@@ -603,6 +603,7 @@ void UiLvglModule::mirror_state() {
     const int32_t sources = has_audio ? read_int("audio.sources", 0) : 0;
     const int32_t volume = has_audio ? read_int("audio.volume", 0) : -1;
     const bool mute = has_audio && read_bool("audio.mute", false);
+    const bool leveler = has_audio && read_bool("audio.leveler", false);
     const float level_l = has_audio ? read_float("audio.level_l", -120.0f) : -120.0f;
     const float level_r = has_audio ? read_float("audio.level_r", -120.0f) : -120.0f;
     const bool eq_on = has_audio && read_bool("audio.eq_enabled", false);
@@ -791,6 +792,7 @@ void UiLvglModule::mirror_state() {
     snap_.sources = sources;
     snap_.volume = volume;
     snap_.mute = mute;
+    snap_.leveler = leveler;
     snap_.level_l = level_l;
     snap_.level_r = level_r;
     snap_.eq_enabled = eq_on;
@@ -1027,6 +1029,12 @@ void UiLvglModule::apply_requests() {
             if (state_get("audio.mute").has_value()) {
                 const bool cur = read_bool("audio.mute", false);
                 state_set("audio.mute", it.value < 0 ? !cur : (it.value != 0));
+            }
+            break;
+        case Req::LEVELER:
+            if (state_get("audio.leveler").has_value()) {
+                const bool cur = read_bool("audio.leveler", false);
+                state_set("audio.leveler", it.value < 0 ? !cur : (it.value != 0));
             }
             break;
         case Req::EQ_ENABLED:

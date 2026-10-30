@@ -223,7 +223,9 @@ whole number goes without ".0". Transport:
 
 Seeking — `player.seek_s` (card) or `radio.seek_s` (a DLNA track, when `radio.seekable`). Repeat and
 shuffle — `player.repeat`, `player.shuffle`. The list button leads to the list of the source that is
-playing.
+playing. The moon after "Sound" switches "Volume leveling" (`audio.leveler`, `Req::LEVELER`;
+[AUDIO.md](AUDIO.md)): filled in the accent colour while it is on; the web's Player has the same
+moon beside its "Sound" button.
 
 **Source** (`screen_src.cpp`). A grid of cards in the order Bluetooth, AirPlay, Radio / Card,
 Media servers, USB; a card is there only when its bit is set in `audio.sources`. Each card says what
@@ -485,10 +487,10 @@ the pairing dialog (`PairDialog.svelte`).
 
 | page | state | own endpoints |
 |---|---|---|
-| Player | `stores/now.js` (the source's face, as in `screen_now.cpp`), `audio.volume`, `audio.mute`, transport `*.cmd`, `player.repeat/shuffle`, `*.seek_s`, `radio.fav_add` | `GET /api/cover?px=280` following `ui.cover` |
+| Player | `stores/now.js` (the source's face, as in `screen_now.cpp`), `audio.volume`, `audio.mute`, `audio.leveler`, transport `*.cmd`, `player.repeat/shuffle`, `*.seek_s`, `radio.fav_add` | `GET /api/cover?px=280` following `ui.cover` |
 | Source | `audio.sources`, `audio.source` (the same cards and order as on the panel) | — |
 | Settings | `airplay.enabled/mode`, `dlna.enabled`, `radio.covers`, captions | `POST /api/restart` |
-| Tone and volume | `audio.bass_db`, `treble_db`, `loudness`, `eq_enabled`, `vol_max`, `vol_start` | `/api/eq` (presets, `lib/eq.js`) |
+| Tone and volume | `audio.bass_db`, `treble_db`, `loudness`, `eq_enabled`, `vol_max`, `vol_start`; "Volume leveling": `lev_sched` and, while it is on, `lev_from`/`lev_to` as time fields (5-minute step) | `/api/eq` (presets, `lib/eq.js`) |
 | Equalizer | `audio.eq_enabled`, `audio.eq_rev` | `GET/POST /api/eq` |
 | Speakers, wizard, calibration | `audio.spk_*`, `audio.port_*`, `audio.balance_db10`, `audio.tone_*` | — |
 | Screen | `ui.backlight`, `ui.standby_bl`, `ui.standby_min`, `ui.theme` | — |

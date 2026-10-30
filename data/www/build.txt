@@ -1,4 +1,4 @@
-21279d739c1a42f6  bundle.js.gz
+abeb6bd27dee5e66  bundle.js.gz
 2112f24250f361d8  chunk-AccessPage.js.gz
 1c76d2c05635bb6f  chunk-BackupPage.js.gz
 ca7301a049005948  chunk-BtPage.js.gz
@@ -17,7 +17,7 @@ ca41f0b6a77d7bd1  chunk-LogPage.js.gz
 ae406e68f9cf1b35  chunk-MorePage.js.gz
 46f720cbf14aef8d  chunk-ScreenshotPage.js.gz
 f228db864b0040b8  chunk-ServicePage.js.gz
-a022151176c658c8  chunk-SoundControls.js.gz
+67f7f19326c86aba  chunk-SoundControls.js.gz
 5ca5a7b03a6e6d20  chunk-SoundPage.js.gz
 5e0eb3e598a39a66  chunk-SoundPick.js.gz
 d9463feb96866363  chunk-SpeakersPage.js.gz
@@ -33,7 +33,7 @@ c4e3d7f4f92885ef  chunk-TuningPage.js.gz
 819606fee2edeef9  chunk-longtail.js.gz
 6d39980f66caa88b  chunk-media.js.gz
 2d3d51945c4b98cc  chunk-tone.js.gz
-bcf74fe1f148b28c  bundle.css.gz
-6192f6a2ea8e6dc0  lang/en.json.gz
-9f3b31a512fc32f3  lang/de.json.gz
-9a3aaaf91e33f779  lang/pl.json.gz
+22a1098a7b38ea0a  bundle.css.gz
+319687c21ecb92f4  lang/en.json.gz
+78125f525fc28f26  lang/de.json.gz
+19faea7ca341978d  lang/pl.json.gz

@@ -2,7 +2,8 @@
   // Player: a remote, not a second player
   // (customer, 11.10.2026). Where the sound comes from; the cover, big; what plays, its codec; the
   // transport with a big pause; a thin volume that shows its number while it moves; one «Звук»
-  // button for the sheet with the sounds, Бас, Високі and the loudness (S3). Below, what can be done
+  // button for the sheet with the sounds, Бас, Високі and the loudness (S3), and the moon beside it,
+  // «Вирівнювання гучності» (audio.leveler, as on the glass). Below, what can be done
   // about the source that plays. The faces, texts and commands are the panel's (stores/now.js after
   // screen_now.cpp), and so is the background: the shell tints the page with ui.cover_rgb.
   import { onDestroy } from 'svelte';
@@ -52,9 +53,11 @@
   // ── volume, mute: the one slider, the number at its right as on the glass's (m3w::slider) ──
   const volume = createSettingSender('audio.volume', { debounceMs: 150, live: true });
   const mute = createSettingSender('audio.mute', { debounceMs: 0 });
-  onDestroy(() => [volume, mute].forEach((x) => x.cleanup()));
+  const leveler = createSettingSender('audio.leveler', { debounceMs: 0 });
+  onDestroy(() => [volume, mute, leveler].forEach((x) => x.cleanup()));
 
   $: muted = !!s['audio.mute'];
+  $: leveling = !!s['audio.leveler'];
   $: vol = s['audio.volume'] ?? 0;
   // a finger drags it along; a press, or one that goes up or down, does not (lib/gesture.js)
   function setVolume(v) {
@@ -202,6 +205,7 @@
 
     <div class="quick">
       <button class="pill" type="button" on:click={openSound}><Icon name="tune" size={20} />{$t['sys.sound']}</button>
+      <IconButton icon="bedtime" label={$t['sound.leveler']} selected={leveling} on:click={() => leveler.send(!leveling)} />
     </div>
   </section>
 
@@ -392,7 +396,7 @@
   .line { flex: 1; min-width: 0; }
   .off :global(.fill), .off :global(.knob) { background: var(--outline); }
 
-  .quick { display: flex; justify-content: center; margin-top: 12px; }
+  .quick { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 12px; }
   .pill {
     display: inline-flex;
     align-items: center;

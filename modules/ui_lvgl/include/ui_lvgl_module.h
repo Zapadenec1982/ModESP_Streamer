@@ -49,6 +49,7 @@ public:
         bool     encoder_sw  = false;
         int32_t  volume      = -1;      ///< audio.volume mirror, −1 = no audio core
         bool     mute        = false;
+        bool     leveler     = false;   ///< audio.leveler: «Вирівнювання гучності» (the Player's moon)
         int32_t  source      = -1;      ///< audio.source (0 off, 1 tone, 2 aux, 3 bt), −1 = none
         int32_t  sources     = 0;       ///< audio.sources bitmask — unavailable keys are greyed out
         char     audio_state[16] = "";  ///< audio.state
@@ -211,6 +212,7 @@ public:
         TREBLE,       ///< value = audio.treble_db, −6…+6
         LOUDNESS,     ///< value = audio.loudness, 0…100 (0 = off)
         BALANCE,      ///< value = audio.balance_db10, −60…+60 in steps of 5 (Колонки)
+        LEVELER,      ///< value = audio.leveler 0/1, −1 = toggle (the Player's moon)
     };
 
 

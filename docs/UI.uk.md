@@ -218,7 +218,9 @@ Wi-Fi мають свою ієрархію), потім іде на `parent`, п
 
 Перемотка — `player.seek_s` (картка) або `radio.seek_s` (трек DLNA, коли `radio.seekable`).
 Повтор і перемішування — `player.repeat`, `player.shuffle`. Кнопка списку веде на список
-джерела, що грає.
+джерела, що грає. Місяць після «Звуку» перемикає «Вирівнювання гучності» (`audio.leveler`,
+`Req::LEVELER`; [AUDIO.uk.md](AUDIO.uk.md)): поки воно ввімкнене, він заповнений кольором акценту;
+на вебі в Плеєрі такий самий місяць поруч із кнопкою «Звук».
 
 **Джерело** (`screen_src.cpp`). Сітка карток у порядку Bluetooth, AirPlay, Радіо / Картка,
 Медіасервери, USB; картка є лише тоді, коли її біт стоїть у `audio.sources`. Кожна картка
@@ -474,10 +476,10 @@ AUX — завжди) або його можна продовжити з мін�
 
 | сторінка | стан | власні ендпоінти |
 |---|---|---|
-| Плеєр | `stores/now.js` (обличчя джерела, як `screen_now.cpp`), `audio.volume`, `audio.mute`, транспорт `*.cmd`, `player.repeat/shuffle`, `*.seek_s`, `radio.fav_add` | `GET /api/cover?px=280` за `ui.cover` |
+| Плеєр | `stores/now.js` (обличчя джерела, як `screen_now.cpp`), `audio.volume`, `audio.mute`, `audio.leveler`, транспорт `*.cmd`, `player.repeat/shuffle`, `*.seek_s`, `radio.fav_add` | `GET /api/cover?px=280` за `ui.cover` |
 | Джерело | `audio.sources`, `audio.source` (ті самі картки й порядок, що на панелі) | — |
 | Налаштування | `airplay.enabled/mode`, `dlna.enabled`, `radio.covers`, підписи | `POST /api/restart` |
-| Тембр і гучність | `audio.bass_db`, `treble_db`, `loudness`, `eq_enabled`, `vol_max`, `vol_start` | `/api/eq` (пресети, `lib/eq.js`) |
+| Тембр і гучність | `audio.bass_db`, `treble_db`, `loudness`, `eq_enabled`, `vol_max`, `vol_start`; «Вирівнювання гучності»: `lev_sched` і, поки воно ввімкнене, `lev_from`/`lev_to` полями часу (крок 5 хв) | `/api/eq` (пресети, `lib/eq.js`) |
 | Еквалайзер | `audio.eq_enabled`, `audio.eq_rev` | `GET/POST /api/eq` |
 | Колонки, майстер, калібрування | `audio.spk_*`, `audio.port_*`, `audio.balance_db10`, `audio.tone_*` | — |
 | Екран | `ui.backlight`, `ui.standby_bl`, `ui.standby_min`, `ui.theme` | — |

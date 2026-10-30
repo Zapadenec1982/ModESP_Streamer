@@ -105,11 +105,11 @@ struct Now {
     uint32_t  cover_gen   = 0xFFFFFFFF;
     int       cover_source = -1;
     int       cover_tile   = -1;   ///< which CoverSource the image came from: gens are per tile
-    // the row over the block: where it plays from, «Звук», the list and the volume
+    // the row over the block: where it plays from, «Звук», the moon, the list and the volume
     lv_obj_t*   from     = nullptr;
     lv_obj_t*   from_src = nullptr;
     lv_obj_t*   from_dev = nullptr;
-    m3w::Button sound, list_btn, vol_btn;
+    m3w::Button sound, lev_btn, list_btn, vol_btn;
     int32_t     sound_w = 0;
     // the block
     lv_obj_t* title = nullptr;
@@ -149,6 +149,7 @@ struct Now {
     int8_t  tran_live = -1;
     int8_t  playing = -1;
     int8_t  muted   = -1;             ///< what the volume button shows
+    int8_t  leveler = -1;             ///< what the moon shows
     int32_t repeat  = -1;
     int8_t  shuffle = -1;
     UiCtx* ctx = nullptr;
@@ -207,6 +208,7 @@ void vis_cb(lv_event_t*) {
 }
 void vol_cb(lv_event_t*)    { ui_shell_show_volume(); }
 void sound_cb(lv_event_t*)  { ui_sound_open(); }
+void lev_cb(lv_event_t*)    { post(UiLvglModule::Req::LEVELER, -1); }
 void rep_cb(lv_event_t*)    { post(UiLvglModule::Req::REPEAT, -1); }
 void shuf_cb(lv_event_t*)   { post(UiLvglModule::Req::SHUFFLE, -1); }
 
@@ -343,6 +345,11 @@ lv_obj_t* build(lv_obj_t* parent, UiCtx& c) {
     lv_obj_add_event_cb(n.sound.obj, sound_cb, LV_EVENT_CLICKED, nullptr);
     lv_obj_update_layout(n.sound.obj);
     n.sound_w = lv_obj_get_width(n.sound.obj);
+    // «Вирівнювання гучності» right after «Звук» (place_row puts it there): a moon, filled in
+    // the accent while it works, like shuffle and repeat
+    n.lev_btn = m3w::icon_button(col, 0, 0, ROW_BTN, UI_SYM_MOON, t.t.icon_m);
+    lv_obj_set_ext_click_area(n.lev_btn.obj, ROW_EXT);
+    lv_obj_add_event_cb(n.lev_btn.obj, lev_cb, LV_EVENT_CLICKED, nullptr);
     // the two buttons at the row's end: the source's list, and the volume pop-up
     n.vol_btn = m3w::icon_button(col, COL_W - ROW_BTN - ROW_EXT, 0, ROW_BTN, UI_SYM_VOLUME, t.t.icon_m);
     lv_obj_add_event_cb(n.vol_btn.obj, vol_cb, LV_EVENT_CLICKED, nullptr);
@@ -441,11 +448,13 @@ lv_obj_t* build(lv_obj_t* parent, UiCtx& c) {
 // ── refresh ──
 
 /// Lay the row out: the buttons at its end — the volume always, the list when the source has
-/// one — then «Звук», and the source line takes what is left.
+/// one, the moon — then «Звук», and the source line takes what is left.
 void place_row() {
     const bool has_list = !lv_obj_has_flag(n.list_btn.obj, LV_OBJ_FLAG_HIDDEN);
-    // each button's reach is ROW_EXT past what is drawn: «Звук»'s ends where the list's begins
-    const int32_t sound_x = COL_W - (has_list ? 2 : 1) * (ROW_BTN + 2 * ROW_EXT) - ROW_EXT - n.sound_w;
+    // each button's reach is ROW_EXT past what is drawn: «Звук»'s ends where the moon's begins
+    const int32_t buttons = has_list ? 3 : 2;
+    lv_obj_set_x(n.lev_btn.obj, COL_W - buttons * (ROW_BTN + 2 * ROW_EXT) + ROW_EXT);
+    const int32_t sound_x = COL_W - buttons * (ROW_BTN + 2 * ROW_EXT) - ROW_EXT - n.sound_w;
     lv_obj_set_x(n.sound.obj, sound_x);
     lv_obj_set_width(n.from, sound_x - ROW_EXT);
 }
@@ -588,6 +597,12 @@ void refresh(lv_obj_t*, UiCtx& c) {
     if (muted != n.muted) {
         n.muted = muted;
         if (n.vol_btn.icon) lv_label_set_text(n.vol_btn.icon, muted ? UI_SYM_MUTE : UI_SYM_VOLUME);
+    }
+    const int8_t lev = s.leveler ? 1 : 0;
+    if (lev != n.leveler && n.lev_btn.icon) {
+        n.leveler = lev;
+        lv_obj_set_style_text_font(n.lev_btn.icon, lev ? t.t.icon_m_fill : t.t.icon_m, 0);
+        lv_obj_set_style_text_color(n.lev_btn.icon, m3::col(lev ? t.c.primary : t.c.on_surface_var), 0);
     }
 
     // ── the transport's mood ──
