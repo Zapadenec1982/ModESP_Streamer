@@ -73,6 +73,7 @@ set(MODULE_SOURCES
     "${ROOT}/components/modesp_services/src/persist_service.cpp" # restore + the one-shot positional-key pass
     "${ROOT}/components/audio_dsp/src/dsp_chain.cpp"         # band design, the EQ/width/limiter chain, the tone
     "${ROOT}/components/audio_dsp/src/dsp_kernels.cpp"       # the EQ's stereo SVF loops (fmaf spelled out: same rounding as the P4)
+    "${ROOT}/components/audio_dsp/src/leveler.cpp"           # «Вирівнювання гучності» and its schedule
     "${ROOT}/components/audio_dsp/src/eq_config.cpp"         # eq.json parse/serialise (jsmn, header-only)
     "${ROOT}/components/audio_dsp/src/eq_presets.cpp"        # the DSP page's presets and the "Свій" rules
     "${ROOT}/modules/ui_lvgl/src/i18n.cpp"                   # the panel's strings: tr, plural, fmt, num
@@ -114,6 +115,7 @@ set(TEST_SOURCES
     "${CMAKE_SOURCE_DIR}/test_dsp_design.cpp"
     "${CMAKE_SOURCE_DIR}/test_dsp_loudness.cpp"
     "${CMAKE_SOURCE_DIR}/test_dsp_tone.cpp"
+    "${CMAKE_SOURCE_DIR}/test_dsp_leveler.cpp"
     "${CMAKE_SOURCE_DIR}/test_dsp_passes.cpp"        # the filter sections two to a pass, bit for bit
     "${CMAKE_SOURCE_DIR}/test_level_latch.cpp"
     "${CMAKE_SOURCE_DIR}/test_port_finder.cpp"

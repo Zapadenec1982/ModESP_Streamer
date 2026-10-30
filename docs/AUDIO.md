@@ -203,15 +203,16 @@ interleaved stereo float between the producers and the audio task; lock-free on 
 `audio_core::DspChain` (`components/audio_dsp/src/dsp_chain.cpp`), float, in blocks, no heap
 after start. The order in `DspChain::process`:
 
-1. input gain: trim · volume · EQ headroom;
-2. subsonic and the lift at the port;
-3. loudness compensation;
-4. "Bass" and "Treble";
-5. PEQ, up to 10 bands;
-6. width / mono bass (mid/side);
-7. balance;
-8. bass limiter;
-9. brickwall.
+1. volume leveler (only while it is on);
+2. input gain: trim · volume · EQ headroom;
+3. subsonic and the lift at the port;
+4. loudness compensation;
+5. "Bass" and "Treble";
+6. PEQ, up to 10 bands;
+7. width / mono bass (mid/side);
+8. balance;
+9. bass limiter;
+10. brickwall.
 
 Inside the chain **1.0 = the amplifier ceiling**, not the DAC's full scale (section "Amplifier
 ceiling"). The filters are trapezoidal SVFs (Simper), one section per band for both channels
@@ -229,6 +230,9 @@ block.
 | `audio.vol_max` | 40…100 %, 100 | "Maximum": plays `volume × vol_max / 100` of the same law |
 | `audio.vol_start` | 0…100 %, 0 | after power-on the volume is no higher than this (0 — as it was) |
 | `audio.mute` | bool | 10 ms ramp |
+| `audio.leveler` | bool, false | "Volume leveling" (section below) |
+| `audio.lev_sched` | bool, false | the leveler by the schedule |
+| `audio.lev_from`, `audio.lev_to` | 0…1435 min of the day, step 5; 1320 (22:00), 420 (07:00) | the schedule's window |
 | `audio.drive_db` | 0…6 dB, 0 | how far 100 % drives into the limiters above the clean ceiling |
 | `audio.hp_hz` | 0 off / 20…80 Hz, 40 | subsonic, 4th-order Butterworth |
 | `audio.spk_type` | 0 not set / 1 ported / 2 sealed | sealed — the port has no effect, whatever number is saved |
@@ -246,8 +250,8 @@ block.
 | `audio.rms_cap_db10` | −120…0 (tenths of dB), 0 off | bass power ceiling, dB below a full-scale sine in both channels |
 | `audio.amp_clip_db10` | −240…0 (tenths of dBFS), −98 | amplifier ceiling C |
 
-All of them are saved (persist). Shelves at 0 dB ("Bass", "Treble"), balance 0, loudness compensation 0 (and at the top of the scale), width 100 are a
-bit-exact "wire".
+All of them are saved (persist). Shelves at 0 dB ("Bass", "Treble"), balance 0, loudness compensation 0 (and at the top of the scale), width 100,
+the leveler off are a bit-exact "wire".
 
 ### Volume
 
@@ -268,6 +272,33 @@ bit-exact "wire".
 - `audio.volume` is written by: the panel (encoder — 2 % per click; `docs/UI.md`), the web and the
   API, DLNA RenderingControl, AirPlay (through a reference point, `docs/NETWORK.md`), the phone
   over AVRCP and the computer over USB (sections below).
+
+### Volume leveling
+
+For a film mixed quiet with loud advertising in its breaks (`components/audio_dsp/src/leveler.cpp`,
+`audio_core::Leveler`). It acts on the source before the volume, so what it holds does not depend on
+where the volume is.
+
+- Loudness as ITU-R BS.1770 measures it: the K-weighting (its pre-filter shelf and the RLB
+  high-pass, from the analogue prototypes, so at every rate; at 48 kHz within 0.05 dB of the
+  standard's own filters), mean square of the mono sum (L + R)/2, in LUFS. Decorrelated content reads
+  3 dB lower than the standard would make it.
+- Two levels: over ~0.4 s (one-pole, BS.1770's momentary window is 400 ms) and over ~50 ms. The
+  gain wanted is −20 LUFS minus the slow level, and no more than −12 LUFS minus the fast one (a bang
+  after a quiet scene), within −20…+6 dB.
+- Down: a one-pole on the gain in dB, τ 100 ms — a break 16 dB over the film is down by half in
+  0.3 s and to within a dB in a second. Up: only after 1.5 s without a cut, then at 3 dB/s at most —
+  back from that break in about 7 s.
+- A 5 ms block under −60 LUFS is a pause: it is not measured, and the gain stays where it is.
+- The gain is applied as a straight line across each block, decided by the block before.
+- Off is a wire, bit-exact. Switched off while it holds a gain, it goes back to 0 dB at 3 dB/s
+  first. A chain reset (source switch, new rate) restarts the measurement and keeps the gain.
+- The current gain is `audio.lev_db`.
+- **Schedule** (`AudioModule::leveler_schedule`, once a second): while `audio.lev_sched` is on and
+  SNTP has set the clock, `audio.leveler` is switched on when the minute of the day enters
+  [`lev_from`, `lev_to`) and off when it leaves; the window may cross midnight, equal ends are an
+  empty window. When the schedule starts to apply (switched on, moved, the clock set at boot) it
+  sets the switch to what it says now. Between the edges the switch on the Player is left alone.
 
 ### Subsonic and port
 

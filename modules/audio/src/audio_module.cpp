@@ -32,6 +32,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cmath>
+#include <ctime>
 
 #ifndef MODESP_AUDIO_DIAGNOSTIC_BT_DIRECT
 #define MODESP_AUDIO_DIAGNOSTIC_BT_DIRECT 0
@@ -723,6 +724,8 @@ bool AudioModule::on_init() {
     dsp_.set_tone((float)(int8_t)(last_timbre_ >> 8), (float)(int8_t)last_timbre_);
     last_balance_ = read_int("audio.balance_db10", 0);
     dsp_.set_balance_db((float)last_balance_ / 10.0f);
+    last_leveler_ = read_bool("audio.leveler", false) ? 1 : 0;
+    dsp_.set_leveler(last_leveler_ != 0);
     log_bass("boot");
     // The bass limiter's look-ahead: up to 8 KB, read and written once a frame in order — PSRAM
     // through the cache serves that well, and internal RAM is what the TLS radio runs short of.
@@ -855,6 +858,23 @@ void AudioModule::send(CmdType t, int32_t v) {
     if (xQueueSend(cmd_q_, &c, 0) != pdTRUE) ESP_LOGW(TAG, "command queue full");
 }
 
+void AudioModule::leveler_schedule(uint32_t dt_ms) {
+    lev_sched_ms_ += dt_ms;
+    if (lev_sched_ms_ < 1000) return;
+    lev_sched_ms_ = 0;
+    int now_min = -1;
+    const time_t now = time(nullptr);
+    struct tm t;
+    localtime_r(&now, &t);
+    if (t.tm_year + 1900 >= 2020) now_min = t.tm_hour * 60 + t.tm_min;   // SNTP has set the clock
+    const int32_t from = read_int("audio.lev_from", 22 * 60), to = read_int("audio.lev_to", 7 * 60);
+    const int r = lev_sched_.tick(now_min, read_bool("audio.lev_sched", false), (int)from, (int)to);
+    if (r < 0 || (r == 1) == read_bool("audio.leveler", false)) return;
+    ESP_LOGI(TAG, "leveler %s by the schedule (%02d:%02d–%02d:%02d)", r ? "on" : "off",
+             (int)(from / 60), (int)(from % 60), (int)(to / 60), (int)(to % 60));
+    state_set("audio.leveler", r == 1);
+}
+
 void AudioModule::on_update(uint32_t dt_ms) {
     own_eq();
     if (!main_ || !run_) return;
@@ -951,6 +971,9 @@ void AudioModule::on_update(uint32_t dt_ms) {
     if (tim != last_timbre_) { last_timbre_ = tim; send(CmdType::TIMBRE, tim); }
     const int32_t bal = read_int("audio.balance_db10", 0);
     if (bal != last_balance_) { last_balance_ = bal; send(CmdType::BALANCE, bal); }
+    leveler_schedule(dt_ms);
+    const int32_t lev = read_bool("audio.leveler", false) ? 1 : 0;
+    if (lev != last_leveler_) { last_leveler_ = lev; send(CmdType::LEVELER, lev); }
     if (read_bool("audio.port_meas", false) && !meter_busy_.load()) {
         meter_busy_.store(true);
         if (xTaskCreatePinnedToCore(meter_entry, "port_meter", 8192, this, 5, nullptr, 0) != pdPASS) {
@@ -1064,6 +1087,13 @@ void AudioModule::on_update(uint32_t dt_ms) {
         if (ld != last_loud_db_) {
             last_loud_db_ = ld;
             state_set("audio.loud_db", ld);
+        }
+    }
+    {
+        const float lv = roundf(st.lev_db * 10.0f) / 10.0f;
+        if (lv != last_lev_db_) {
+            last_lev_db_ = lv;
+            state_set("audio.lev_db", lv);
         }
     }
     // Module init order is not guaranteed, so the "file" bit is re-evaluated here
@@ -2071,6 +2101,7 @@ void AudioModule::task_loop() {
             case CmdType::PORT:      dsp_.set_port((float)(c.value >> 4), (float)(c.value & 15)); break;
             case CmdType::TIMBRE:    dsp_.set_tone((float)(int8_t)(c.value >> 8), (float)(int8_t)c.value); break;
             case CmdType::BALANCE:   dsp_.set_balance_db((float)c.value / 10.0f); break;
+            case CmdType::LEVELER:   dsp_.set_leveler(c.value != 0); break;
             case CmdType::TONE_MODE: {
                 const int32_t m = (c.value == TONE_RAW || c.value == TONE_BURSTS) ? c.value : TONE_CHAIN;
                 // Through the gate: shut, change, open. Switching in the middle of a tone is a
@@ -2754,6 +2785,7 @@ void AudioModule::task_loop() {
             status_.out_clamps = out_clamps;
             status_.eq_headroom_db = dsp_.headroom_db();
             status_.loud_db = dsp_.loudness_db();
+            status_.lev_db = dsp_.leveler_db();
             {
                 const float bg = dsp_.take_bass_min();
                 status_.bass_gr_db = bg >= 1.0f ? 0.0f : -20.0f * log10f(bg);

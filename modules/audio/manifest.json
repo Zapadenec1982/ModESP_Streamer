@@ -564,6 +564,53 @@
       "persist": true,
       "description": "Баланс у десятих dB: більше нуля — тихіше лівий канал, менше — правий. Лише приглушує, запасу не забирає; 0 — не діє"
     },
+    "audio.leveler": {
+      "type": "bool",
+      "access": "readwrite",
+      "default": false,
+      "persist": true,
+      "on_label": "увімкнено",
+      "off_label": "вимкнено",
+      "description": "Вирівнювання гучності: тримає звук біля одного рівня — гучну рекламу приглушує, тихий фільм трохи підтягує. На музиці краще вимкнути"
+    },
+    "audio.lev_sched": {
+      "type": "bool",
+      "access": "readwrite",
+      "default": false,
+      "persist": true,
+      "on_label": "за розкладом",
+      "off_label": "вручну",
+      "description": "Вирівнювання гучності за розкладом: вмикається о audio.lev_from, вимикається о audio.lev_to; між ними перемикач Плеєра діє до наступної межі"
+    },
+    "audio.lev_from": {
+      "type": "int",
+      "access": "readwrite",
+      "default": 1320,
+      "min": 0,
+      "max": 1435,
+      "step": 5,
+      "unit": "min",
+      "persist": true,
+      "description": "Розклад вирівнювання: з якої хвилини доби вмикати (1320 = 22:00)"
+    },
+    "audio.lev_to": {
+      "type": "int",
+      "access": "readwrite",
+      "default": 420,
+      "min": 0,
+      "max": 1435,
+      "step": 5,
+      "unit": "min",
+      "persist": true,
+      "description": "Розклад вирівнювання: о котрій хвилині доби вимикати (420 = 07:00); дорівнює початку — не вмикати"
+    },
+    "audio.lev_db": {
+      "type": "float",
+      "access": "read",
+      "default": 0.0,
+      "unit": "dB",
+      "description": "Скільки вирівнювання гучності зараз додає (+) чи забирає (−)"
+    },
     "audio.loud_db": {
       "type": "float",
       "access": "read",

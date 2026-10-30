@@ -16,6 +16,7 @@
 #include <cstddef>
 
 #include "dsp_kernels.h"
+#include "leveler.h"
 
 namespace audio_core {
 
@@ -265,7 +266,13 @@ public:
     /// This is the honest half of "spatial" processing: it fixes the real problem (out-of-
     /// phase bass wasting excursion and blurring the image) instead of adding an effect.
     void set_mono_bass(float hz);
-    /// The entry gain, the first thing a block meets: trim · volume · the EQ's headroom.
+    /// «Вирівнювання гучності» (leveler.h): ahead of everything, the volume included. Off is a
+    /// wire, bit-exact; switched off while it holds a gain, it glides back to 0 dB first.
+    void set_leveler(bool on) { lev_.set_on(on); }
+    /// What it does now, dB (> 0 lifts, < 0 cuts).
+    float leveler_db() const { return lev_.gain_db(); }
+    /// The entry gain, the first thing a block meets after the leveler: trim · volume · the EQ's
+    /// headroom.
     ///
     /// Volume: 1 % = −80 dB to 100 % = drive (volume_db); 0 = silence. 100 % is the loudest
     /// CLEAN level — the source's full scale lands on the ceiling — and drive (0…6 dB) is how
@@ -421,6 +428,7 @@ private:
     /// g0 = tan(π·f0/fs); g0 ≤ 0 gives a wire.
     static SvfCoef shelf_coef(float g0, float q, float gain_db, bool high);
 
+    Leveler  lev_;                       ///< set_leveler()
     Band     band_[MAX_BANDS];
     Band     sub_[3];                    ///< subsonic: two Butterworth high-passes, the port lift
     float    sub_hz_ = 0.0f;             ///< what set_subsonic() asked for

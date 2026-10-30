@@ -89,7 +89,7 @@ private:
     enum class CmdType : uint8_t { SOURCE, MUTE, EQ_ENABLE, EQ_RELOAD, TONE_HZ,
                                    WIDTH, MONO_BASS, SPECTRUM, BT_CLOCK, AMP_CLIP, DRIVE,
                                    SUBSONIC, TONE_MODE, TONE_DB10, TONE_CH, BASS_XO, RMS_CAP,
-                                   LOUDNESS, PORT, TIMBRE, BALANCE, LOUD_REF, STOP };
+                                   LOUDNESS, PORT, TIMBRE, BALANCE, LOUD_REF, LEVELER, STOP };
     /// audio.tone_mode: what the tone source plays.
     enum ToneMode : int32_t {
         TONE_CHAIN  = 0,   ///< through the whole chain, −12 dB under the ceiling (as ever)
@@ -111,6 +111,7 @@ private:
         float    eq_headroom_db = 0;        ///< B: what the EQ takes off the top of the volume scale
         float    bass_gr_db = 0;            ///< the bass limiter's deepest cut in the window, dB
         float    loud_db = 0;               ///< the loudness bass shelf's gain now, dB
+        float    lev_db = 0;                ///< «Вирівнювання гучності»: its gain now, dB
         float    dsp_pct = 0;               ///< DSP cycles over the window, % of one core
         float    dsp_max_pct = 0;           ///< the window's worst block, % of a block's time
         uint32_t out_clamps = 0;            ///< samples the output conversion had to clamp, total
@@ -288,6 +289,13 @@ private:
     int32_t  last_loud_ref_ = INT32_MIN;
     int32_t  last_timbre_ = INT32_MIN, last_balance_ = INT32_MIN;   ///< Бас and Високі packed (timbre()), balance
     float    last_loud_db_ = -1.0f;
+    // «Вирівнювання гучності» (audio.leveler) and its schedule (audio.lev_sched/lev_from/lev_to)
+    int32_t  last_leveler_ = INT32_MIN;
+    float    last_lev_db_ = 99.0f;
+    audio_core::LevelerSchedule lev_sched_;
+    uint32_t lev_sched_ms_ = 0;
+    /// Once a second: the schedule against the clock, and the switch to what it says at its edges.
+    void leveler_schedule(uint32_t dt_ms);
     // ── port meter (audio.port_meas): the onboard microphone at a woofer finds the port ──
     struct i2c_master_bus_t* mic_bus_ = nullptr;   ///< the microphone codec's I2C bus, from on_bind
     std::atomic<bool> meter_busy_{false};

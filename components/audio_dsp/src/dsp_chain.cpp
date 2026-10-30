@@ -220,6 +220,7 @@ void DspChain::reset() {
     restart(band_, MAX_BANDS);
     restart(sub_, 3);
     restart(tone_, 2);
+    lev_.reset();
     bal_l_ = bal_tl_;                // the balance starts where it is set: nothing to glide from
     bal_r_ = bal_tr_;
     side_s1_ = side_s2_ = 0.0f;
@@ -243,6 +244,7 @@ void DspChain::reset() {
 void DspChain::set_sample_rate(float hz) {
     if (!(hz >= 1000.0f)) hz = FS_HZ_DEFAULT;
     sample_rate_hz_ = hz;
+    lev_.set_sample_rate(hz);
     // k = 1 − e^(−1/(τ·fs)): the one-pole that reaches 63 % of a step in τ seconds.
     vol_k_   = 1.0f - expf(-1.0f / (VOL_TAU_S * hz));
     mute_k_  = 1.0f - expf(-1.0f / (MUTE_TAU_S * hz));
@@ -966,7 +968,9 @@ void DspChain::run_gain(float* stereo, size_t frames) {
 void DspChain::process(float* stereo, size_t frames) {
     if (frames > BLOCK) frames = BLOCK;
 
-    // Trim, volume and the EQ's headroom, first: from here on 1.0 is the amplifier's ceiling.
+    // The leveler, on the source as it comes: what it holds does not depend on the volume.
+    lev_.process(stereo, frames);
+    // Trim, volume and the EQ's headroom: from here on 1.0 is the amplifier's ceiling.
     run_gain(stereo, frames);
     if (xo_switching_ && vol_gain_ < 1e-4f) {      // −80 dB: the split can move unheard
         xo_switching_ = false;
@@ -1057,6 +1061,7 @@ void DspChain::process(float* stereo, size_t frames) {
     // may sit an ulp above. Only a NaN, or something that is no longer a gain, is a fault.
     bad |= !(fabsf(side_s1_) <= 1e6f) | !(fabsf(side_s2_) <= 1e6f) | !(lim_g_ < 2.0f) | !(bass_g_ < 2.0f);
     for (int j = 0; j < 8; j++) bad |= !(fabsf(det_s_[j]) <= 1e6f) | !(fabsf(app_s_[j]) <= 1e6f);
+    bad |= !lev_.sane();
     if (bad) {
         faults_++;
         reset();

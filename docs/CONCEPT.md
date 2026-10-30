@@ -106,7 +106,7 @@ test tone (generator) ───────────────────�
                                                    → I2S0 TX ──► PCM5102A ──► TPA3255 ──► speakers
 ```
 
-`DspChain` (`components/audio_dsp`): input gain (section trim, volume, EQ headroom) → subsonic filter
+`DspChain` (`components/audio_dsp`): volume leveler (while on) → input gain (section trim, volume, EQ headroom) → subsonic filter
 and boost at the port frequency → loudness → bass and treble → PEQ up to 10 bands →
 width and mono bass → balance → bass limiter → brickwall with look-ahead. Float inside; 32-bit slots go onto the bus. Details
 of each stage — [AUDIO.md](AUDIO.md).
