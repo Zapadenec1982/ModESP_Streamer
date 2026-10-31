@@ -900,6 +900,9 @@ void UiLvglModule::mirror_diag() {
     char ap_mode_error[64] = "";
     read_string("airplay.mode_error", ap_mode_error, sizeof(ap_mode_error));
     const int32_t standby_min = read_int("ui.standby_min", 5);
+    const bool    lev_sched   = read_bool("audio.lev_sched", false);
+    const int32_t lev_from    = read_int("audio.lev_from", 1320);
+    const int32_t lev_to      = read_int("audio.lev_to", 420);
     // set once at boot (out_caps.h); a build without the audio module plays nothing, and the
     // crossover page then says stereo, which is what the board is
     const int32_t out_caps    = read_number("audio.out_caps", audio_core::OUT_STEREO);
@@ -943,6 +946,9 @@ void UiLvglModule::mirror_diag() {
     snap_.ap_switching = ap_switching;
     snap_.ap_mode_error = ap_mode_error[0] != '\0';
     snap_.standby_min = standby_min;
+    snap_.lev_sched   = lev_sched;
+    snap_.lev_from    = lev_from;
+    snap_.lev_to      = lev_to;
     snap_.out_caps    = out_caps;
     snap_.dlna_built   = dlna_built;
     snap_.dlna_enabled = dlna_enabled;
@@ -1035,6 +1041,17 @@ void UiLvglModule::apply_requests() {
             if (state_get("audio.leveler").has_value()) {
                 const bool cur = read_bool("audio.leveler", false);
                 state_set("audio.leveler", it.value < 0 ? !cur : (it.value != 0));
+            }
+            break;
+        case Req::LEV_SCHED:
+            if (state_get("audio.lev_sched").has_value()) state_set("audio.lev_sched", it.value != 0);
+            break;
+        case Req::LEV_FROM:
+        case Req::LEV_TO:
+            // the manifest's range and step
+            if (it.value >= 0 && it.value <= 1435 && it.value % 5 == 0) {
+                const char* key = it.kind == Req::LEV_FROM ? "audio.lev_from" : "audio.lev_to";
+                if (state_get(key).has_value()) state_set(key, it.value);
             }
             break;
         case Req::EQ_ENABLED:

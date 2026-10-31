@@ -195,6 +195,10 @@ enum class S : uint16_t {
     sound_bass,              // sound.bass
     sound_eq_off,            // sound.eq_off
     sound_eq_on,             // sound.eq_on
+    sound_lev_from,          // sound.lev_from
+    sound_lev_sched,         // sound.lev_sched
+    sound_lev_to,            // sound.lev_to
+    sound_leveler,           // sound.leveler
     sound_styles,            // sound.styles
     sound_treble,            // sound.treble
     sound_undo,              // sound.undo

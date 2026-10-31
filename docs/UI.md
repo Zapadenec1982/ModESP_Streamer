@@ -254,7 +254,9 @@ page opens and there are no servers yet.
 
 **Sound and EQ.** The "Sound" sheet and the Tone page are the same controls (`sound_sheet.cpp`): the
 preset field (pick list), Bass and Treble (−6…+6 dB), loudness compensation (the `audio.loudness`
-switch), the way to the equalizer. The equalizer (`screen_eq.cpp`) draws the frequency response with
+switch), the way to the equalizer. The Tone page also has, at its foot, "Volume leveling": "On a
+schedule" (`audio.lev_sched`) and, while it is on, the two times with − and + (a quarter hour a
+press, a held button keeps stepping; `audio.lev_from`, `audio.lev_to`), as on the web. The equalizer (`screen_eq.cpp`) draws the frequency response with
 the same function, `audio_core::eq_magnitude_db()`, that the audio core computes the biquads with;
 the band points are dragged with a finger. At the top: the PEQ switch captioned "On" (the row takes
 a finger anywhere), the preset field and, while "Custom" plays, "Reset “Custom”". Edits go to a local

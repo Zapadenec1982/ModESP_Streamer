@@ -151,6 +151,9 @@ public:
         bool     dlna_built   = false;  ///< the key exists: this build has the renderer
         char     dlna_name[40] = "";    ///< dlna.name
         int32_t  standby_min  = 5;      ///< ui.standby_min — 0 is never
+        bool     lev_sched    = false;  ///< audio.lev_sched: «Вирівнювання гучності» by the clock
+        int32_t  lev_from     = 1320;   ///< audio.lev_from, minute of the day it switches on
+        int32_t  lev_to       = 420;    ///< audio.lev_to, minute of the day it switches off
         int32_t  out_caps     = 1;      ///< audio.out_caps — the output schemes that play (out_caps.h)
         // ── the Wi-Fi page (2 Hz) ──
         bool     wifi_ap      = false;  ///< wifi.mode is "ap": the fallback access point is up
@@ -213,6 +216,9 @@ public:
         LOUDNESS,     ///< value = audio.loudness, 0…100 (0 = off)
         BALANCE,      ///< value = audio.balance_db10, −60…+60 in steps of 5 (Колонки)
         LEVELER,      ///< value = audio.leveler 0/1, −1 = toggle (the Player's moon)
+        LEV_SCHED,    ///< value = audio.lev_sched 0/1 (Налаштування › Звук › Тембр)
+        LEV_FROM,     ///< value = audio.lev_from, minute of the day, 0…1435 in steps of 5
+        LEV_TO,       ///< value = audio.lev_to, the same
     };
 
 

@@ -16,6 +16,10 @@
  * The sounds are the EQ store's (audio_dsp/eq_store.h), so a sound chosen here is the web's at
  * once, and the other way round. Бас, Високі and the loudness are settings: posted to the main
  * loop, read back from the snapshot.
+ *
+ * The page has one section the sheet has not, as on the web: «Вирівнювання гучності» by the clock —
+ * «За розкладом» and, while it is on, the two times with − and + (the switch itself is the Player's
+ * moon).
  */
 
 #include "ui_common.h"
@@ -48,6 +52,12 @@ constexpr int32_t TRACK_H  = m3w::SLIDER_RAIL;
 constexpr int32_t KNOB     = m3w::SLIDER_KNOB;
 constexpr int32_t TONE_VAL = 36;                  ///< the number's column: "−6"
 constexpr int32_t TONE_GAP = 12;
+// the schedule's times: − and + a finger's 64, the time between them, as the screen's Автосон
+constexpr int32_t TIME_BTN  = 64;
+constexpr int32_t TIME_VAL  = 70;
+constexpr int32_t TIME_STEP = 15;                 ///< minutes a press moves a time; the web's are 5
+constexpr int32_t DAY_MIN   = 24 * 60;
+constexpr int64_t TIME_HOLD_MS = 800;             ///< after a press the rows show what was pressed
 
 struct Controls {
     UiCtx*      ctx  = nullptr;
@@ -76,6 +86,13 @@ struct Controls {
     int32_t     bass     = INT32_MIN;
     int32_t     treble   = INT32_MIN;
     int8_t      loud_on  = -1;
+    // the page's only: «Вирівнювання гучності» by the clock (sched_build)
+    lv_obj_t*   sched_sw = nullptr;
+    lv_obj_t*   time_row[2] = {};      ///< «Вмикати о», «Вимикати о»: shown while the schedule is on
+    lv_obj_t*   time_val[2] = {};
+    int32_t     time_v[2] = {INT32_MIN, INT32_MIN};   ///< what they show, minute of the day
+    int64_t     time_pressed = 0;      ///< ms of the last − or +: the snapshot catches up after it
+    int8_t      sched_on = -1;
     bool        bass_drag = false, treble_drag = false;
     touch::Slide tone_touch[2];        ///< a finger on Бас or Високі (touch_gesture.h)
     // a finger's move of Бас or Високі, for «Скасувати» (ui_shell_undo)
@@ -208,6 +225,33 @@ void loud_cb(lv_event_t* e) {
     set_loudness(c, lv_obj_has_state(c.loud_sw, LV_STATE_CHECKED));
 }
 void enable_cb(lv_event_t* e) { post(of(e), UiLvglModule::Req::EQ_ENABLED, 1); }
+void sched_cb(lv_event_t* e) {
+    Controls& c = of(e);
+    post(c, UiLvglModule::Req::LEV_SCHED, lv_obj_has_state(c.sched_sw, LV_STATE_CHECKED) ? 1 : 0);
+}
+
+void show_time(lv_obj_t* lbl, int32_t m) {
+    if (m < 0 || m >= DAY_MIN) m = 0;
+    char b[16];
+    snprintf(b, sizeof(b), "%02d:%02d", (int)(m / 60), (int)(m % 60));
+    lv_label_set_text(lbl, b);
+}
+
+/// − or + on a time: to the next quarter hour that way, round the clock. A time the web set between
+/// two quarters goes to the nearer one in that direction.
+void time_cb(lv_event_t* e) {
+    Controls& c = page;
+    const int which = (int)(intptr_t)lv_event_get_user_data(e) >> 1;
+    const int dir = ((int)(intptr_t)lv_event_get_user_data(e) & 1) ? 1 : -1;
+    int32_t m = c.time_v[which];
+    if (m < 0 || m >= DAY_MIN) return;
+    m = dir > 0 ? (m / TIME_STEP + 1) * TIME_STEP : ((m + TIME_STEP - 1) / TIME_STEP - 1) * TIME_STEP;
+    m = (m + DAY_MIN) % DAY_MIN;
+    c.time_v[which] = m;
+    c.time_pressed = esp_timer_get_time() / 1000;
+    show_time(c.time_val[which], m);
+    post(c, which ? UiLvglModule::Req::LEV_TO : UiLvglModule::Req::LEV_FROM, m);
+}
 void eq_cb(lv_event_t* e)     { open_eq(of(e)); }
 
 // ── building ──
@@ -337,6 +381,41 @@ void build_controls(Controls& c, lv_obj_t* parent, int32_t x, int32_t y, int32_t
     lv_obj_align(c.eq_val, LV_ALIGN_RIGHT_MID, -32, 0);
 }
 
+/// The page's section: a caption, «За розкладом», and the two times under it.
+void sched_build(Controls& c) {
+    const auto& t = m3::theme();
+    const int32_t w = c.w;
+    rule(c.body, w);
+    lv_obj_t* cap = m3w::box(c.body, 0, 0, w, 40);
+    lv_obj_t* ct = m3w::text(cap, t.t.label_m, t.c.on_surface_var, tr(S::sound_leveler));
+    lv_obj_align(ct, LV_ALIGN_BOTTOM_LEFT, 0, -4);
+    lv_obj_t* r = m3w::box(c.body, 0, 0, w, ROW_H);
+    lv_obj_t* st = m3w::text(r, t.t.body_l, t.c.on_surface, tr(S::sound_lev_sched));
+    lv_obj_align(st, LV_ALIGN_LEFT_MID, 0, 0);
+    c.sched_sw = m3w::switch_m3(r, w - 52, (ROW_H - 32) / 2, false);
+    m3w::switch_row(r, c.sched_sw);
+    lv_obj_add_event_cb(c.sched_sw, sched_cb, LV_EVENT_VALUE_CHANGED, &c);
+    const S names[2] = {S::sound_lev_from, S::sound_lev_to};
+    for (int k = 0; k < 2; k++) {
+        lv_obj_t* tr_row = m3w::box(c.body, 0, 0, w, ROW_H);
+        lv_obj_t* n = m3w::text(tr_row, t.t.body_l, t.c.on_surface, tr(names[k]));
+        lv_obj_align(n, LV_ALIGN_LEFT_MID, 0, 0);
+        m3w::Button dec = m3w::icon_button(tr_row, w - 2 * TIME_BTN - TIME_VAL, 0, TIME_BTN, UI_SYM_REMOVE, t.t.icon_m);
+        m3w::Button inc = m3w::icon_button(tr_row, w - TIME_BTN, 0, TIME_BTN, UI_SYM_ADD, t.t.icon_m);
+        // a press steps once, a held one keeps stepping
+        for (lv_event_code_t code : {LV_EVENT_SHORT_CLICKED, LV_EVENT_LONG_PRESSED, LV_EVENT_LONG_PRESSED_REPEAT}) {
+            lv_obj_add_event_cb(dec.obj, time_cb, code, (void*)(intptr_t)(k << 1));
+            lv_obj_add_event_cb(inc.obj, time_cb, code, (void*)(intptr_t)((k << 1) | 1));
+        }
+        c.time_val[k] = m3w::text(tr_row, t.t.label_m, t.c.on_surface, "");
+        lv_obj_set_width(c.time_val[k], TIME_VAL);
+        lv_obj_set_style_text_align(c.time_val[k], LV_TEXT_ALIGN_CENTER, 0);
+        lv_obj_set_pos(c.time_val[k], w - TIME_BTN - TIME_VAL, (ROW_H - lv_font_get_line_height(t.t.label_m)) / 2);
+        c.time_row[k] = tr_row;
+        uih::show(tr_row, false);
+    }
+}
+
 // ── following the snapshot and the store ──
 
 void show_value(lv_obj_t* lbl, int32_t v) {
@@ -381,6 +460,23 @@ void refresh_controls(Controls& c, UiCtx& ctx) {
         if (loud_on) lv_obj_add_state(c.loud_sw, LV_STATE_CHECKED);
         else         lv_obj_remove_state(c.loud_sw, LV_STATE_CHECKED);
     }
+    if (!c.sched_sw) return;                          // the sheet: no schedule
+    const int8_t sched_on = s.lev_sched ? 1 : 0;
+    if (sched_on != c.sched_on) {
+        c.sched_on = sched_on;
+        if (sched_on) lv_obj_add_state(c.sched_sw, LV_STATE_CHECKED);
+        else          lv_obj_remove_state(c.sched_sw, LV_STATE_CHECKED);
+        for (lv_obj_t* r : c.time_row) uih::show(r, sched_on);
+    }
+    // The snapshot follows a press within a second (mirror_diag, 2 Hz); until then the rows keep
+    // what was pressed, so a held + does not jump back.
+    if (esp_timer_get_time() / 1000 - c.time_pressed < TIME_HOLD_MS) return;
+    const int32_t snap[2] = {s.lev_from, s.lev_to};
+    for (int k = 0; k < 2; k++) {
+        if (snap[k] == c.time_v[k]) continue;
+        c.time_v[k] = snap[k];
+        show_time(c.time_val[k], snap[k]);
+    }
 }
 
 // ── the sheet ──
@@ -400,6 +496,7 @@ void scrim_cb(lv_event_t*) { close_sheet(); }
 lv_obj_t* page_build(lv_obj_t* parent, UiCtx& c) {
     lv_obj_t* root = uih::box(parent, 0, 0, uig::CONT_W, uig::CONT_H);
     build_controls(page, root, (uig::CONT_W - PAGE_W) / 2, 0, PAGE_W, uig::CONT_H, c);
+    sched_build(page);
     refresh_controls(page, c);
     return root;
 }

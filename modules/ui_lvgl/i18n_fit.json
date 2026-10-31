@@ -787,6 +787,15 @@
     "pair.timeout": {
       "de": 339.2
     },
+    "sound.lev_from": {
+      "de": 136.6
+    },
+    "sound.lev_sched": {
+      "pl": 209.1
+    },
+    "sound.lev_to": {
+      "de": 143.6
+    },
     "spk.closed": {
       "de": 247.1,
       "pl": 174.9
