@@ -29,6 +29,8 @@
 #include <cstring>
 #include <cstdio>
 #include <cstdlib>
+#include <memory>
+#include <new>
 
 static const char* TAG = "MQTT";
 
@@ -905,8 +907,26 @@ esp_err_t MqttService::handle_get_mqtt(httpd_req_t* req) {
         else status = "disconnected";
     }
 
-    char buf[512];
-    int len = snprintf(buf, sizeof(buf),
+    // player-fork: the text fields escaped, as POST unescapes them on the way in — a user such
+    // as DOMAIN\user or a prefix holding a quote came back as broken JSON, the page was left with
+    // an empty form, and a Save from it would have wiped the settings. At their worst (six bytes
+    // for one) the fields and the reply take ~4 KB: the heap's, not the server's 8 KB stack.
+    struct Text {
+        char broker[net::json_escaped_capacity(sizeof(MqttService::broker_) - 1)];
+        char user[net::json_escaped_capacity(sizeof(MqttService::user_) - 1)];
+        char prefix[net::json_escaped_capacity(sizeof(MqttService::prefix_) - 1)];
+        char tenant[net::json_escaped_capacity(sizeof(MqttService::tenant_) - 1)];
+        char json[sizeof(broker) + sizeof(user) + sizeof(prefix) + sizeof(tenant) + 256];
+    };
+    std::unique_ptr<Text> t(new (std::nothrow) Text);
+    if (!t || !net::json_escape(t->broker, sizeof(t->broker), self->broker_) ||
+        !net::json_escape(t->user, sizeof(t->user), self->user_) ||
+        !net::json_escape(t->prefix, sizeof(t->prefix), self->prefix_) ||
+        !net::json_escape(t->tenant, sizeof(t->tenant), self->tenant_)) {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Out of memory");
+        return ESP_FAIL;
+    }
+    int len = snprintf(t->json, sizeof(t->json),
         "{\"enabled\":%s,"
         "\"connected\":%s,"
         "\"broker\":\"%s\","
@@ -918,17 +938,17 @@ esp_err_t MqttService::handle_get_mqtt(httpd_req_t* req) {
         "\"status\":\"%s\"}",
         self->enabled_ ? "true" : "false",
         self->connected_ ? "true" : "false",
-        self->broker_,
+        t->broker,
         self->port_,
-        self->user_,
-        self->prefix_,
-        self->tenant_,
+        t->user,
+        t->prefix,
+        t->tenant,
         self->device_id_,
         status);
 
     set_cors_headers(req);
     httpd_resp_set_type(req, "application/json");
-    httpd_resp_send(req, buf, len);
+    httpd_resp_send(req, t->json, len);
     return ESP_OK;
 }
 
