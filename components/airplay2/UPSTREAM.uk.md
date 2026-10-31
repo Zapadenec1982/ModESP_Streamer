@@ -241,6 +241,11 @@ setup, plist/bplist, годинники PTP і NTP, приймачі realtime (A
     U+FFFF, U+FFFD для байта, з якого не починається коректна послідовність UTF-8); ASCII-ім'я
     пишеться як і раніше (`tools/tests/test_airplay_mode.py`).
 
+21. **XML-варіант /info екранує ім'я** (`port/rtsp_handlers.c`, `plist_dict_text()`).
+    `upstream/plist/plist_xml.c` друкує `<string>` таким, як дано, і `&` чи `<` в імені власника
+    («Living & Dining») робили всю відповідь некоректним XML. Ім'я екранується (`&amp;` `&lt;`
+    `&gt;` `&quot;` `&apos;`) і пишеться цілим або ніяк (`tools/tests/test_airplay_mode.py`).
+
 ## Оновлення
 
 Клонувати upstream на новому коміті, порівняти з `upstream/` файл за файлом, перенести, згенерувати

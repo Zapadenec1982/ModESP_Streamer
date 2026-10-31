@@ -151,6 +151,10 @@ struct DlnaState {
     char uuid[40]     = "";
     char udn[32]      = "";
     char friendly[40] = "";
+    /// `friendly` as XML text. The library prints the root description's friendlyName as it
+    /// is given, and "Living & Dining" left that document ill-formed: strict control points
+    /// drop such a renderer. Six bytes is the most a character becomes.
+    char friendly_xml[sizeof(friendly) * 6] = "";
 
     dlna_core::Transport* model = nullptr; // bounded storage in PSRAM
     dlna_core::Command* command = nullptr; // main-loop scratch, never on its stack
@@ -367,7 +371,7 @@ void start_renderer(void* ctx) {
     ESP_LOGI(TAG, "starting renderer, internal heap %u B", (unsigned)free_internal());
 
     dlna_config_t cfg = {};
-    cfg.friendly_name = d.friendly;
+    cfg.friendly_name = d.friendly_xml;
     cfg.uuid          = d.uuid;
     cfg.httpd         = d.server;
     cfg.httpd_port    = HTTP_PORT;
@@ -512,6 +516,7 @@ bool DlnaModule::on_init() {
     // was «P4 Player D12C4C»). Control points know the renderer by its UUID, which stays. A new
     // name reaches DLNA at the next start.
     device_name::get(d.friendly, sizeof(d.friendly));
+    dlna_core::xml_reply(d.friendly, d.friendly_xml, sizeof(d.friendly_xml));
 
     if (!dlna_client::init()) ESP_LOGE(TAG, "MediaServer browser allocation failed");
     // What PersistService restored, not `true`: this key is persisted, and writing the default

@@ -555,6 +555,39 @@ static void plist_dict_real(plist_t *p, const char *key, double value) {
   }
 }
 
+// Appends n bytes if they fit with the terminator; false, and nothing, if not.
+static bool plist_put(plist_t *p, const char *text, size_t n) {
+  if (n >= p->capacity - p->size) {
+    return false;
+  }
+  memcpy(p->buffer + p->size, text, n);
+  p->size += n;
+  p->buffer[p->size] = '\0';
+  return true;
+}
+
+// upstream/plist/plist_xml.c prints a <string> as it is given. The device name
+// is the owner's own text, and an & or < in it ("Living & Dining") left the
+// whole answer ill-formed: here it is escaped, and written whole or not at all.
+static void plist_dict_text(plist_t *p, const char *key, const char *value) {
+  const size_t start = p->size;
+  bool fits = plist_put(p, "<key>", 5) && plist_put(p, key, strlen(key)) &&
+              plist_put(p, "</key>\n<string>", 15);
+  for (const char *c = value; fits && *c; c++) {
+    const char *entity = *c == '&'    ? "&amp;"
+                         : *c == '<'  ? "&lt;"
+                         : *c == '>'  ? "&gt;"
+                         : *c == '"'  ? "&quot;"
+                         : *c == '\'' ? "&apos;"
+                                      : NULL;
+    fits = entity ? plist_put(p, entity, strlen(entity)) : plist_put(p, c, 1);
+  }
+  if (!fits || !plist_put(p, "</string>\n", 10)) {
+    p->size = start;
+    p->buffer[start] = '\0';
+  }
+}
+
 static void handle_get(int socket, rtsp_conn_t *conn, const rtsp_request_t *req,
                        const uint8_t *raw, size_t raw_len) {
   (void)raw;
@@ -616,7 +649,7 @@ static void handle_get(int socket, rtsp_conn_t *conn, const rtsp_request_t *req,
     plist_dict_real(&p, "initialVolume", initial_volume);
     plist_dict_data(&p, "pk", pk, 32);
     plist_dict_string(&p, "pi", "00000000-0000-0000-0000-000000000000");
-    plist_dict_string(&p, "name", device_name);
+    plist_dict_text(&p, "name", device_name);
 
     // Audio formats array
     plist_dict_array_begin(&p, "audioFormats");

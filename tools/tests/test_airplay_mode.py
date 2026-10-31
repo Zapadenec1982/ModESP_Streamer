@@ -235,15 +235,17 @@ def c_string(raw):
     return '"' + "".join(f"\\x{b:02x}" for b in raw) + '"'
 
 
-# The device name /info carries at step 3 of the harness.
-STEP3_NAME = "Кухня і зала \U0001F3B5"
+# The device name /info carries at step 3 of the harness: the owner's own text, which the XML
+# answer has to escape and the binary one to write as UTF-16.
+STEP3_NAME = "Кухня & <зала> \"2\" 'Б' \U0001F3B5"
+LONG_NAME = "Кухня і зала \U0001F3B5"
 # Names for the binary /info alone: the UTF-8 the builder is given, the string a plist
 # reader must find, and the object that holds it (marker and length, then the text).
 NAME_CASES = [
     (b"P4 Test", "P4 Test", b"\x57P4 Test"),
     ("Кухня".encode(), "Кухня", b"\x65" + "Кухня".encode("utf-16-be")),
     # 15 code units take the long length form, as an ASCII string of 15 bytes would.
-    (STEP3_NAME.encode(), STEP3_NAME, b"\x6f\x10\x0f" + STEP3_NAME.encode("utf-16-be")),
+    (LONG_NAME.encode(), LONG_NAME, b"\x6f\x10\x0f" + LONG_NAME.encode("utf-16-be")),
     ("\U0001F3B5".encode(), "\U0001F3B5", b"\x62\xd8\x3c\xdf\xb5"),
     # Bytes that start no well-formed sequence are U+FFFD, one each: a lone 0xFF, a lead
     # cut short by the end, an overlong '/', a UTF-8 surrogate.
@@ -266,6 +268,8 @@ def build_harness(directory):
               production(PORT / "rtsp_message.c"),
               function(handlers, "static bool request_uses_rtsp("),
               function(handlers, "static void plist_dict_real("),
+              function(handlers, "static bool plist_put("),
+              function(handlers, "static void plist_dict_text("),
               function(handlers, "static void handle_get(int socket, rtsp_conn_t *conn, const rtsp_request_t *req,"),
               "#define TAG MDNS_TAG\n" + production(PORT / "mdns_airplay.c") + "\n#undef TAG",
               MAIN]

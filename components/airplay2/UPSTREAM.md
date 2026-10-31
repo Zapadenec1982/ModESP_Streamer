@@ -247,6 +247,12 @@ No file in `upstream/` is edited. How the behaviour differs from upstream:
     U+FFFF, U+FFFD for a byte that starts no well-formed UTF-8 sequence); an ASCII name is written
     as before (`tools/tests/test_airplay_mode.py`).
 
+21. **The XML /info escapes the name** (`port/rtsp_handlers.c`, `plist_dict_text()`).
+    `upstream/plist/plist_xml.c` prints a `<string>` as it is given, and an `&` or `<` in the
+    owner's name ("Living & Dining") left the whole answer ill-formed. The name is escaped
+    (`&amp;` `&lt;` `&gt;` `&quot;` `&apos;`) and written whole or not at all
+    (`tools/tests/test_airplay_mode.py`).
+
 ## Updating
 
 Clone upstream at the new commit, compare it with `upstream/` file by file, carry the changes over,
