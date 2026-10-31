@@ -95,6 +95,43 @@ TEST_CASE("band design: rejects impossible bands") {
     bad.q = 1.0f; bad.freq_hz = FS_HZ_DEFAULT * 0.6f;
     CHECK_FALSE(design(bad, h));
     CHECK_FALSE(design_svf(bad, FS_HZ_DEFAULT, c));
+    // A gain that is not a number would design NaN coefficients.
+    bad.freq_hz = 1000;
+    for (BandType t : {BandType::PEAK, BandType::LOW_SHELF, BandType::HIGH_SHELF}) {
+        for (float g : {INFINITY, -INFINITY, NAN}) {
+            bad.type = t;
+            bad.gain_db = g;
+            CHECK_FALSE(design(bad, h));
+            CHECK_FALSE(design_svf(bad, FS_HZ_DEFAULT, c));
+            CHECK_FALSE(design_svf_params(bad, FS_HZ_DEFAULT, h.d, Design::BILINEAR));
+        }
+    }
+}
+
+TEST_CASE("chain: a band whose gain is not a number is a wire, not a silenced block") {
+    for (float g : {INFINITY, -INFINITY, NAN}) {
+        DspChain chain;
+        chain.reset();
+        EqBand b[2];
+        b[0].type = BandType::PEAK; b[0].freq_hz = 1000; b[0].gain_db = g; b[0].q = 1.0f; b[0].enabled = true;
+        b[1].type = BandType::PEAK; b[1].freq_hz = 1000; b[1].gain_db = -6.0f; b[1].q = 1.0f; b[1].enabled = true;
+        chain.set_bands(b, 2);
+        chain.set_eq_enabled(true);
+        chain.set_volume_percent(100);
+        CHECK(std::isfinite(chain.headroom_db()));
+        CHECK(band_magnitude_db(b[0], 1000.0f) == 0.0f);   // the screen draws what plays
+
+        float blk[DspChain::BLOCK * 2];
+        float phase = 0.0f, peak = 0.0f;
+        for (int n = 0; n < 60; n++) {
+            fill_sine(blk, DspChain::BLOCK, 0.5f, 1000.0f, phase);
+            chain.process(blk, DspChain::BLOCK);
+            for (float v : blk) REQUIRE(std::isfinite(v));
+            if (n >= 40) peak = std::max(peak, peak_abs(blk, DspChain::BLOCK));
+        }
+        CHECK(chain.faults() == 0);
+        CHECK(20.0 * std::log10(peak / 0.5) == doctest::Approx(-6.0).epsilon(0.03));   // the other band alone
+    }
 }
 
 TEST_CASE("chain: EQ applies the band gain to a sine at f0 (stereo, in place)") {

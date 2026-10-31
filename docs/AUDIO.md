@@ -333,16 +333,18 @@ where the volume is.
 ### PEQ and `eq.json`
 
 - Up to 10 bands: `peak`, `lowshelf`, `highshelf`, `lowpass`, `highpass`, `notch`; fields `type`,
-  `f`, `gain`, `q`, `on`. Shelf Q ≤ 1.0 (above that a shelf overshoots its own gain).
+  `f`, `gain`, `q`, `on`. `f` 20 Hz…20 kHz, `gain` ±12 dB, `q` 0.3…8, shelf Q ≤ 1.0 (above that a
+  shelf overshoots its own gain): what the editors reach, and a band read from a file is held to it
+  too.
 - A band change is crossfaded over 20 ms: the old design plays out on its own copy of the state;
   an edit during the fade waits, and the last one wins. Filter state is reset only behind a closed
   output gate (pause, stop, source change, retune).
 - The EQ document is `audio_core::EqStore` (`components/audio_dsp/include/eq_store.h`): `eq.json`
   (what plays) and `eq_custom.json` ("Custom") in `/userdata` through `UserStore`, with the factory
   `data/eq.json` as the fallback. Both files are read once at start; schema `version` 2, a file of a
-  newer schema is not read (EQ flat). Before the first write over a file from an older build, a
-  copy `<name>.v2` is left next to it; a file that cannot be read moves to `<name>.bad` on the
-  first write.
+  newer schema is not read (EQ flat), nor is one with a number no float holds (`inf`, `nan`,
+  `1e39`). Before the first write over a file from an older build, a copy `<name>.v2` is left next
+  to it; a file that cannot be read moves to `<name>.bad` on the first write.
 - The editors are the panel's EQ page and the web (`GET`/`POST /api/eq`: `{"rev",bands}`,
   `{"rev",preset}`, `{"keep":true}`; an edit from a stale revision → 409). The document's owner is
   `AudioModule::own_eq()` on the main task: it passes the bands to the audio task through `EqBus`

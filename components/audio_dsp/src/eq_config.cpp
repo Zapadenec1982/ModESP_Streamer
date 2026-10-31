@@ -4,11 +4,13 @@
  */
 
 #include "eq_config.h"
+#include "eq_web.h"          // eq_web_clamp(): a band read from a file is held to the editors' limits
 #include "safe_file.h"
 
 #define JSMN_STATIC          // jsmn is header-only and linked in several places
 #include "jsmn.h"
 
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -60,10 +62,15 @@ void copy_str(const char* json, const jsmntok_t& t, char* out, size_t out_sz) {
     out[n] = '\0';
 }
 
-float num(const char* json, const jsmntok_t& t) {
+/// A number. jsmn is not strict here, so inf and nan pass as numbers, and strtof makes 1e39 an
+/// inf too. No field can hold one — as a band's gain it designs NaN coefficients, and the audio
+/// core silences every block they run in — so `finite` turns false and the file is refused.
+float num(const char* json, const jsmntok_t& t, bool& finite) {
     char b[24];
     copy_str(json, t, b, sizeof(b));
-    return strtof(b, nullptr);
+    const float v = strtof(b, nullptr);
+    if (!std::isfinite(v)) finite = false;
+    return v;
 }
 
 bool truthy(const char* json, const jsmntok_t& t) {
@@ -128,19 +135,21 @@ bool eq_parse(const char* json, size_t len, EqConfig& cfg) {
     // LATER build would be read with today's rules: the fields this parser does not know
     // would be dropped silently, and the first touch of a slider would write the file back
     // without them. Refusing costs a flat EQ and a log line; the alternative costs the file.
+    // Compared as read, not cast to int: an int cast of a float out of its range is undefined.
+    bool finite = true;   // every number read so far (num())
     {
-        int file_version = EQ_SCHEMA_VERSION;
+        float file_version = EQ_SCHEMA_VERSION;
         for (int i = 1, f = 0; f < tok[0].size && i < n; f++) {
             const int vi = i + 1;
             if (vi >= n) break;
-            if (key_is(json, tok[i], "version")) { file_version = (int)num(json, tok[vi]); break; }
+            if (key_is(json, tok[i], "version")) { file_version = num(json, tok[vi], finite); break; }
             i = vi + span(tok, n, vi);
         }
-        if (file_version > EQ_SCHEMA_VERSION) return false;
+        if (!finite || file_version > EQ_SCHEMA_VERSION) return false;
     }
 
-    // A key without a value is a file this parser cannot read, at any depth, and is refused
-    // like any other: cfg back at its defaults (eq_config.h).
+    // A key without a value, or a number no float holds, is a file this parser cannot read, at
+    // any depth, and is refused like any other: cfg back at its defaults (eq_config.h).
     auto malformed = [&cfg] { cfg = EqConfig{}; return false; };
 
     int i = 1;
@@ -167,7 +176,7 @@ bool eq_parse(const char* json, size_t len, EqConfig& cfg) {
             for (int c = 0; c < tok[vi].size && ci < n; c++) {
                 const int cv = value_of(tok, n, ci);
                 if (cv < 0) return malformed();
-                if (key_is(json, tok[ci], "freq_hz")) cfg.crossover_hz = num(json, tok[cv]);
+                if (key_is(json, tok[ci], "freq_hz")) cfg.crossover_hz = num(json, tok[cv], finite);
                 ci += 1 + span(tok, n, ci + 1);
             }
         } else if (key_is(json, key, "outputs") && tok[vi].type == JSMN_ARRAY) {
@@ -182,8 +191,8 @@ bool eq_parse(const char* json, size_t len, EqConfig& cfg) {
                         if (svi < 0) return malformed();
                         if      (key_is(json, sk, "id"))       copy_str(json, tok[svi], sec.id, sizeof(sec.id));
                         else if (key_is(json, sk, "label"))    copy_str(json, tok[svi], sec.label, sizeof(sec.label));
-                        else if (key_is(json, sk, "gain_db"))  sec.gain_db  = num(json, tok[svi]);
-                        else if (key_is(json, sk, "delay_ms")) sec.delay_ms = num(json, tok[svi]);
+                        else if (key_is(json, sk, "gain_db"))  sec.gain_db  = num(json, tok[svi], finite);
+                        else if (key_is(json, sk, "delay_ms")) sec.delay_ms = num(json, tok[svi], finite);
                         else if (key_is(json, sk, "invert"))   sec.invert   = truthy(json, tok[svi]);
                         else if (key_is(json, sk, "bands") && tok[svi].type == JSMN_ARRAY) {
                             int bi = svi + 1;
@@ -196,12 +205,16 @@ bool eq_parse(const char* json, size_t len, EqConfig& cfg) {
                                         const int bv = value_of(tok, n, fi);
                                         if (bv < 0) return malformed();
                                         if      (key_is(json, bk, "type")) band.type    = parse_type(json, tok[bv]);
-                                        else if (key_is(json, bk, "f"))    band.freq_hz = num(json, tok[bv]);
-                                        else if (key_is(json, bk, "gain")) band.gain_db = num(json, tok[bv]);
-                                        else if (key_is(json, bk, "q"))    band.q       = num(json, tok[bv]);
+                                        else if (key_is(json, bk, "f"))    band.freq_hz = num(json, tok[bv], finite);
+                                        else if (key_is(json, bk, "gain")) band.gain_db = num(json, tok[bv], finite);
+                                        else if (key_is(json, bk, "q"))    band.q       = num(json, tok[bv], finite);
                                         else if (key_is(json, bk, "on"))   band.enabled = truthy(json, tok[bv]);
                                         fi += 1 + span(tok, n, fi + 1);
                                     }
+                                    // What the panel's page and the web can set: a file is no
+                                    // way past them, and a gain of hundreds of dB, designed as
+                                    // written, took the volume down to nothing.
+                                    eq_web_clamp(band);
                                     sec.count++;
                                 }
                                 bi += span(tok, n, bi);
@@ -216,6 +229,7 @@ bool eq_parse(const char* json, size_t len, EqConfig& cfg) {
         }
         i = vi + span(tok, n, vi);
     }
+    if (!finite) return malformed();
     return cfg.sections > 0;
 }
 

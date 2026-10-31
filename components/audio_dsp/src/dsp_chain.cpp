@@ -100,6 +100,9 @@ bool design_svf_params(const EqBand& band, double fs, SvfDesign& d, Design how) 
     if (!(fs >= 1000.0)) return false;
     const double f = band.freq_hz, q = design_q(band);
     if (!(f >= 10.0) || f > fs * 0.49 || !(q > 0.0)) return false;
+    // A gain that is not a number designs NaN coefficients (a peak's m1 is 0·∞ at +∞), and the
+    // chain would silence every block the band ran in. Such a band is a wire.
+    if (!std::isfinite(band.gain_db)) return false;
     if (how == Design::MATCHED && design_matched(band, fs, d)) return true;
     const double A = pow(10.0, (double)band.gain_db / 40.0);   // √ of the linear gain
     double g = tan(M_PI * f / fs);

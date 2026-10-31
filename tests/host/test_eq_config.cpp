@@ -6,6 +6,8 @@
 
 #include "doctest.h"
 #include "eq_config.h"
+#include "eq_web.h"
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -202,6 +204,73 @@ TEST_CASE("eq_parse: a key with no value is a file it cannot read, at every dept
     EqConfig d;
     CHECK_FALSE(eq_parse(full.c_str(), full.size(), d));
     CHECK(d.sections == 0);
+}
+
+TEST_CASE("eq_parse: a number no float holds refuses the file, wherever it stands") {
+    // jsmn is not strict here: inf and nan pass as numbers, and strtof makes 1e39 an inf. As a
+    // band's gain each designed NaN coefficients, and the audio core silenced every block.
+    const char* bad[] = {
+        R"({"outputs":[{"bands":[{"type":"peak","f":1000,"gain":inf,"q":1,"on":true}]}]})",
+        R"({"outputs":[{"bands":[{"type":"peak","f":1000,"gain":-inf,"q":1,"on":true}]}]})",
+        R"({"outputs":[{"bands":[{"type":"peak","f":1000,"gain":nan,"q":1,"on":true}]}]})",
+        R"({"outputs":[{"bands":[{"type":"peak","f":1000,"gain":1e39,"q":1,"on":true}]}]})",
+        R"({"outputs":[{"bands":[{"type":"peak","f":nan,"gain":3,"q":1,"on":true}]}]})",
+        R"({"outputs":[{"bands":[{"type":"peak","f":1000,"gain":3,"q":inf,"on":true}]}]})",
+        R"({"outputs":[{"gain_db":inf,"bands":[{"f":1000}]}]})",
+        R"({"crossover":{"freq_hz":nan},"outputs":[{"bands":[{"f":1000}]}]})",
+        R"({"version":nan,"outputs":[{"bands":[{"f":1000}]}]})",
+    };
+    for (const char* b : bad) {
+        INFO(b);
+        EqConfig c;
+        CHECK_FALSE(eq_parse(b, strlen(b), c));
+        CHECK(c.sections == 0);
+    }
+}
+
+TEST_CASE("eq_parse: a band past what the editors reach is held to it, and plays") {
+    // The limits of an edit from the web (eq_web_clamp), which are the panel page's.
+    const char* far = R"({"outputs":[{"bands":[
+        {"type":"peak","f":5,"gain":600,"q":40,"on":true},
+        {"type":"lowshelf","f":90000,"gain":-600,"q":4,"on":true},
+        {"type":"notch","f":1000,"gain":0,"q":0.01,"on":true}]}]})";
+    EqConfig c;
+    REQUIRE(eq_parse(far, strlen(far), c));
+    REQUIRE(c.sec[0].count == 3);
+    const EqBand* b = c.sec[0].bands;
+    CHECK(b[0].freq_hz == EQ_WEB_F_MIN);
+    CHECK(b[0].gain_db == EQ_WEB_GAIN_MAX);
+    CHECK(b[0].q == EQ_WEB_Q_MAX);
+    CHECK(b[1].freq_hz == EQ_WEB_F_MAX);
+    CHECK(b[1].gain_db == -EQ_WEB_GAIN_MAX);
+    CHECK(b[1].q == SHELF_Q_MAX);
+    CHECK(b[2].q == EQ_WEB_Q_MIN);
+
+    // 600 dB as written left the volume no room at all; held to +12 dB, the EQ asks 12 dB of
+    // headroom, and a tone at the band plays at its level.
+    const char* loud = R"({"outputs":[{"bands":[{"type":"peak","f":1000,"gain":600,"q":1,"on":true}]}]})";
+    EqConfig l;
+    REQUIRE(eq_parse(loud, strlen(loud), l));
+    DspChain chain;
+    chain.reset();
+    chain.set_bands(l.sec[0].bands, l.sec[0].count);
+    chain.set_eq_enabled(true);
+    chain.set_volume_percent(100);
+    CHECK(chain.headroom_db() == doctest::Approx(EQ_WEB_GAIN_MAX).epsilon(0.01));
+    float blk[DspChain::BLOCK * 2];
+    float phase = 0.0f, peak = 0.0f;
+    for (int n = 0; n < 60; n++) {
+        for (size_t i = 0; i < DspChain::BLOCK; i++) {
+            blk[2 * i] = blk[2 * i + 1] = 0.25f * std::sin(2.0f * (float)M_PI * phase);
+            phase += 1000.0f / FS_HZ_DEFAULT;
+            if (phase >= 1.0f) phase -= 1.0f;
+        }
+        chain.process(blk, DspChain::BLOCK);
+        for (float v : blk) REQUIRE(std::isfinite(v));
+        if (n >= 40) for (float v : blk) peak = std::max(peak, std::fabs(v));
+    }
+    CHECK(chain.faults() == 0);
+    CHECK(peak == doctest::Approx(0.25f).epsilon(0.05));
 }
 
 TEST_CASE("eq_serialize: a buffer that is too small yields nothing, never a partial file") {
