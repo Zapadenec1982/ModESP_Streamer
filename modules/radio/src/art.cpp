@@ -84,8 +84,11 @@ ArtTask a;
 
 bool current_title(uint32_t serial) { return a.latest.load(std::memory_order_acquire) == serial; }
 
-/// No song cover: the station's logo if there is one, else nothing.
+/// No song cover: the station's logo if there is one, else nothing. A logo already on the
+/// tile is left there: decoded again on every title with no cover, a PNG one cost the
+/// software decoder its whole run each time, for the picture that was already up.
 void fall_back() {
+    if (a.logo_len && a.shown == Shown::LOGO) return;
     if (a.logo_len) {
         const uint32_t gen = player_core::cover_view(TILE).gen;
         if (player_core::cover_set_jpeg(a.logo, a.logo_len, TILE, gen)) {
@@ -243,7 +246,12 @@ bool start() {
         for (int i = 0; i < HITS; i++) new (&a.hits[i]) radio_art::Hit();
     }
     if (!a.titles || !a.stations || !a.search || !a.image || !a.logo || !a.hits) return false;
-    return xTaskCreatePinnedToCoreWithCaps(art_task, "radio_art", ART_STACK, nullptr, 2, nullptr, 0,
+    // Idle priority, as the card player's artwork worker has (player_module.cpp, on_init): a
+    // PNG or progressive picture goes to the software decoder, which takes this task's
+    // priority and never blocks. At 2 it ran above the radio's decoder and reader, LVGL, main
+    // and IDLE0 on core 0, and a logo of about 700 px was a dropout and a frozen screen.
+    return xTaskCreatePinnedToCoreWithCaps(art_task, "radio_art", ART_STACK, nullptr,
+                                           tskIDLE_PRIORITY, nullptr, 0,
                                            MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT) == pdPASS;
 }
 
