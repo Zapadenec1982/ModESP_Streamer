@@ -343,11 +343,10 @@ constexpr uint32_t VOL_HOLD_MS = 300;
 
 void vol_show() {
     g.vol_at = lv_tick_get();
-    if (lv_obj_has_flag(g.vol, LV_OBJ_FLAG_HIDDEN)) {
-        uih::show(g.vol, true);
-        lv_obj_move_foreground(g.vol);
-        if (g.drawer_open) { lv_obj_move_foreground(g.scrim); lv_obj_move_foreground(g.drawer); }
-    }
+    // Not raised: built before every other overlay, it stays under the menu, the «Звук» sheet, the
+    // pick list and the dialogs (docs/UI.md, "Overlays") rather than over their buttons, where it
+    // took the taps meant for them for as long as it showed.
+    if (lv_obj_has_flag(g.vol, LV_OBJ_FLAG_HIDDEN)) uih::show(g.vol, true);
 }
 
 void vol_hide() {

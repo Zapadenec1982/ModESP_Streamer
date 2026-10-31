@@ -398,7 +398,13 @@ void UiLvglModule::lvgl_refresh() {
         if (down) {
             lv_indev_get_point(s_ui.indev, &p);
             lv_obj_set_pos(s_ui.dot, p.x - 15, p.y - 15);
-            if (!s_ui.dot_on) { lv_obj_remove_flag(s_ui.dot, LV_OBJ_FLAG_HIDDEN); s_ui.dot_on = true; }
+            if (!s_ui.dot_on) {
+                // Above everything (docs/UI.md, "Overlays"): the menu, a sheet or a dialog raises
+                // itself as it opens, so the ring is raised again with every touch.
+                lv_obj_move_foreground(s_ui.dot);
+                lv_obj_remove_flag(s_ui.dot, LV_OBJ_FLAG_HIDDEN);
+                s_ui.dot_on = true;
+            }
         } else if (s_ui.dot_on) {
             lv_obj_add_flag(s_ui.dot, LV_OBJ_FLAG_HIDDEN);
             s_ui.dot_on = false;
