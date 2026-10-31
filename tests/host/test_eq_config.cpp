@@ -176,6 +176,34 @@ TEST_CASE("eq_parse: a field it does not know is skipped whole, however it nests
     CHECK_FALSE(eq_parse(chain.c_str(), chain.size(), d));
 }
 
+TEST_CASE("eq_parse: a key with no value is a file it cannot read, at every depth") {
+    // jsmn is not strict here and lets {"f":} through. What follows such a key was read as its
+    // value: another field's token, or, after the file's last key, one jsmn never wrote.
+    const char* bad[] = {
+        R"({"outputs":[{"bands":[{"gain":,"f":1000}]}]})",            // "f" taken for the gain
+        R"({"outputs":[{"id":,"bands":[{"f":1000}]}]})",              // "bands" taken for the id
+        R"({"crossover":{"freq_hz":},"outputs":[{"bands":[{"f":1000}]}]})",
+        R"({"outputs":[{"bands":[{"f":1000}]}],"mode":})",            // the file's last key
+        R"({"outputs":[{"bands":[{"f":1000}],"label":}]})",           // a section's last key
+        R"({"outputs":[{"bands":[{"f":}]}]})",                        // a band's last key
+    };
+    for (const char* b : bad) {
+        INFO(b);
+        EqConfig c;
+        CHECK_FALSE(eq_parse(b, strlen(b), c));
+        CHECK(c.sections == 0);
+    }
+
+    // The band's key as the 320th token: jsmn filled the whole array, and the value read for
+    // it was the slot past its end.
+    std::string full = R"({"outputs":[{"bands":[{"x":[1)";
+    for (int k = 1; k < 310; k++) full += ",1";
+    full += R"(],"f":}]}]})";
+    EqConfig d;
+    CHECK_FALSE(eq_parse(full.c_str(), full.size(), d));
+    CHECK(d.sections == 0);
+}
+
 TEST_CASE("eq_serialize: a buffer that is too small yields nothing, never a partial file") {
     EqConfig c;
     REQUIRE(eq_parse(SAMPLE, strlen(SAMPLE), c));

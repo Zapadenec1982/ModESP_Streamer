@@ -104,6 +104,14 @@ int span(const jsmntok_t* tok, int count, int i) {
     return j - i;
 }
 
+/// The index of the value the key at `k` holds, or -1 when it holds none. jsmn here is not
+/// strict and lets a key close with nothing after it, as in {"f":}: the token after it is then
+/// something else's, or, for the last key, one jsmn never wrote — past the whole array when
+/// the file filled it. A key's value is its one child, so a key with none is caught here.
+int value_of(const jsmntok_t* tok, int count, int k) {
+    return k + 1 < count && tok[k].size == 1 ? k + 1 : -1;
+}
+
 } // namespace
 
 bool eq_parse(const char* json, size_t len, EqConfig& cfg) {
@@ -131,11 +139,15 @@ bool eq_parse(const char* json, size_t len, EqConfig& cfg) {
         if (file_version > EQ_SCHEMA_VERSION) return false;
     }
 
+    // A key without a value is a file this parser cannot read, at any depth, and is refused
+    // like any other: cfg back at its defaults (eq_config.h).
+    auto malformed = [&cfg] { cfg = EqConfig{}; return false; };
+
     int i = 1;
     for (int f = 0; f < tok[0].size && i < n; f++) {
         const jsmntok_t& key = tok[i];
-        const int vi = i + 1;
-        if (vi >= n) break;
+        const int vi = value_of(tok, n, i);
+        if (vi < 0) return malformed();
 
         if (key_is(json, key, "mode")) {
             copy_str(json, tok[vi], cfg.mode, sizeof(cfg.mode));
@@ -149,11 +161,13 @@ bool eq_parse(const char* json, size_t len, EqConfig& cfg) {
                 plain = (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '_';
             }
             if (plain) copy_str(json, tok[vi], cfg.preset, sizeof(cfg.preset));
-        } else if (key_is(json, key, "crossover")) {
+        } else if (key_is(json, key, "crossover") && tok[vi].type == JSMN_OBJECT) {
             // one nested object: pick freq_hz out of it
             int ci = vi + 1;
             for (int c = 0; c < tok[vi].size && ci < n; c++) {
-                if (key_is(json, tok[ci], "freq_hz")) cfg.crossover_hz = num(json, tok[ci + 1]);
+                const int cv = value_of(tok, n, ci);
+                if (cv < 0) return malformed();
+                if (key_is(json, tok[ci], "freq_hz")) cfg.crossover_hz = num(json, tok[cv]);
                 ci += 1 + span(tok, n, ci + 1);
             }
         } else if (key_is(json, key, "outputs") && tok[vi].type == JSMN_ARRAY) {
@@ -164,7 +178,8 @@ bool eq_parse(const char* json, size_t len, EqConfig& cfg) {
                     int ki = si + 1;
                     for (int k = 0; k < tok[si].size && ki < n; k++) {
                         const jsmntok_t& sk = tok[ki];
-                        const int svi = ki + 1;
+                        const int svi = value_of(tok, n, ki);
+                        if (svi < 0) return malformed();
                         if      (key_is(json, sk, "id"))       copy_str(json, tok[svi], sec.id, sizeof(sec.id));
                         else if (key_is(json, sk, "label"))    copy_str(json, tok[svi], sec.label, sizeof(sec.label));
                         else if (key_is(json, sk, "gain_db"))  sec.gain_db  = num(json, tok[svi]);
@@ -178,11 +193,13 @@ bool eq_parse(const char* json, size_t len, EqConfig& cfg) {
                                     int fi = bi + 1;
                                     for (int q = 0; q < tok[bi].size && fi < n; q++) {
                                         const jsmntok_t& bk = tok[fi];
-                                        if      (key_is(json, bk, "type")) band.type    = parse_type(json, tok[fi + 1]);
-                                        else if (key_is(json, bk, "f"))    band.freq_hz = num(json, tok[fi + 1]);
-                                        else if (key_is(json, bk, "gain")) band.gain_db = num(json, tok[fi + 1]);
-                                        else if (key_is(json, bk, "q"))    band.q       = num(json, tok[fi + 1]);
-                                        else if (key_is(json, bk, "on"))   band.enabled = truthy(json, tok[fi + 1]);
+                                        const int bv = value_of(tok, n, fi);
+                                        if (bv < 0) return malformed();
+                                        if      (key_is(json, bk, "type")) band.type    = parse_type(json, tok[bv]);
+                                        else if (key_is(json, bk, "f"))    band.freq_hz = num(json, tok[bv]);
+                                        else if (key_is(json, bk, "gain")) band.gain_db = num(json, tok[bv]);
+                                        else if (key_is(json, bk, "q"))    band.q       = num(json, tok[bv]);
+                                        else if (key_is(json, bk, "on"))   band.enabled = truthy(json, tok[bv]);
                                         fi += 1 + span(tok, n, fi + 1);
                                     }
                                     sec.count++;
