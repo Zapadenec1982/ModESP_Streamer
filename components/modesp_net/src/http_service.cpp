@@ -206,6 +206,17 @@ static void log_clamp(const char* where, const char* key, double requested, doub
              where, key, requested, (double)meta->min_val, (double)meta->max_val, clamped);
 }
 
+// player-fork: a JSON value of the type the key's manifest declares. The store takes any type
+// for any key, so a string or a true/false written over a number changed what the key holds —
+// its readers fell back to their default until a reboot — and a command posted as "2" was
+// stored instead of being run.
+static bool value_fits(const gen::StateMeta* meta, const jsmntok_t& tok, const char* val) {
+    if (strcmp(meta->type, "string") == 0) return tok.type == JSMN_STRING;
+    if (tok.type != JSMN_PRIMITIVE) return false;
+    if (strcmp(meta->type, "bool") == 0) return strcmp(val, "true") == 0 || strcmp(val, "false") == 0;
+    return val[0] == '-' || (val[0] >= '0' && val[0] <= '9');          // "int", "float"
+}
+
 // Context for SharedState serialization
 struct SerCtx {
     char* buf;
@@ -720,12 +731,24 @@ esp_err_t HttpService::handle_post_settings(httpd_req_t* req) {
             rejected++;
             continue;
         }
+        if (!value_fits(meta, val_tok, val_str)) {
+            ESP_LOGW(TAG, "POST /settings: rejected '%s' (not a %s)", key_str, meta->type);
+            rejected++;
+            continue;
+        }
+        // player-fork: jsmn hands a string over as it stands in the body, escapes and all, so a
+        // catalog station called Radio "Rock" was stored as Radio \"Rock\", in stations.json too.
+        if (val_tok.type == JSMN_STRING && !net::json_unescape(buf + val_tok.start)) {
+            ESP_LOGW(TAG, "POST /settings: rejected '%s' (an escape that cannot be stored)", key_str);
+            rejected++;
+            continue;
+        }
 
         if (val_tok.type == JSMN_PRIMITIVE) {
             // BUG-023 fix: використовуємо meta->type замість евристики з крапкою.
             // JavaScript може відправити "5" (без крапки) для float параметра,
             // що ламало persist (etl::get_if<float> на int32_t = nullptr).
-            if (val_str[0] == 't' || val_str[0] == 'f') {
+            if (strcmp(meta->type, "bool") == 0) {
                 self->state_->set(key_str, val_str[0] == 't');
                 accepted++;
             } else if (strcmp(meta->type, "float") == 0) {
@@ -749,7 +772,7 @@ esp_err_t HttpService::handle_post_settings(httpd_req_t* req) {
                 self->state_->set(key_str, ival);
                 accepted++;
             }
-        } else if (val_tok.type == JSMN_STRING) {
+        } else {                                                    // a string key (value_fits)
             self->state_->set(key_str, val_str);
             accepted++;
         }
@@ -1151,27 +1174,34 @@ esp_err_t HttpService::handle_get_backup(httpd_req_t* req) {
         size_t rem = sizeof(buf) - pos;
         if (rem < 64) break;
 
+        // player-fork: the separator goes with a value that is written. A key whose value is not
+        // of its manifest type is left out, and it used to take a "," with it: as the first key
+        // that made `{"keys":{,` — a backup nothing could read back.
         const char* sep = first ? "" : ",";
-        first = false;
+        int n = 0;
 
         if (strcmp(meta.type, "float") == 0) {
             const auto* fp = etl::get_if<float>(&val.value());
             if (fp) {
-                pos += snprintf(buf + pos, rem, "%s\"%s\":%.2f",
-                                sep, meta.key, static_cast<double>(*fp));
+                n = snprintf(buf + pos, rem, "%s\"%s\":%.2f",
+                             sep, meta.key, static_cast<double>(*fp));
             }
         } else if (strcmp(meta.type, "int") == 0) {
             const auto* ip = etl::get_if<int32_t>(&val.value());
             if (ip) {
-                pos += snprintf(buf + pos, rem, "%s\"%s\":%ld",
-                                sep, meta.key, (long)*ip);
+                n = snprintf(buf + pos, rem, "%s\"%s\":%ld",
+                             sep, meta.key, (long)*ip);
             }
         } else if (strcmp(meta.type, "bool") == 0) {
             const auto* bp = etl::get_if<bool>(&val.value());
             if (bp) {
-                pos += snprintf(buf + pos, rem, "%s\"%s\":%s",
-                                sep, meta.key, *bp ? "true" : "false");
+                n = snprintf(buf + pos, rem, "%s\"%s\":%s",
+                             sep, meta.key, *bp ? "true" : "false");
             }
+        }
+        if (n > 0 && (size_t)n < rem) {
+            pos += (size_t)n;
+            first = false;
         }
     }
 

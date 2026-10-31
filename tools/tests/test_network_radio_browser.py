@@ -271,3 +271,145 @@ int main() {
 }
 """
     build_and_run(tmp_path, harness, [])
+
+
+# The framework's HTTP handlers, compiled as they are against a stub server and a stub store.
+HTTP_STUBS = r"""
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <map>
+#include <optional>
+#include <string>
+#include <variant>
+#include "jsmn.h"
+#include "modesp/net/json_escape.h"
+using esp_err_t = int;
+constexpr int ESP_OK = 0, ESP_FAIL = -1;
+enum { HTTPD_400_BAD_REQUEST = 400, HTTPD_500_INTERNAL_SERVER_ERROR = 500 };
+#define ESP_LOGW(...) ((void)0)
+#define ESP_LOGI(...) ((void)0)
+struct httpd_req_t { void* user_ctx = nullptr; std::string body; int status = 200; std::string resp; };
+int httpd_req_recv(httpd_req_t* req, char* buf, size_t len) {
+  const size_t n = req->body.size() < len ? req->body.size() : len;
+  memcpy(buf, req->body.data(), n);
+  req->body.erase(0, n);
+  return (int)n;
+}
+int httpd_resp_send_err(httpd_req_t* req, int status, const char* msg) {
+  req->status = status; req->resp = msg; return ESP_OK;
+}
+int httpd_resp_set_type(httpd_req_t*, const char*) { return ESP_OK; }
+int httpd_resp_set_hdr(httpd_req_t*, const char*, const char*) { return ESP_OK; }
+int httpd_resp_sendstr(httpd_req_t* req, const char* s) { req->resp = s; return ESP_OK; }
+int httpd_resp_send(httpd_req_t* req, const char* s, long n) {
+  req->resp.assign(s, n < 0 ? strlen(s) : (size_t)n); return ESP_OK;
+}
+namespace etl { template <class T, class V> auto get_if(V* v) { return std::get_if<T>(v); } }
+namespace modesp {
+namespace gen {
+struct StateMeta { const char* key; const char* type; bool writable; bool persist; float min_val; float max_val; };
+constexpr StateMeta STATE_META[] = {
+  {"ui.backlight", "int", true, true, 0, 100},
+  {"audio.volume", "int", true, true, 0, 100},
+  {"audio.mute", "bool", true, true, 0, 0},
+  {"radio.cmd", "int", true, false, 0, 4},
+  {"radio.web_name", "string", true, false, 0, 0},
+  {"system.heap", "int", false, false, 0, 0},
+};
+constexpr size_t STATE_META_COUNT = sizeof(STATE_META) / sizeof(STATE_META[0]);
+inline const StateMeta* find_state_meta(const char* key) {
+  for (const auto& m : STATE_META) if (!strcmp(m.key, key)) return &m;
+  return nullptr;
+}
+}  // namespace gen
+using Value = std::variant<int32_t, float, bool, std::string>;
+struct SharedState {
+  std::map<std::string, Value> kv;
+  void set(const char* k, int32_t v) { kv[k] = v; }
+  void set(const char* k, float v) { kv[k] = v; }
+  void set(const char* k, bool v) { kv[k] = v; }
+  void set(const char* k, const char* v) { kv[k] = std::string(v); }
+  std::optional<Value> get(const char* k) const {
+    auto it = kv.find(k);
+    if (it == kv.end()) return std::nullopt;
+    return it->second;
+  }
+};
+struct ModuleManager { std::string posted; };
+static bool post_if_command(ModuleManager* m, const char* key, int32_t value) {
+  if (strcmp(key, "radio.cmd")) return false;
+  m->posted += std::string(key) + "=" + std::to_string(value) + ";";
+  return true;
+}
+static void log_clamp(const char*, const char*, double, double, const gen::StateMeta*) {}
+struct HttpService {
+  SharedState* state_ = nullptr;
+  ModuleManager* modules_ = nullptr;
+  static bool check_auth(httpd_req_t*) { return true; }
+  static void set_cors_headers(httpd_req_t*) {}
+  static esp_err_t handle_post_settings(httpd_req_t*);
+  static esp_err_t handle_get_backup(httpd_req_t*);
+};
+"""
+
+
+def test_settings_take_a_value_of_the_keys_type_unescaped(tmp_path):
+    source = (ROOT / "components/modesp_net/src/http_service.cpp").read_text(encoding="utf-8")
+    handlers = "\n".join(extract(source, signature) for signature in (
+        "static bool value_fits(",
+        "esp_err_t HttpService::handle_post_settings(",
+        "esp_err_t HttpService::handle_get_backup(",
+    ))
+    harness = HTTP_STUBS + handlers + "\n}\n" + r"""
+using namespace modesp;
+static httpd_req_t post(HttpService& svc, const char* body) {
+  httpd_req_t req;
+  req.user_ctx = &svc;
+  req.body = body;
+  HttpService::handle_post_settings(&req);
+  return req;
+}
+int main() {
+  SharedState st;
+  ModuleManager mm;
+  HttpService svc;
+  svc.state_ = &st;
+  svc.modules_ = &mm;
+  // a string is stored as it reads, its JSON escapes undone
+  httpd_req_t r = post(svc, R"({"radio.web_name":"Radio \"Rock\" \\ А"})");
+  auto name = st.get("radio.web_name");
+  if (r.status != 200 || !name || std::get<std::string>(*name) != "Radio \"Rock\" \\ \xd0\x90") return 1;
+  // a value of another type is refused, and the key keeps what it held
+  st.set("audio.volume", (int32_t)30);
+  for (const char* bad : {R"({"audio.volume":"50"})", R"({"audio.volume":true})",
+                          R"({"audio.volume":null})", R"({"audio.mute":1})",
+                          R"({"radio.web_name":5})", R"({"radio.web_name":"\u0000"})",
+                          R"({"system.heap":1})"}) {
+    if (post(svc, bad).status != 400) return 2;
+  }
+  if (std::get<int32_t>(*st.get("audio.volume")) != 30 || st.get("audio.mute")) return 3;
+  // a command posted as a string is neither stored nor run
+  r = post(svc, R"({"radio.cmd":"2"})");
+  if (r.status != 400 || st.get("radio.cmd") || !mm.posted.empty()) return 4;
+  // the rest of a request goes in around a refused pair
+  r = post(svc, R"({"audio.volume":40,"radio.cmd":2,"audio.mute":true,"radio.web_name":[1]})");
+  if (r.status != 200 || std::get<int32_t>(*st.get("audio.volume")) != 40 ||
+      mm.posted != "radio.cmd=2;" || !std::get<bool>(*st.get("audio.mute"))) return 5;
+
+  // a backup leaves out a value of another type, and its comma with it
+  SharedState bs;
+  HttpService backup;
+  backup.state_ = &bs;
+  bs.set("ui.backlight", "80");          // the first persist key, held as a string
+  bs.set("audio.volume", (int32_t)40);
+  bs.set("audio.mute", true);
+  httpd_req_t req;
+  req.user_ctx = &backup;
+  HttpService::handle_get_backup(&req);
+  if (req.resp != R"({"modesp_backup":1,"keys":{"audio.volume":40,"audio.mute":true}})") return 6;
+  return 0;
+}
+"""
+    build_and_run(tmp_path, harness,
+                  [ROOT / "components/jsmn", ROOT / "components/modesp_net/include"])

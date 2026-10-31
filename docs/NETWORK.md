@@ -253,7 +253,7 @@ Framework routes (`http_service.cpp`):
 | Route | What |
 |---|---|
 | `GET /api/state` | the whole SharedState as one JSON object (80 KB buffer in PSRAM; does not fit — 500) |
-| `POST /api/settings` | `{key: value,…}`: only known writable keys from `generated/state_meta.h`; a number outside the manifest's range is clamped with a WARN in the log; a command key (`"command": true`) goes to the owning module's queue, not to the store. Body ≤ 511 B, up to 15 pairs |
+| `POST /api/settings` | `{key: value,…}`: only known writable keys from `generated/state_meta.h`, each with a value of its manifest type (a string, a number, `true`/`false`) — anything else is refused, and the request gets `400` when nothing in it was taken; a number outside the manifest's range is clamped with a WARN in the log; a command key (`"command": true`) goes to the owning module's queue, not to the store. Body ≤ 511 B, up to 15 pairs |
 | `GET /api/ui` | `ui.json` |
 | `GET /api/board`, `GET`/`POST /api/bindings`, `GET`/`POST /api/devices`, `GET /api/modules` | ModESP board and module configuration |
 | `POST /api/wifi` | `{"ssid","password"}` — save only (takes effect after a restart); with `"join":true` — `try_connect()` (SSID 1–32 bytes, password ≤ 64; `409 {"error":"busy"}` during another attempt); `{"forget":true}` — forget the network, access point. Body ≤ 255 B |

@@ -247,7 +247,7 @@ HTTP Basic, realm `ModESP`. NVS-простір `auth`: `user`, `pass`, `enabled`
 | Маршрут | Що |
 |---|---|
 | `GET /api/state` | увесь SharedState одним JSON-об'єктом (буфер 80 КБ у PSRAM; не вмістився — 500) |
-| `POST /api/settings` | `{ключ: значення,…}`: лише відомі writable-ключі з `generated/state_meta.h`; число поза діапазоном маніфесту обрізається з WARN у лозі; command-ключ (`"command": true`) іде в чергу модуля-власника, не в сховище. Тіло ≤ 511 Б, до 15 пар |
+| `POST /api/settings` | `{ключ: значення,…}`: лише відомі writable-ключі з `generated/state_meta.h`, кожен зі значенням свого типу з маніфесту (рядок, число, `true`/`false`) — решта відхиляється, а запит отримує `400`, коли з нього не взято нічого; число поза діапазоном маніфесту обрізається з WARN у лозі; command-ключ (`"command": true`) іде в чергу модуля-власника, не в сховище. Тіло ≤ 511 Б, до 15 пар |
 | `GET /api/ui` | `ui.json` |
 | `GET /api/board`, `GET`/`POST /api/bindings`, `GET`/`POST /api/devices`, `GET /api/modules` | конфігурація плати й модулів ModESP |
 | `POST /api/wifi` | `{"ssid","password"}` — лише зберегти (діє після перезапуску); з `"join":true` — `try_connect()` (SSID 1–32 байти, пароль ≤ 64; `409 {"error":"busy"}` під час іншої спроби); `{"forget":true}` — забути мережу, точка доступу. Тіло ≤ 255 Б |
