@@ -149,20 +149,23 @@ bool fake_touch(int32_t x, int32_t y, uint32_t press_ms) {
 
 /// `peek=drawer|standby` lays that overlay over the page for the picture; `peeked` tells the
 /// caller to take it away again once the picture is sent. `tap=x,y` and `hold=x,y` press
-/// the screen there (bench builds) before the capture.
-esp_err_t switch_screen_if_asked(httpd_req_t* req, bool& peeked) {
+/// the screen there (bench builds) before the capture. False once an error is sent: the request
+/// is answered, and the caller stops. httpd_resp_send_err() returns ESP_OK when the error went
+/// out, so its result cannot say that.
+bool switch_screen_if_asked(httpd_req_t* req, bool& peeked) {
     peeked = false;
     char query[96];
-    if (httpd_req_get_url_query_str(req, query, sizeof(query)) != ESP_OK) return ESP_OK;
+    if (httpd_req_get_url_query_str(req, query, sizeof(query)) != ESP_OK) return true;
     char id[16], peek[16], at[24];
     const bool has_screen = httpd_query_key_value(query, "screen", id, sizeof(id)) == ESP_OK;
     const bool has_peek   = httpd_query_key_value(query, "peek", peek, sizeof(peek)) == ESP_OK;
     uint32_t press_ms = 0;
     if (httpd_query_key_value(query, "tap", at, sizeof(at)) == ESP_OK)       press_ms = 80;
     else if (httpd_query_key_value(query, "hold", at, sizeof(at)) == ESP_OK) press_ms = 900;
-    if (!has_screen && !has_peek && !press_ms) return ESP_OK;
+    if (!has_screen && !has_peek && !press_ms) return true;
     if (!lvgl_port_lock(200)) {
-        return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "LVGL busy");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "LVGL busy");
+        return false;
     }
     bool known = true;
     if (has_screen) known = ui_shell_go(id);
@@ -177,12 +180,18 @@ esp_err_t switch_screen_if_asked(httpd_req_t* req, bool& peeked) {
 #endif
     }
     lvgl_port_unlock();
-    if (!known)   return httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "No such screen or peek");
-    if (!pressed) return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "tap=x,y inside the picture, bench builds only");
+    if (!known) {
+        httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "No such screen or peek");
+        return false;
+    }
+    if (!pressed) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "tap=x,y inside the picture, bench builds only");
+        return false;
+    }
     // the refresh timer runs every 40 ms; a press needs its first read, its release and the
     // refresh after it — and the page it lands on may take a moment to say what it did
     vTaskDelay(pdMS_TO_TICKS(120 + press_ms + (press_ms ? 500 : 0)));
-    return ESP_OK;
+    return true;
 }
 
 /// Undoes a peek on every way out of the handler.
@@ -198,7 +207,7 @@ esp_err_t handle_screenshot(httpd_req_t* req) {
     if (!modesp::http_routes::authorized(req)) return ESP_OK;
 #endif
     Unpeek unpeek;
-    if (switch_screen_if_asked(req, unpeek.on) != ESP_OK) return ESP_OK;   // the error is already sent
+    if (!switch_screen_if_asked(req, unpeek.on)) return ESP_OK;   // the error is already sent
 
     const Source s = s_src;
     void* fb = nullptr;
