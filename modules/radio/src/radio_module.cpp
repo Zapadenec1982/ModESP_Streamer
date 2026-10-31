@@ -1807,6 +1807,22 @@ void radio_task(void*) {
     vTaskDeleteWithCaps(nullptr);
 }
 
+/// How long the radio waits after a start that failed (radio_up) before it tries again.
+constexpr uint32_t UP_RETRY_MS = 5000;
+
+/// The buffers radio_up() makes, given back; any of them may be missing. A start that failed
+/// half way frees what it did get: kept, the next attempt overwrote the pointers and leaked it.
+void free_buffers() {
+    free(s.raw);       s.raw = nullptr;
+    free(s.pcm);       s.pcm = nullptr;
+    free(s.net_chunk); s.net_chunk = nullptr;
+    free(s.feed);      s.feed = nullptr;
+    free(s.meta);      s.meta = nullptr;
+    free(s.icy_buf);   s.icy_buf = nullptr;
+    free(s.fbuf);      s.fbuf = nullptr;
+    free(s.rbuf);      s.rbuf = nullptr;
+}
+
 /// Everything the radio needs in order to play, made when it is asked to play.
 ///
 /// Nothing here exists while the card is the source, and that is the point. Measured on the
@@ -1837,13 +1853,13 @@ bool radio_up() {
     s.icy_buf   = (char*)heap_caps_malloc(16 * 255 + 1, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     s.fbuf      = (float*)heap_caps_malloc(CHUNK * 2 * sizeof(float), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     s.rbuf      = (float*)heap_caps_malloc(CHUNK * 2 * 2 * sizeof(float), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    if (!s.q) s.q = xQueueCreate(4, sizeof(CmdMsg));
     if (!s.raw || !s.pcm || !s.fbuf || !s.rbuf || !s.net_chunk || !s.feed || !s.meta ||
-        !s.icy_buf) {
+        !s.icy_buf || !s.q) {
         ESP_LOGE(TAG, "buffer allocation failed");
+        free_buffers();
         return false;
     }
-    if (!s.q) s.q = xQueueCreate(4, sizeof(CmdMsg));
-    if (!s.q) return false;
     xQueueReset(s.q);
     raw_clear();
 
@@ -1888,15 +1904,7 @@ void radio_down() {
     close_stream();
     audio_core::pcm_ring().release(audio_core::PcmRing::OWNER_RADIO);
     s.conv.free_bank();
-
-    free(s.raw);       s.raw = nullptr;
-    free(s.pcm);       s.pcm = nullptr;
-    free(s.net_chunk); s.net_chunk = nullptr;
-    free(s.feed);      s.feed = nullptr;
-    free(s.meta);      s.meta = nullptr;
-    free(s.icy_buf);   s.icy_buf = nullptr;
-    free(s.fbuf);      s.fbuf = nullptr;
-    free(s.rbuf);      s.rbuf = nullptr;
+    free_buffers();
     s.state.store(ST_IDLE, std::memory_order_release);
     s.up = false;
     ESP_LOGI(TAG, "down");
@@ -2068,6 +2076,7 @@ void RadioModule::on_update(uint32_t dt_ms) {
         if (s.up) radio_down();
         report_ms_ = 0;
         health_ms_ = 0;
+        up_wait_ms_ = 0;        // chosen again, the radio starts at once
         // Anything posted while another source owns the output is stale by the time this
         // one gets it back, and the rest of this function — which is where commands are
         // consumed — does not run. Drop them rather than let eight presses accumulate and
@@ -2078,7 +2087,13 @@ void RadioModule::on_update(uint32_t dt_ms) {
         return;
     }
     if (s.up && !s.run) { radio_down(); if(s.up)return; }
-    if (!radio_up()) return;
+    // A start that failed is tried again a few seconds on, not on the next pass: memory that
+    // is not there now is not there ten milliseconds later either.
+    if (!s.up && up_wait_ms_) {
+        up_wait_ms_ = up_wait_ms_ > dt_ms ? up_wait_ms_ - dt_ms : 0;
+        return;
+    }
+    if (!radio_up()) { up_wait_ms_ = UP_RETRY_MS; return; }
     char next_url[PLAY_URL_LEN]{};
     read_string("radio.next_url", next_url, sizeof(next_url));
     const int32_t duration = s.dur_s.load();
