@@ -2,8 +2,9 @@
  * @file test_uac_tone.cpp
  * @brief HOST tests for the USB audio stream check (components/usb_uac/include/uac_tone.h, stage
  *        U0): a clean tone is measured to a fraction of a hertz and counts no breaks — at 16-bit
- *        quantisation too; one lost packet and one repeated packet are each one break; music and
- *        a tone being retuned count nothing.
+ *        quantisation too, and a low tone at 96 kHz, where its float block sums are tightest;
+ *        one lost packet and one repeated packet are each one break; music and a tone being
+ *        retuned count nothing.
  */
 
 #include <cmath>
@@ -29,8 +30,17 @@ std::vector<float> sine(double hz, double seconds, double amp = 0.5, bool q16 = 
     return v;
 }
 
+/// The same at `fs`, quantised to 24 bits: the computer's widest format.
+std::vector<float> sine24(double hz, double seconds, uint32_t fs) {
+    std::vector<float> v(size_t(seconds * fs));
+    for (size_t n = 0; n < v.size(); n++)
+        v[n] = float(std::round(0.5 * std::sin(2.0 * M_PI * hz * double(n) / fs) * 8388607.0) / 8388608.0);
+    return v;
+}
+
 struct Run {
     Tone tone;
+    uint32_t fs = FS;
     uint32_t breaks = 0;
     std::vector<float> hz;   // one per closed second
 
@@ -40,8 +50,8 @@ struct Run {
         for (float x : v) {
             tone.push(x);
             peak = std::max(peak, std::fabs(x));
-            if (++in_second == FS) {
-                hz.push_back(tone.close(FS, peak, breaks));
+            if (++in_second == fs) {
+                hz.push_back(tone.close(fs, peak, breaks));
                 in_second = 0;
                 peak = 0;
             }
@@ -66,11 +76,32 @@ TEST_CASE("uac_tone: 16-bit quantisation is not a break") {
     CHECK(r.breaks == 0);
 }
 
+TEST_CASE("uac_tone: a low tone at 96 kHz and 24 bits is still one clean tone") {
+    // The sums are float over a block. On the second difference they hold even here; on
+    // x + x2 the residual is (1 - c)^-2, some 2.7e7, times smaller than the sums it comes from.
+    Run r;
+    r.fs = 96000;
+    r.feed(sine24(300.0, 4.0, 96000));
+    REQUIRE(r.hz.size() == 4);
+    for (float hz : r.hz) CHECK(hz == doctest::Approx(300.0).epsilon(0.0005));
+    CHECK(r.breaks == 0);
+}
+
 TEST_CASE("uac_tone: one lost packet is one break") {
     std::vector<float> v = sine(1000.0, 4.0);
     // A microframe at 48 kHz carries 6 frames; lose one in the third second.
     v.erase(v.begin() + 2 * FS + 12345, v.begin() + 2 * FS + 12345 + 6);
     Run r;
+    r.feed(v);
+    CHECK(r.breaks == 1);
+}
+
+TEST_CASE("uac_tone: one lost packet at 96 kHz is one break") {
+    std::vector<float> v = sine24(1000.0, 4.0, 96000);
+    // A microframe at 96 kHz carries 12 frames.
+    v.erase(v.begin() + 2 * 96000 + 12345, v.begin() + 2 * 96000 + 12345 + 12);
+    Run r;
+    r.fs = 96000;
     r.feed(v);
     CHECK(r.breaks == 1);
 }
