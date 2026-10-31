@@ -34,6 +34,7 @@
 #include <cstdint>
 
 namespace modesp { class DriverManager; struct BindingTable; class HAL; }
+namespace audio_core { class PcmRing; }
 struct resample;   // dbry/audio-resampler context
 
 class AudioModule : public modesp::BaseModule {
@@ -216,6 +217,9 @@ private:
     /// The second half of retune(): the port has taken `hz`, so record it, answer the
     /// producer and redesign what depends on the rate.
     void adopt_clock(uint32_t hz, uint16_t mclk_mult);
+    /// The rate the playing ring source's producer asks for, 0 for none. A new session it
+    /// asked for is taken first: the clock the old one settled is forgotten. Audio task.
+    uint32_t ring_question(audio_core::PcmRing& ring);
     /// Silence held after the amplifier is enabled, before any audio is let through.
     ///
     /// Switching the enable line is a pop, in the amplifier, downstream of everything this

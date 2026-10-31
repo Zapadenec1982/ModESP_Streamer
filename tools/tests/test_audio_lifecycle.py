@@ -152,3 +152,99 @@ int main() {
 }
 '''
     compile_run(tmp_path, code)
+
+
+def test_new_session_asked_between_take_and_read_is_not_refused(tmp_path):
+    # usb_pcm runs above the audio task on core 1. A new stream asks for a new session and then
+    # for its rate; landing between the consumer's take_new_session() and its rate() read, it
+    # looked like a second rate in the old, locked session — refused, the stream silent until
+    # the computer restarted it. The production slice runs against a ring whose producer runs
+    # exactly there, and right after the read as well.
+    source = (ROOT / "modules/audio/src/audio_module.cpp").read_text(encoding="utf-8")
+    start = source.index("uint32_t AudioModule::ring_question(")
+    end = source.index("{", start) + 1
+    level = 1
+    while level:
+        level += (source[end] == "{") - (source[end] == "}")
+        end += 1
+    code = r'''
+#include <cassert>
+#include <cstdint>
+#define PcmRing Ring   // the slice names the real ring; this one lets the producer in on cue
+namespace audio_core {
+struct Ring {
+    enum Owner : uint8_t { OWNER_NONE, OWNER_FILE, OWNER_RADIO, OWNER_AIRPLAY, OWNER_USB };
+    Owner who = OWNER_USB;
+    uint32_t asked = 48000;
+    bool request = false, locked = true;
+    int takes = 0, reads = 0;
+    int run_after_take = 0, run_after_read = 0;   // the producer runs after this call, 0: never
+    uint32_t next = 96000;
+    void producer() { request = true; asked = next; }   // request_new_session(), ask_rate()
+    bool take_new_session() {
+        const bool had = request && who == OWNER_USB;
+        request = false;
+        if (++takes == run_after_take) producer();
+        return had;
+    }
+    Owner owner() const { return who; }
+    uint32_t rate() {
+        const uint32_t r = asked;
+        if (++reads == run_after_read) producer();
+        return r;
+    }
+    void set_clock_locked(bool on) { locked = on; }
+};
+}
+enum { SRC_OFF, SRC_TONE, SRC_AUX, SRC_BT, SRC_FILE, SRC_RADIO, SRC_AIRPLAY, SRC_USB };
+audio_core::Ring::Owner ring_owner(int32_t src) {
+    return src == SRC_USB ? audio_core::Ring::OWNER_USB : audio_core::Ring::OWNER_NONE;
+}
+struct AudioModule {
+    int32_t source_ = SRC_USB;
+    uint32_t out_rate_ = 48000, session_rate_ = 48000, refused_rate_ = 0;
+    uint32_t ring_question(audio_core::Ring& ring);
+};
+'''
+    code += source[start:end]
+    code += r'''
+int main() {
+    {   // the producer between the take and the read: the new session is taken with its rate
+        AudioModule m; audio_core::Ring ring; ring.run_after_take = 1;
+        assert(m.ring_question(ring) == 96000);
+        assert(m.session_rate_ == 0 && m.refused_rate_ == 0 && !ring.locked);
+        assert(!ring.request);
+    }
+    {   // a rate the old session refused, asked again by a new one in the same place
+        AudioModule m; m.out_rate_ = m.session_rate_ = 44100; m.refused_rate_ = 88200;
+        audio_core::Ring ring; ring.asked = 88200; ring.next = 88200; ring.run_after_take = 1;
+        assert(m.ring_question(ring) == 88200);
+        assert(m.session_rate_ == 0 && m.refused_rate_ == 0 && !ring.locked);
+    }
+    {   // the producer right after the read: what was read is the old question, answered as one;
+        // the new session waits for the next block, and is never paired with the old rate
+        AudioModule m; audio_core::Ring ring; ring.run_after_read = 1;
+        const uint32_t first = m.ring_question(ring);
+        assert(first == 96000 ? m.session_rate_ == 0 : (first == 48000 && m.session_rate_ == 48000));
+        assert(m.ring_question(ring) == 96000);
+        assert(m.session_rate_ == 0 && !ring.locked);
+    }
+    {   // the old session refused a rate, the producer runs after the read of it: rate read again
+        AudioModule m; m.out_rate_ = m.session_rate_ = 44100; m.refused_rate_ = 88200;
+        audio_core::Ring ring; ring.asked = 88200; ring.next = 96000; ring.run_after_read = 1;
+        assert(m.ring_question(ring) == 96000);
+        assert(m.session_rate_ == 0 && m.refused_rate_ == 0);
+    }
+    {   // nothing new: the session stays as it is
+        AudioModule m; audio_core::Ring ring; ring.asked = 44100;
+        assert(m.ring_question(ring) == 44100);
+        assert(m.session_rate_ == 48000 && ring.locked);
+    }
+    {   // another producer's ring: no question, and no session of its to take
+        AudioModule m; audio_core::Ring ring; ring.who = audio_core::Ring::OWNER_FILE; ring.request = true;
+        assert(m.ring_question(ring) == 0);
+        assert(m.session_rate_ == 48000 && ring.locked);
+    }
+}
+'''
+    compile_run(tmp_path, code)

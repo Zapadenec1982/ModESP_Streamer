@@ -1494,6 +1494,28 @@ void AudioModule::adopt_clock(uint32_t hz, uint16_t mclk_mult) {
     ESP_LOGI(TAG, "output retuned to %lu Hz", (unsigned long)hz);
 }
 
+uint32_t AudioModule::ring_question(audio_core::PcmRing& ring) {
+    bool fresh = ring.take_new_session();
+    uint32_t r = ring.owner() == ring_owner(source_) ? ring.rate() : 0;
+    // USB asks for a new session and then for its rate, and usb_pcm runs above this task on its
+    // core: both can land between the take above and the read. Refused as a second rate of the
+    // old session, that stream stayed silent until the computer restarted it. A rate read after
+    // the request carries the request with it (pcm_ring.h), so before a rate is refused the
+    // request is looked for again — and the rate read again behind it, since the producer may
+    // have run after the read rather than before it.
+    if (!fresh && r && r != out_rate_ && (r == refused_rate_ || (session_rate_ && r != session_rate_)) &&
+        ring.take_new_session()) {
+        fresh = true;
+        r = ring.owner() == ring_owner(source_) ? ring.rate() : 0;
+    }
+    if (fresh) {
+        session_rate_ = 0;
+        refused_rate_ = 0;
+        ring.set_clock_locked(false);
+    }
+    return r;
+}
+
 void AudioModule::pause_bt_reader() {
     bt_capture_.store(false);
     // Source changes/stop only; format transitions wait without blocking below.
@@ -2282,12 +2304,7 @@ void AudioModule::task_loop() {
             // switches — asks for a new one. Same as a source change for the clock: nothing
             // settled, nothing refused; the producer's next question retunes once the old
             // frames have played out (rate_change_due).
-            if (ring.take_new_session()) {
-                session_rate_ = 0;
-                refused_rate_ = 0;
-                ring.set_clock_locked(false);
-            }
-            const uint32_t r = ring.owner() == ring_owner(source_) ? ring.rate() : 0;
+            const uint32_t r = ring_question(ring);
             if (r) {
                 // The clock is chosen ONCE, by the first track of the source session, and
                 // not touched again until the source changes.

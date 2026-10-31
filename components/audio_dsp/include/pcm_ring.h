@@ -189,6 +189,11 @@ public:
     ///
     /// Only the owner can ask, and a new owner's claim drops a request it did not make.
     /// The consumer takes it once (take_new_session) and treats it as a source change does.
+    ///
+    /// The owner asks for the session's rate after this, never before: the release store of
+    /// ask_rate() then carries this request with it, and a consumer that reads the new rate can
+    /// count on finding the request, even one made after its own take_new_session() came back
+    /// empty.
     bool request_new_session(Owner who) {
         if (owner() != who) return false;
         session_req_.store((uint8_t)who, std::memory_order_release);
