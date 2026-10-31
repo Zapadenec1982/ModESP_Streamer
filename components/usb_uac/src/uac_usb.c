@@ -141,18 +141,31 @@ static const tusb_desc_device_qualifier_t s_desc_qualifier = {
     .bReserved          = 0x00,
 };
 
-/// At full speed the panel offers no audio: a configuration with no interfaces. A full-speed-only
-/// host still enumerates it and simply finds nothing to play to.
-static const uint8_t s_desc_other_speed[] = {
-    9, TUSB_DESC_OTHER_SPEED_CONFIG, U16_TO_U8S_LE(9), 0x00, 0x01, 0x00,
-    TU_BIT(7) | TUSB_DESC_CONFIG_ATT_SELF_POWERED, 50,
+/// At full speed the panel offers no audio: a configuration with no interfaces. The audio function
+/// is built for high speed — a packet every microframe, high-speed feedback — and cannot stream
+/// at full speed; behind a full-speed-only hub the host enumerates the panel and simply finds
+/// nothing to play to.
+static const uint8_t s_desc_config_fs[] = {
+    TUD_CONFIG_DESCRIPTOR(1, 0, 0, TUD_CONFIG_DESC_LEN, TUSB_DESC_CONFIG_ATT_SELF_POWERED, 100),
 };
 
+/// The configuration of the speed not in use, under its own descriptor type (USB 2.0 §9.6.4).
+static uint8_t s_desc_other_speed[UAC_CONFIG_TOTAL_LEN];
+
 uint8_t const* tud_descriptor_device_cb(void) { return (uint8_t const*)&s_desc_device; }
-uint8_t const* tud_descriptor_configuration_cb(uint8_t index) { (void)index; return s_desc_config; }
+/// TinyUSB serves GET_DESCRIPTOR(CONFIGURATION) and SET_CONFIGURATION from this at whatever speed
+/// the bus reset settled on.
+uint8_t const* tud_descriptor_configuration_cb(uint8_t index) {
+    (void)index;
+    return tud_speed_get() == TUSB_SPEED_HIGH ? s_desc_config : s_desc_config_fs;
+}
 uint8_t const* tud_descriptor_device_qualifier_cb(void) { return (uint8_t const*)&s_desc_qualifier; }
 uint8_t const* tud_descriptor_other_speed_configuration_cb(uint8_t index) {
     (void)index;
+    const bool hs = tud_speed_get() == TUSB_SPEED_HIGH;
+    memcpy(s_desc_other_speed, hs ? s_desc_config_fs : s_desc_config,
+           hs ? sizeof(s_desc_config_fs) : sizeof(s_desc_config));
+    s_desc_other_speed[1] = TUSB_DESC_OTHER_SPEED_CONFIG;
     return s_desc_other_speed;
 }
 
