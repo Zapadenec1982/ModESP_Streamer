@@ -79,7 +79,7 @@ namespace {
 constexpr int      MAX_STRIPES = 16;
 constexpr uint32_t LINE = CONFIG_CACHE_L2_CACHE_LINE_SIZE;   // ≥ the L1 line on this chip
 constexpr int32_t  BAND_W = 16;       ///< logical px at a list's right edge: its scrollbar, drawn again on a shift
-constexpr int64_t  SWAP_GUARD_US = 300;   ///< a frame ending this soon after a swap request may predate it
+constexpr int64_t  SWAP_GUARD_US = 300;   ///< a frame end this soon after a swap request may have read the old index
 constexpr int      MAX_DAMAGE = 24;
 
 /// A rectangle of the frame buffer, inclusive.
@@ -187,10 +187,13 @@ bool ppa_done(ppa_client_handle_t, ppa_event_data_t*, void* user) {
     return false;
 }
 
-/// The DPI driver finished scanning a frame and restarted on cur_fb_index. The driver reads that
-/// index first and calls this after, so a frame ending a moment after the request may have
-/// restarted on the old buffer: those are left to the next frame. IRAM: the DSI interrupt is
-/// IRAM-safe here (CONFIG_LCD_DSI_ISR_IRAM_SAFE), so it may run with the cache off.
+/// The DPI driver finished scanning a frame and restarted on cur_fb_index. The request is made
+/// only once draw_bitmap has stored the new index (end_frame), so a frame end before the store
+/// finds none pending; the driver reads the index first and calls this after, so one that read
+/// the old index just before the store (from the other core) and calls this just after the
+/// request is turned away by SWAP_GUARD_US. Either way the swap is reported a frame later, never
+/// early. IRAM: the DSI interrupt is IRAM-safe here (CONFIG_LCD_DSI_ISR_IRAM_SAFE), so it may run
+/// with the cache off.
 IRAM_ATTR bool frame_done(esp_lcd_panel_handle_t, esp_lcd_dpi_panel_event_data_t*, void*) {
     if (!s_flush.swap_pending) return false;
     std::atomic_thread_fence(std::memory_order_acquire);
@@ -537,11 +540,16 @@ void refr_ready_cb(lv_event_t* e) {
 
 /// The frame's last block is in: the DPI driver scans this buffer from its next frame.
 void end_frame() {
+    // A pointer into one of the panel's own frame buffers: the driver only switches to it.
+    esp_lcd_panel_draw_bitmap(s_flush.panel, 0, 0, 1, 1, s_flush.fbs[s_flush.back]);
+    // The swap is asked for only once the index is stored. Asked for before, a wait inside
+    // draw_bitmap longer than SWAP_GUARD_US — its cache sync takes the chunked-msync mutex
+    // (CONFIG_ESP_MM_CACHE_MSYNC_C2M_CHUNKED_OPS), which the audio task holds for up to ~0.4 ms, or
+    // a task above LVGL's priority runs — let a frame end that restarted on the old buffer report
+    // the swap, and the compositor wrote into the buffer on the glass: a torn frame.
     s_flush.swap_t = esp_timer_get_time();
     std::atomic_thread_fence(std::memory_order_release);
     s_flush.swap_pending = true;
-    // A pointer into one of the panel's own frame buffers: the driver only switches to it.
-    esp_lcd_panel_draw_bitmap(s_flush.panel, 0, 0, 1, 1, s_flush.fbs[s_flush.back]);
     s_flush.shown = s_flush.back;
     s_flush.flip = true;
     s_flush.last = s_flush.now;
