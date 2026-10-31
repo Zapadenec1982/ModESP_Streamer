@@ -42,6 +42,18 @@ bool is_refusal(uint8_t reason) {
         return false;
     }
 }
+
+/// player-fork: a wifi_config_t SSID or password is a byte array, not a C string — a 32-byte SSID
+/// and a 64-character password (a raw hex PSK) fill it with no NUL after them. strncpy() to
+/// sizeof - 1 dropped the last byte: such a network was searched for under 31 characters, or its
+/// key hashed as a 63-character passphrase, and never joined. The config comes zeroed, so a
+/// shorter value stays terminated. Returns the bytes copied.
+template <size_t N>
+size_t copy_field(uint8_t (&dst)[N], const char* src) {
+    const size_t n = strnlen(src, N);
+    memcpy(dst, src, n);
+    return n;
+}
 }  // namespace
 
 // ── Event handler (static, dispatches to instance) ──────────────
@@ -579,10 +591,8 @@ bool WiFiService::start_sta() {
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
 
     wifi_config_t wifi_config = {};
-    strncpy(reinterpret_cast<char*>(wifi_config.sta.ssid),
-            ssid_, sizeof(wifi_config.sta.ssid) - 1);
-    strncpy(reinterpret_cast<char*>(wifi_config.sta.password),
-            password_, sizeof(wifi_config.sta.password) - 1);
+    copy_field(wifi_config.sta.ssid, ssid_);
+    copy_field(wifi_config.sta.password, password_);
     // player-fork: an open network has no password, and a WPA2 floor refuses it outright
     // (reason 211, "no AP in the authmode threshold") — the panel could list it and never
     // join it. A network with a password keeps the WPA2 floor.
@@ -654,16 +664,13 @@ bool WiFiService::start_ap() {
     if (ap_channel < 1 || ap_channel > 13) ap_channel = 1;
 
     wifi_config_t wifi_config = {};
-    strncpy(reinterpret_cast<char*>(wifi_config.ap.ssid),
-            ap_ssid, sizeof(wifi_config.ap.ssid) - 1);
-    wifi_config.ap.ssid_len = static_cast<uint8_t>(strlen(ap_ssid));
+    wifi_config.ap.ssid_len = static_cast<uint8_t>(copy_field(wifi_config.ap.ssid, ap_ssid));
     wifi_config.ap.channel = static_cast<uint8_t>(ap_channel);
     wifi_config.ap.max_connection = 2;
 
     // Пароль >= 8 символів → WPA2, інакше відкрита мережа
     if (strlen(ap_pass) >= 8) {
-        strncpy(reinterpret_cast<char*>(wifi_config.ap.password),
-                ap_pass, sizeof(wifi_config.ap.password) - 1);
+        copy_field(wifi_config.ap.password, ap_pass);
         wifi_config.ap.authmode = WIFI_AUTH_WPA2_PSK;
     } else {
         wifi_config.ap.authmode = WIFI_AUTH_OPEN;
@@ -726,10 +733,8 @@ void WiFiService::attempt_ap_sta_probe() {
 
     // Config + connect ПІСЛЯ mode switch (STA_START не викликає auto-connect)
     wifi_config_t sta_cfg = {};
-    strncpy(reinterpret_cast<char*>(sta_cfg.sta.ssid),
-            ssid_, sizeof(sta_cfg.sta.ssid) - 1);
-    strncpy(reinterpret_cast<char*>(sta_cfg.sta.password),
-            password_, sizeof(sta_cfg.sta.password) - 1);
+    copy_field(sta_cfg.sta.ssid, ssid_);
+    copy_field(sta_cfg.sta.password, password_);
     sta_cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
     sta_cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
     esp_wifi_set_config(WIFI_IF_STA, &sta_cfg);
