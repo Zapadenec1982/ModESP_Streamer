@@ -20,6 +20,7 @@
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 #include "freertos/task.h"
 
 #include <algorithm>
@@ -41,6 +42,11 @@ bool              s_started = false;
 int               s_core = -1;
 std::atomic<bool> s_output{false};
 std::atomic<bool> s_signal{false};
+SemaphoreHandle_t s_init_done = nullptr;   ///< given by device_task once uac_usb_init() has answered
+bool              s_init_ok   = false;
+
+/// How long start() waits for the PHY and TinyUSB, which come up in milliseconds.
+constexpr TickType_t INIT_WAIT = pdMS_TO_TICKS(1000);
 
 /// Larger than 1 ms of the widest format (97 frames × 8 B); a late wake-up reads in pieces.
 constexpr uint32_t RAW_BYTES  = 4096;
@@ -58,8 +64,9 @@ constexpr float SIGNAL_PEAK = 0.001f;
 constexpr int64_t SIGNAL_HOLD_US = 300000;
 
 void device_task(void*) {
-    if (!uac_usb_init()) {
-        ESP_LOGE(TAG, "USB PHY or TinyUSB did not start");
+    s_init_ok = uac_usb_init();
+    xSemaphoreGive(s_init_done);
+    if (!s_init_ok) {
         vTaskDelete(nullptr);
         return;
     }
@@ -331,10 +338,19 @@ bool start(const Config& cfg) {
     if (s_started) return true;
     uac_usb_set_strings(cfg.product, cfg.serial);
 
+    static StaticSemaphore_t init_storage;
+    s_init_done = xSemaphoreCreateBinaryStatic(&init_storage);
     const size_t before = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
     if (xTaskCreatePinnedToCore(device_task, "usb_dev", 4096, nullptr, cfg.priority, nullptr,
                                 cfg.core) != pdPASS) {
         ESP_LOGE(TAG, "usb_dev task");
+        return false;
+    }
+    // The PHY and the stack come up on that task, because the controller's interrupt lands on
+    // the core that brings it up. started() promises a device — it is what offers source 7 — so
+    // the answer is waited for here, not assumed.
+    if (xSemaphoreTake(s_init_done, INIT_WAIT) != pdTRUE || !s_init_ok) {
+        ESP_LOGE(TAG, "USB PHY or TinyUSB did not start");
         return false;
     }
     // The producer does arithmetic and ring copies only — no flash, no NVS — so its stack can
