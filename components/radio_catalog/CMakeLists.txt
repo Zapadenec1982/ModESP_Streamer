@@ -5,5 +5,5 @@
 idf_component_register(
     SRCS "src/radio_catalog.cpp" "src/radio_art.cpp" "src/radio_catalog_ui.cpp"
     INCLUDE_DIRS "include"
-    PRIV_REQUIRES jsmn
+    PRIV_REQUIRES jsmn stations
 )

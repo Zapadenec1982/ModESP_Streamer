@@ -10,6 +10,7 @@
 #include "radio_catalog.h"
 
 #include "json_util.h"   // jsmn and the helpers shared with radio_art.cpp
+#include "stations.h"    // tidy_name(): a row's name is one line, as a station's
 
 #include <cstdio>
 #include <cstdlib>
@@ -22,17 +23,6 @@
 
 namespace radio_catalog {
 namespace {
-
-/// Names come from people typing into a web form: tabs, newlines, leading spaces. A list
-/// row has one line, so control characters become spaces and the ends are trimmed.
-void tidy(char* s) {
-    for (char* p = s; *p; p++) if ((unsigned char)*p < 0x20) *p = ' ';
-    size_t n = strlen(s);
-    while (n && s[n - 1] == ' ') s[--n] = '\0';
-    size_t lead = 0;
-    while (s[lead] == ' ') lead++;
-    if (lead) memmove(s, s + lead, n - lead + 1);
-}
 
 bool playable_codec(const char* c) {
     return !strcmp(c, "MP3") || !strcmp(c, "AAC") || !strcmp(c, "AAC+") || !strcmp(c, "FLAC");
@@ -75,7 +65,9 @@ bool fill_row(const char* json, const jsmntok_t* tok, int count, int obj, Row& r
         else if (key_is(json, key, "hls"))          r.hls = to_uint(json, val) != 0;
         j += 1 + span(tok, count, j + 1);
     }
-    tidy(r.name);
+    // Names come from people typing into a web form: tabs, newlines, leading spaces. A row is
+    // one line, as the list's are.
+    radio_core::tidy_name(r.name);
     // Same size as r.url, and copy_str has said the whole text is in it.
     if (resolved_fits && resolved[0])   memcpy(r.url, resolved, sizeof(r.url));
     else if (plain_fits && plain[0])    memcpy(r.url, plain, sizeof(r.url));

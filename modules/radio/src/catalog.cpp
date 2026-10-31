@@ -20,6 +20,7 @@
 #include "radio_catalog_task.h"
 #include "radio_catalog_ui.h"
 #include "state_enums.h"   // audio.source values, generated from the manifests
+#include "stations.h"
 
 #include "esp_heap_caps.h"
 #include "radio_http.h"
@@ -603,6 +604,7 @@ void RadioModule::catalog_update(uint32_t /*dt_ms*/) {
         read_string("radio.web_name", name, sizeof(name));
         read_string("radio.web_url", url, sizeof(url));
         read_string("radio.web_uuid", uuid, sizeof(uuid));
+        radio_core::tidy_name(name);   // one line, as a row of the panel's own catalog
         const bool usable = (!strncmp(url, "http://", 7) || !strncmp(url, "https://", 8)) &&
                             strlen(url) < (size_t)rc::URL_LEN;
         const char* label = name[0] ? name : url;

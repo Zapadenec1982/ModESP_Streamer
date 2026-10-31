@@ -384,7 +384,9 @@ empty one — the built-in set.
 {"stations":[{"name":"…","url":"…","uuid":"…"}],"presets":[0,3,-1,-1,-1,-1]}
 ```
 
-Unreadable entries are discarded, the rest remain; file ≤ 24 KB.
+Unreadable entries are discarded, the rest remain; file ≤ 24 KB. A name is one line: a control
+character in it (a tab, a line break) becomes a space and the spaces at its ends go, whichever way
+it came — the web, the catalog, the file.
 
 - `GET /api/stations` → `{"rev":N,"list":{"stations":[…],"presets":[…]}}`.
 - `POST /api/stations` ← `{"rev":N,"stations":[…],"presets":[…]}`, `rev` as the first field. `202` —

@@ -52,6 +52,12 @@ struct StationList {
     int  find(const char* url) const;
 };
 
+/// A station's name as a row shows it: one line. A control character, a tab or a line break
+/// typed or pasted into a web form or kept in Radio Browser's data, becomes a space, and the
+/// spaces at either end go. Every name entering a list passes through it (StationList::add),
+/// and so does a catalog row's (components/radio_catalog).
+void tidy_name(char* s);
+
 /// Parses `json` (`len` bytes) into `out`. False when the text is not a station list at
 /// all; a list with some unreadable entries loses those entries and keeps the rest,
 /// because one mistyped URL should not cost somebody their whole set.

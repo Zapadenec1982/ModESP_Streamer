@@ -43,8 +43,9 @@ bool key_is(const char* json, const jsmntok_t& t, const char* name) {
 /// jsmn hands back the raw span between the quotes, backslashes and all — so a station
 /// called Rock "FM" comes out of the file with the backslashes still in its name, and
 /// gains another pair every time the list is saved. Only the escapes a name or a URL can
-/// actually contain are handled; \u sequences are passed through as written, because
-/// nothing this device writes produces them and guessing at half a surrogate pair is
+/// actually contain are handled; \u sequences are passed through as written: this device
+/// writes one only for a control character without a short form, which no name holds
+/// (StationList::add) and no working URL does, and guessing at half a surrogate pair is
 /// worse than leaving the text alone.
 void copy_str(const char* json, const jsmntok_t& t, char* out, size_t out_sz) {
     int n = t.end - t.start;
@@ -94,15 +95,31 @@ int span(const jsmntok_t* tok, int count, int i) {
     return j - i;
 }
 
-/// JSON string escaping, for the two characters a name or a URL can actually contain.
+/// JSON string escaping: `"`, `\` and every control character, which JSON allows nowhere raw
+/// in a string. A tab written raw into a name left GET /api/stations a body the web could not
+/// parse. The five with a short form are written the way copy_str() reads them back.
 size_t put_escaped(char* out, size_t cap, const char* s) {
+    static constexpr char HEX[] = "0123456789abcdef";
     size_t n = 0;
     for (; *s; s++) {
-        const char c = *s;
-        const bool esc = (c == '"' || c == '\\');
-        if (n + (esc ? 2u : 1u) >= cap) break;
-        if (esc) out[n++] = '\\';
-        out[n++] = c;
+        const unsigned char c = (unsigned char)*s;
+        char e[6] = {'\\', (char)c};
+        size_t w = 2;
+        switch (c) {
+        case '"': case '\\': break;
+        case '\b': e[1] = 'b'; break;
+        case '\f': e[1] = 'f'; break;
+        case '\n': e[1] = 'n'; break;
+        case '\r': e[1] = 'r'; break;
+        case '\t': e[1] = 't'; break;
+        default:
+            if (c >= 0x20) { e[0] = (char)c; w = 1; break; }
+            e[1] = 'u'; e[2] = '0'; e[3] = '0'; e[4] = HEX[c >> 4]; e[5] = HEX[c & 15]; w = 6;
+            break;
+        }
+        if (n + w >= cap) break;
+        memcpy(out + n, e, w);
+        n += w;
     }
     if (n < cap) out[n] = '\0';
     return n;
@@ -110,15 +127,27 @@ size_t put_escaped(char* out, size_t cap, const char* s) {
 
 }  // namespace
 
+void tidy_name(char* s) {
+    for (char* p = s; *p; p++) if ((unsigned char)*p < 0x20) *p = ' ';
+    size_t n = strlen(s);
+    while (n && s[n - 1] == ' ') s[--n] = '\0';
+    size_t lead = 0;
+    while (s[lead] == ' ') lead++;
+    if (lead) memmove(s, s + lead, n - lead + 1);
+}
+
 bool StationList::add(const char* name, const char* url, const char* uuid) {
     if (count >= MAX_STATIONS || !url || !url[0]) return false;
-    snprintf(station[count].name, NAME_LEN, "%s", name ? name : "");
+    char* const label = station[count].name;
+    snprintf(label, NAME_LEN, "%s", name ? name : "");
+    tidy_name(label);
     snprintf(station[count].url, URL_LEN, "%s", url);
     snprintf(station[count].uuid, UUID_LEN, "%s", uuid ? uuid : "");
-    if (!station[count].name[0]) {
+    if (!label[0]) {
         // No name given: the host is a better label than an empty row.
         const char* p = strstr(url, "://");
-        snprintf(station[count].name, NAME_LEN, "%s", p ? p + 3 : url);
+        snprintf(label, NAME_LEN, "%s", p ? p + 3 : url);
+        tidy_name(label);
     }
     count++;
     return true;
