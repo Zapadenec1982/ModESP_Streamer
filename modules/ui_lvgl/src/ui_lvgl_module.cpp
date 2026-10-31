@@ -394,9 +394,12 @@ void UiLvglModule::lvgl_refresh() {
     // including over widgets that consume their own press events.
     if (s_ui.indev) {
         const bool down = (lv_indev_get_state(s_ui.indev) == LV_INDEV_STATE_PRESSED);
-        lv_point_t p = {0, 0};
+        // Read on the release too: LVGL keeps a pointer's last point after it lifts
+        // (indev_read_core), so ui.touch_x/y say where the touch ended — what docs/PANEL.md's
+        // four-corner check reads — rather than 0,0.
+        lv_point_t p;
+        lv_indev_get_point(s_ui.indev, &p);
         if (down) {
-            lv_indev_get_point(s_ui.indev, &p);
             lv_obj_set_pos(s_ui.dot, p.x - 15, p.y - 15);
             if (!s_ui.dot_on) {
                 // Above everything (docs/UI.md, "Overlays"): the menu, a sheet or a dialog raises
