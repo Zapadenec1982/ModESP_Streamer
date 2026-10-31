@@ -1323,6 +1323,14 @@ static void handle_setup(int socket, rtsp_conn_t *conn,
 
     ESP_LOGI(TAG, "SETUP: Initial connection setup (no streams)");
 
+    // This session is timed by PTP, which an AirPlay 1 SETUP stops (above).
+    // The cleanup of a slot this connection replaced does not restart it
+    // (rtsp_server.c), so it is started here; running, it is left as it is.
+    esp_err_t ptp_err = ptp_clock_init();
+    if (ptp_err != ESP_OK && ptp_err != ESP_ERR_INVALID_STATE) {
+      ESP_LOGW(TAG, "PTP clock not started: %s", esp_err_to_name(ptp_err));
+    }
+
     if (is_bplist) {
       uint8_t plist_body[128];
       size_t plist_len = bplist_build_initial_setup(

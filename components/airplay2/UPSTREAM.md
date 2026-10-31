@@ -232,6 +232,13 @@ No file in `upstream/` is edited. How the behaviour differs from upstream:
     device. A SETUP on a connection without both identifiers clears the session; a sender that
     names them sets its own, as before (`tools/tests/test_airplay_dacp.py`).
 
+19. **An AirPlay 2 session starts PTP itself** (`port/rtsp_handlers.c`, `handle_setup`). An
+    AirPlay 1 SETUP stops the PTP clock for its sockets, and only the cleanup of a slot that was
+    not replaced starts it again, on the word that the new session's SETUP manages PTP; upstream's
+    AirPlay 2 SETUP never starts it. An AirPlay 2 sender that replaced an AirPlay 1 session played
+    all of it without a clock lock, on a local anchor. The AirPlay 2 initial SETUP starts PTP when
+    it is not running (`tools/tests/test_airplay_setup.py`).
+
 ## Updating
 
 Clone upstream at the new commit, compare it with `upstream/` file by file, carry the changes over,

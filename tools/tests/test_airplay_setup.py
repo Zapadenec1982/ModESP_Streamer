@@ -7,6 +7,8 @@ changed, as ANNOUNCE is (test_airplay_sdp.py).
 An ekey is decrypted into a 32-byte key; libsodium writes all of its plaintext, so one that
 would not fit is not handed to it. An AirPlay 2 stream's sr outside
 AIRPLAY_RATE_MIN_HZ..AIRPLAY_RATE_MAX_HZ is refused before the receiver's format is set.
+An AirPlay 1 SETUP stops PTP, and the cleanup of a slot an AirPlay 2 connection replaced
+does not restart it: the AirPlay 2 initial SETUP starts it.
 Direct run: python tools/tests/test_airplay_setup.py
 """
 import os
@@ -51,6 +53,8 @@ PREFIX = r'''
 #define ESP_LOGD(...) ((void)0)
 typedef int esp_err_t;
 #define ESP_OK 0
+#define ESP_FAIL -1
+#define ESP_ERR_INVALID_STATE 0x103
 typedef struct { uint8_t shared_secret[32]; bool session_established; } hap_session_t;
 typedef enum { RTSP_EVENT_CLIENT_CONNECTED, RTSP_EVENT_PLAYING } rtsp_event_t;
 typedef struct { int unused; } rtsp_event_data_t;
@@ -72,7 +76,7 @@ static void unreached(const char *what) {
     abort();
 }
 static int formats, encryptions, ntp_starts, port_allocs, ptp_stops, stream_types;
-static int transports, event_sockets, replies, status, decrypts, derives;
+static int transports, event_sockets, replies, status, decrypts, derives, ptp_inits;
 static size_t ekey_sent;   /* the ekey the sender's plist carries; 0 = none */
 static bool streams;       /* an AirPlay 2 stream SETUP: one realtime stream... */
 static int64_t stream_sr;  /* ...at this sr */
@@ -81,7 +85,7 @@ static audio_format_t last_format;
 static void stream_setup_only(const char *what) { if (!streams) unreached(what); }
 static void reset_counts(void) {
     formats = encryptions = ntp_starts = port_allocs = ptp_stops = stream_types = 0;
-    transports = event_sockets = replies = status = decrypts = derives = 0;
+    transports = event_sockets = replies = status = decrypts = derives = ptp_inits = 0;
 }
 bool bplist_get_streams_count(const uint8_t *p, size_t n, size_t *count) {
     (void)p; (void)n;
@@ -183,6 +187,9 @@ static void ensure_stream_ports(rtsp_conn_t *conn, bool buffered) {
     conn->data_port = 6100; conn->control_port = 6101; conn->timing_port = 6102;
 }
 static void ptp_clock_stop(void) { ++ptp_stops; }
+static esp_err_t ptp_init_result;   /* ESP_ERR_INVALID_STATE: already running */
+static esp_err_t ptp_clock_init(void) { ++ptp_inits; return ptp_init_result; }
+static const char *esp_err_to_name(esp_err_t err) { (void)err; return "mock"; }
 static bool audio_stream_uses_buffer(audio_stream_type_t type) {
     stream_setup_only("audio_stream_uses_buffer"); return type == AUDIO_STREAM_BUFFERED;
 }
@@ -237,6 +244,7 @@ static void setup(const char *raw, const char *body) {
 static void first_v1_setup(void) {
     setup(V1_SETUP, NULL);
     assert(status == 200 && formats == 1 && ntp_starts == 1 && ptp_stops == 1);
+    assert(ptp_inits == 0);
     assert(port_allocs == 1 && transports == 1 && stream_types == 1);
     assert(conn.stream_active && conn.protocol_version == 1 && conn.stream_type == 96);
     assert(conn.client_control_port == 6001 && conn.client_timing_port == 6002);
@@ -311,6 +319,17 @@ int main(int argc, char **argv) {
         assert(status == 200 && formats == 1 && last_format.sample_rate == 48000);
         assert(port_allocs == 1 && conn.stream_active && conn.protocol_version == 2);
         break;
+    case 8: { /* The initial SETUP starts PTP: stopped, running, or failing to start, the
+                 session is answered the same. */
+        const esp_err_t results[] = {ESP_OK, ESP_ERR_INVALID_STATE, ESP_FAIL};
+        conn.protocol_version = 2;
+        for (size_t r = 0; r < sizeof(results) / sizeof(results[0]); ++r) {
+            ptp_init_result = results[r];
+            setup(AP2_SETUP, NULL);
+            assert(status == 200 && ptp_inits == 1 && ptp_stops == 0);
+        }
+        break;
+    }
     default: return 99;
     }
     return 0;
@@ -357,6 +376,7 @@ class AirplaySetupTests(unittest.TestCase):
     def test_ekey_longer_than_a_key_is_never_decrypted(self): self.run_case(5)
     def test_stream_rate_outside_the_range_is_refused(self): self.run_case(6)
     def test_stream_at_48_khz_is_configured(self): self.run_case(7)
+    def test_airplay2_initial_setup_starts_ptp(self): self.run_case(8)
 
 
 if __name__ == "__main__":
