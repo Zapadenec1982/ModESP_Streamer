@@ -244,6 +244,11 @@ bool seek_stream(int32_t sec) {
     return true;
 }
 
+// Replaced by the production function (test_network_radio_browser.py).
+bool looks_like_playlist(const char*, const char*) {
+ return false;
+}
+
 int main(){
  s.station.store(1);s.tuned.store(0);s.state.store(ST_PLAYING);
  start_station(1);
@@ -312,6 +317,15 @@ int main(){
  connects=0;
  if(http_open("http://h0/a",nullptr,0) || connects!=1) return 54;
  responses.clear();
+ // A playlist by the answer's type when it says anything: an audio type is a stream whatever
+ // the URL ends in, and only a type that says neither leaves it to the extension.
+ if(looks_like_playlist("http://x/listen.pls","audio/mpeg") ||
+    !looks_like_playlist("http://x/listen.pls","text/plain") ||
+    !looks_like_playlist("http://x/listen.M3U?sid=1",nullptr) ||
+    !looks_like_playlist("http://x/a","audio/x-mpegurl") ||
+    !looks_like_playlist("http://x/a","audio/x-scpls") ||
+    !looks_like_playlist("http://x/listen.pls","audio/x-pls") ||
+    looks_like_playlist("http://x/a","application/octet-stream")) return 60;
  puts("radio network regressions passed");
  return 0;
 }

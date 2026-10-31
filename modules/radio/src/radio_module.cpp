@@ -452,8 +452,14 @@ esp_audio_simple_dec_type_t type_from_content(const char* ct, const char* url) {
 
 /// Is this URL a playlist rather than a stream? Station directories hand out .m3u and .pls
 /// far more often than they hand out the stream itself.
+///
+/// The answer's type decides when it says anything. An audio type is a stream whatever the
+/// URL ends in: a hand-added .pls that redirects to the stream itself answers audio/mpeg, and
+/// read as a playlist it had "no stream in it" and reconnected for ever. Only a type that says
+/// neither — text/plain, octet-stream, none — leaves it to the extension.
 bool looks_like_playlist(const char* url, const char* ct) {
-    if (ct && (strstr(ct, "mpegurl") || strstr(ct, "scpls") || strstr(ct, "x-scpls"))) return true;
+    if (ct && (strstr(ct, "mpegurl") || strstr(ct, "scpls") || strstr(ct, "x-pls"))) return true;
+    if (ct && !strncasecmp(ct, "audio/", 6)) return false;
     const char* q = strchr(url, '?');
     const size_t n = q ? (size_t)(q - url) : strlen(url);
     auto ends = [&](const char* ext) {

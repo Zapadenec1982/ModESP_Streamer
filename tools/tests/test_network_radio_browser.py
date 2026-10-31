@@ -45,7 +45,7 @@ def test_radio_http_icy_station_and_seek(tmp_path):
     signatures = (
         "bool split_url(", "bool next_line(", "bool header_is(", "void copy_header(",
         "Hop http_open_hop(", "bool http_open(", "int stream_read(", "void start_station(",
-        "bool seek_stream(",
+        "bool seek_stream(", "bool looks_like_playlist(",
     )
     # One hop per call and a loop around them: a redirect handled by recursion took the
     # 12 KB radio stack past its end on a four-redirect CDN chain (04.10.2026).

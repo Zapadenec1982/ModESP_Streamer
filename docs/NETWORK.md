@@ -340,8 +340,8 @@ wait until the source becomes 5. The same engine plays stations and external URL
   up to 4 redirects (`Location`); `Range` — for seeking and resuming a track.
 - Read: `Content-Type`, `Content-Length`, `Content-Range`, `icy-metaint` (≤ 64 KB), `icy-br`,
   `icy-name`. `StreamTitle='…'` → `radio.now_playing`.
-- Playlist (`.m3u`, `.m3u8`, `.pls` or Content-Type `mpegurl` / `scpls`): the first http URL is
-  taken. HLS is not supported.
+- Playlist (Content-Type `mpegurl` / `scpls` / `x-pls`, or a URL ending in `.m3u`, `.m3u8`, `.pls` whose
+  Content-Type is not `audio/…`): the first http URL is taken. HLS is not supported.
 - Decoder — by Content-Type: `mpeg`/`mp3` → MP3, `aac`/`aacp` → AAC, `flac` → FLAC (checked before
   `ogg`, because there is `audio/ogg; codecs=flac`), `ogg`/`opus` → Ogg, `wav`/`wave` → WAV,
   `mp4`/`m4a` → M4A; without a usable type — by the URL extension (`.aac`, `.wav`, `.flac`,

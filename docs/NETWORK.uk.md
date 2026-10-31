@@ -333,8 +333,8 @@ HTTP Basic, realm `ModESP`. NVS-простір `auth`: `user`, `pass`, `enabled`
   до 4 переадресацій (`Location`); `Range` — для перемотки й відновлення треку.
 - Читаються `Content-Type`, `Content-Length`, `Content-Range`, `icy-metaint` (≤ 64 КБ), `icy-br`,
   `icy-name`. `StreamTitle='…'` → `radio.now_playing`.
-- Плейлист (`.m3u`, `.m3u8`, `.pls` або Content-Type `mpegurl` / `scpls`): береться перший
-  http-URL. HLS не підтримується.
+- Плейлист (Content-Type `mpegurl` / `scpls` / `x-pls` або URL із закінченням `.m3u`, `.m3u8`, `.pls`, чий
+  Content-Type не `audio/…`): береться перший http-URL. HLS не підтримується.
 - Декодер — за Content-Type: `mpeg`/`mp3` → MP3, `aac`/`aacp` → AAC, `flac` → FLAC (перевіряється
   раніше за `ogg`, бо буває `audio/ogg; codecs=flac`), `ogg`/`opus` → Ogg, `wav`/`wave` → WAV,
   `mp4`/`m4a` → M4A; без придатного типу — за розширенням URL (`.aac`, `.wav`, `.flac`,
