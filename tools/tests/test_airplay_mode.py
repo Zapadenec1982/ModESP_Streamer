@@ -101,7 +101,8 @@ const uint8_t *airplay2_port_mac(void) { return mac; }
 const char *airplay2_port_name(void) { return "P4 Test"; }
 const uint8_t *hap_get_public_key(void) { return pk; }
 void rtsp_get_device_id(char *out, size_t n) { snprintf(out,n,"02:04:06:08:0A:0C"); }
-void settings_get_device_name(char *out, size_t n) { snprintf(out,n,"P4 Test"); }
+static const char *info_name = "P4 Test";   /* the device name /info carries */
+void settings_get_device_name(char *out, size_t n) { snprintf(out,n,"%s",info_name); }
 esp_err_t settings_get_volume(float *db) { *db = -18.9f; return 0; }   /* the room at 37 % */
 const char *esp_err_to_name(int err) { (void)err; return "mock"; }
 static int host_strncasecmp(const char *a,const char *b,size_t n) {
@@ -183,10 +184,12 @@ static void save_services(int step) {
 }
 int main(void) {
     /* AP2 -> legacy -> AP2: the firmware latches one per boot, both must be linked.
-       Then AP2 once more with covers not asked for (airplay2_config_t::artwork). */
+       Then AP2 once more with covers not asked for (airplay2_config_t::artwork), and a
+       name that is not ASCII. */
     for(int step=0;step<4;++step) {
         legacy=step==1;
         artwork=step!=3;
+        info_name=step==3 ? STEP3_NAME : "P4 Test";
         for(int encrypted=0;encrypted<2;++encrypted) {
             rtsp_conn_t conn={.encrypted_mode=encrypted!=0};
             const char body[]={'a','\0','b'};
@@ -213,9 +216,40 @@ int main(void) {
         mdns_airplay_init(); assert(adds==(legacy ? 1 : 2));
         save_services(step);
         mdns_airplay_remove(); assert(!services[0].exists && !services[1].exists);
+    }
+    /* The binary /info alone, for each of NAMES. */
+    for(size_t i=0;i<sizeof(NAMES)/sizeof(NAMES[0]);++i) {
+        uint8_t body[1024];
+        size_t n=bplist_build_info_response_vol(body,sizeof(body),"02:04:06:08:0A:0C",
+                                                NAMES[i],pk,32,0,2,-18.9);
+        char path[32]; snprintf(path,sizeof(path),"name-%zu.bin",i);
+        FILE *f=fopen(path,"wb"); assert(f && n);
+        assert(fwrite(body,1,n,f)==n); fclose(f);
     } return 0;
 }
 '''
+
+
+def c_string(raw):
+    """Bytes as a C string literal, every byte escaped (no greedy \\x run-ons)."""
+    return '"' + "".join(f"\\x{b:02x}" for b in raw) + '"'
+
+
+# The device name /info carries at step 3 of the harness.
+STEP3_NAME = "Кухня і зала \U0001F3B5"
+# Names for the binary /info alone: the UTF-8 the builder is given, the string a plist
+# reader must find, and the object that holds it (marker and length, then the text).
+NAME_CASES = [
+    (b"P4 Test", "P4 Test", b"\x57P4 Test"),
+    ("Кухня".encode(), "Кухня", b"\x65" + "Кухня".encode("utf-16-be")),
+    # 15 code units take the long length form, as an ASCII string of 15 bytes would.
+    (STEP3_NAME.encode(), STEP3_NAME, b"\x6f\x10\x0f" + STEP3_NAME.encode("utf-16-be")),
+    ("\U0001F3B5".encode(), "\U0001F3B5", b"\x62\xd8\x3c\xdf\xb5"),
+    # Bytes that start no well-formed sequence are U+FFFD, one each: a lone 0xFF, a lead
+    # cut short by the end, an overlong '/', a UTF-8 surrogate.
+    (b"Bad \xff\xd0", "Bad \ufffd\ufffd", None),
+    (b"\xc0\xaf\xed\xa0\x80", "\ufffd" * 5, None),
+]
 
 
 def build_harness(directory):
@@ -224,7 +258,10 @@ def build_harness(directory):
     info_builder = (builder[:builder.index("size_t bplist_build_initial_setup(")] +
                     function(builder, "size_t bplist_build_info_response_vol(") +
                     function(builder, "size_t bplist_build_info_response("))
-    pieces = [PREFIX, production(UP / "plist/base64.c"),
+    names = ("#define STEP3_NAME " + c_string(STEP3_NAME.encode()) + "\n" +
+             "static const char *const NAMES[] = {" +
+             ", ".join(c_string(raw) for raw, _, _ in NAME_CASES) + "};\n")
+    pieces = [PREFIX, names, production(UP / "plist/base64.c"),
               production(UP / "plist/plist_xml.c"), info_builder,
               production(PORT / "rtsp_message.c"),
               function(handlers, "static bool request_uses_rtsp("),
@@ -314,12 +351,21 @@ class AirplayModeWireTests(unittest.TestCase):
                 self.assertEqual(data["srcvers"],"105.1" if step==1 else "377.40.00")
                 self.assertEqual(data["model"],"Shairport" if step==1 else "AudioAccessory5,1")
                 self.assertEqual(data["deviceid"],"02:04:06:08:0A:0C")
-                self.assertEqual(data["name"],"P4 Test")
+                self.assertEqual(data["name"],STEP3_NAME if step==3 else "P4 Test")
                 self.assertEqual(data["pk"],bytes([1,2,3,4])+bytes(28))
                 # The room's level, so a sender starts its slider there (UPSTREAM.md item 15).
                 self.assertEqual(data["initialVolume"],-18.9)
                 self.assertEqual(self.capture(step,kind,0),self.capture(step,kind,1))
             self.assertEqual(decoded[0],decoded[1])
+
+    def test_binary_info_name_is_any_text(self):
+        # CoreFoundation reads a 0x5X string as ASCII: the name is UTF-16 once it is not.
+        for i, (_, name, encoded) in enumerate(NAME_CASES):
+            with self.subTest(name=name):
+                body = (self.directory / f"name-{i}.bin").read_bytes()
+                self.assertEqual(plistlib.loads(body)["name"], name)
+                if encoded:
+                    self.assertIn(encoded, body)
 
     def test_mdns_legacy_excludes_ap2_service_and_pairing(self):
         for step in range(4):

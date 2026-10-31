@@ -53,6 +53,74 @@ static bool bplist_write_ascii_string(uint8_t *out, size_t capacity,
   return true;
 }
 
+// The next code point of a NUL-terminated UTF-8 string, and the string moved
+// past it. A byte that does not start a well-formed sequence is U+FFFD and is
+// passed over alone, as the firmware's JSON writer does (json_escape.h).
+static uint32_t utf8_next(const uint8_t **s) {
+  const uint8_t *p = *s;
+  const uint8_t c = p[0];
+  const size_t n = c < 0x80                ? 1
+                   : c >= 0xC2 && c <= 0xDF ? 2
+                   : c >= 0xE0 && c <= 0xEF ? 3
+                   : c >= 0xF0 && c <= 0xF4 ? 4
+                                            : 0;
+  bool valid = n != 0;
+  for (size_t i = 1; valid && i < n; i++) {
+    valid = (p[i] & 0xC0) == 0x80; // the NUL fails here: nothing past it is read
+  }
+  if (valid && n == 3) {
+    valid = !(c == 0xE0 && p[1] < 0xA0) && !(c == 0xED && p[1] >= 0xA0);
+  }
+  if (valid && n == 4) {
+    valid = !(c == 0xF0 && p[1] < 0x90) && !(c == 0xF4 && p[1] >= 0x90);
+  }
+  if (!valid) {
+    *s = p + 1;
+    return 0xFFFD;
+  }
+  uint32_t cp = n == 1 ? c : c & (0x7Fu >> n);
+  for (size_t i = 1; i < n; i++) {
+    cp = (cp << 6) | (p[i] & 0x3F);
+  }
+  *s = p + n;
+  return cp;
+}
+
+static void bplist_put_unit(uint8_t *out, size_t *pos, uint32_t unit) {
+  out[(*pos)++] = (uint8_t)(unit >> 8);
+  out[(*pos)++] = (uint8_t)unit;
+}
+
+// Free-form text: ASCII as it is (0x5X), anything else as UTF-16 big-endian
+// (0x6X, counted in code units). CoreFoundation reads a 0x5X object as ASCII,
+// so the owner's name in Cyrillic written that way is no string to a sender.
+static bool bplist_write_string(uint8_t *out, size_t capacity, size_t *pos,
+                                const char *value) {
+  size_t units = 0;
+  bool ascii = true;
+  for (const uint8_t *p = (const uint8_t *)value; *p;) {
+    ascii = ascii && *p < 0x80;
+    units += utf8_next(&p) > 0xFFFF ? 2 : 1;
+  }
+  if (ascii) {
+    return bplist_write_ascii_string(out, capacity, pos, value);
+  }
+  if (!bplist_write_length(out, capacity, pos, 0x60, units) ||
+      !bplist_has_room(*pos, 2 * units, capacity)) {
+    return false;
+  }
+  for (const uint8_t *p = (const uint8_t *)value; *p;) {
+    uint32_t cp = utf8_next(&p);
+    if (cp > 0xFFFF) { // a surrogate pair
+      cp -= 0x10000;
+      bplist_put_unit(out, pos, 0xD800 | (cp >> 10));
+      cp = 0xDC00 | (cp & 0x3FF);
+    }
+    bplist_put_unit(out, pos, cp);
+  }
+  return true;
+}
+
 static bool bplist_write_data(uint8_t *out, size_t capacity, size_t *pos,
                               const uint8_t *data, size_t len) {
   if (!bplist_write_length(out, capacity, pos, 0x40, len) ||
@@ -571,8 +639,8 @@ size_t bplist_build_info_response_vol(uint8_t *out, size_t capacity,
   if (!bplist_write_ascii_string(out, capacity, &pos, "name")) {
     return 0;
   }
-  ADD_OFFSET(); // 19: device name
-  if (!bplist_write_ascii_string(out, capacity, &pos, device_name)) {
+  ADD_OFFSET(); // 19: device name, the owner's own text
+  if (!bplist_write_string(out, capacity, &pos, device_name)) {
     return 0;
   }
   ADD_OFFSET(); // 20: "audioFormats"

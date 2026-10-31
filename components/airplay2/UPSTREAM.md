@@ -239,6 +239,14 @@ No file in `upstream/` is edited. How the behaviour differs from upstream:
     all of it without a clock lock, on a local anchor. The AirPlay 2 initial SETUP starts PTP when
     it is not running (`tools/tests/test_airplay_setup.py`).
 
+20. **The binary /info carries any name** (`port/bplist_builder.c`). Upstream writes the device
+    name as an ASCII string object (marker 0x5X) whatever it holds. The name is the owner's own
+    text ([NETWORK.md](../../docs/NETWORK.md), "Device name and mDNS"), and in Cyrillic it made an
+    object CoreFoundation reads as ASCII, so the plist was not valid. A name with a byte over 0x7F
+    is written as UTF-16 big-endian (marker 0x6X, counted in code units, surrogate pairs above
+    U+FFFF, U+FFFD for a byte that starts no well-formed UTF-8 sequence); an ASCII name is written
+    as before (`tools/tests/test_airplay_mode.py`).
+
 ## Updating
 
 Clone upstream at the new commit, compare it with `upstream/` file by file, carry the changes over,
