@@ -484,6 +484,12 @@ void UiLvglModule::poll_inputs(uint32_t dt_ms) {
     if (encoder_ && encoder_->read(v)) pos = (int32_t)v;
     if (encoder_sw_ && encoder_sw_->read(v)) sw = (v > 0.5f);
 
+    // Asleep, the knob's gesture is a wake and nothing else (ui_shell_encoder): the detents that
+    // wake the panel are not handed on, and the press that wakes it gives neither a click nor a
+    // hold. Settled here, where the wake is: set_standby() below wakes the shell at once, so the
+    // screen lights on the press, and the shell's own guard would see an awake panel by the time
+    // the click comes with the release.
+    const bool asleep = standby_ && ui_;
     bool input = false;
     if (pos != last_encoder_pos_) {
         const int32_t delta = pos - last_encoder_pos_;
@@ -491,6 +497,7 @@ void UiLvglModule::poll_inputs(uint32_t dt_ms) {
         state_set("ui.encoder_pos", pos);
         changed = true;
         input = true;
+        if (!asleep) enc_ui_pos_ += delta;
         // With no screen there is no one to interpret the encoder, so keep the plain
         // behaviour: 2 % of volume per detent.
         if (!ui_ && state_get("audio.volume").has_value()) {
@@ -508,10 +515,12 @@ void UiLvglModule::poll_inputs(uint32_t dt_ms) {
         if (!sw_hold_fired_ && sw_held_ms_ >= 650) {
             sw_hold_fired_ = true;
             input = true;
-            portENTER_CRITICAL(&mux_);
-            snap_.enc_event = 2;
-            snap_.enc_event_seq++;
-            portEXIT_CRITICAL(&mux_);
+            if (!sw_wake_) {
+                portENTER_CRITICAL(&mux_);
+                snap_.enc_event = 2;
+                snap_.enc_event_seq++;
+                portEXIT_CRITICAL(&mux_);
+            }
         }
     }
     if (sw != last_encoder_sw_) {
@@ -519,8 +528,10 @@ void UiLvglModule::poll_inputs(uint32_t dt_ms) {
         state_set("ui.encoder_sw", sw);
         changed = true;
         input = true;
-        if (!sw) {                                  // released
-            if (!sw_hold_fired_) {
+        if (sw) {                                   // pressed
+            sw_wake_ = asleep;
+        } else {                                    // released
+            if (!sw_hold_fired_ && !sw_wake_) {
                 if (ui_) {
                     portENTER_CRITICAL(&mux_);
                     snap_.enc_event = 1;
@@ -532,6 +543,7 @@ void UiLvglModule::poll_inputs(uint32_t dt_ms) {
             }
             sw_held_ms_ = 0;
             sw_hold_fired_ = false;
+            sw_wake_ = false;
         }
     }
 
@@ -565,7 +577,7 @@ void UiLvglModule::poll_inputs(uint32_t dt_ms) {
 
     if (changed || clock_changed) {
         portENTER_CRITICAL(&mux_);
-        snap_.encoder_pos = pos;
+        snap_.encoder_pos = enc_ui_pos_;
         snap_.encoder_sw = sw;
         if (clock_changed) {
             strncpy(snap_.clock, clock_txt, sizeof(snap_.clock) - 1);

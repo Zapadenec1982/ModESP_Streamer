@@ -45,7 +45,7 @@ public:
         // main loop → LVGL
         char     clock[12] = "--:--:--";
         char     date[12]  = "--.--.----";
-        int32_t  encoder_pos = 0;
+        int32_t  encoder_pos = 0;       ///< detents handed to the UI: not the turn that woke the panel
         bool     encoder_sw  = false;
         int32_t  volume      = -1;      ///< audio.volume mirror, −1 = no audio core
         bool     mute        = false;
@@ -269,9 +269,11 @@ private:
     uint32_t last_touch_seq_   = 0;
     bool     last_touch_down_  = false;
     int32_t  last_backlight_   = -1;
+    int32_t  enc_ui_pos_       = 0;     ///< Snapshot::encoder_pos
     // encoder button: a long press opens the quick menu, a short one is a click
     uint32_t sw_held_ms_   = 0;
     bool     sw_hold_fired_ = false;
+    bool     sw_wake_       = false;    ///< this press woke the panel: no click, no hold
     // auto-standby
     uint32_t idle_ms_      = 0;
     bool     standby_      = false;

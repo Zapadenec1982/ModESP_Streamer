@@ -304,7 +304,8 @@ every page, over sheets, lists and dialogs (`ui_shell_encoder`):
   (`ui_now_play_pause`);
 - a 650 ms hold — the menu (open/close), fires while the finger is still down; over a pick list, the
   "Sound" sheet or a dialog it does nothing;
-- in standby, a rotation or a press wakes the screen.
+- in standby, a rotation or a press only wakes the screen: the volume does not move, play/pause and
+  the menu do not fire.
 
 Selection on the glass is by touch only.
 
