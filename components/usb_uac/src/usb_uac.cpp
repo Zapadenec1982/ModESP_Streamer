@@ -87,6 +87,7 @@ void producer_task(void*) {
     uint32_t gen_seen = ~0u;
     uint8_t  alt = 0, fb = 0;
     uint32_t rate = 0;
+    bool     wanted = false;        // USB was the output on the last pass
     Phase    phase = Phase::idle;
     uint32_t gen = 0;               // the ring generation we write under
     uint32_t flush_gen = 0;
@@ -135,8 +136,14 @@ void producer_task(void*) {
         }
 
         // ── The ring: ours while USB is the output ────────────────────────────────────────────
+        // Taken from whoever holds it when USB becomes the output, and after that only from
+        // nobody. s_output falls when usb_audio's on_update sees audio.source move on, later in
+        // the main-loop pass than the producers' own modules; a producer that claimed in between
+        // — the card, on a tap in the web — had the ring taken back within a millisecond,
+        // cancelled its track and stayed idle, silent under its own source.
         const bool want = s_output.load(std::memory_order_acquire) && ring.capacity() > 0;
-        if (want && ring.owner() != PcmRing::OWNER_USB) {
+        const PcmRing::Owner holder = ring.owner();
+        if (want && holder != PcmRing::OWNER_USB && (!wanted || holder == PcmRing::OWNER_NONE)) {
             // Fade whatever another producer queued instead of cutting it (pcm_ring.h).
             audio_core::claim_after_fade(ring, PcmRing::OWNER_USB, nap);
             gen = ring.generation();
@@ -144,11 +151,12 @@ void producer_task(void*) {
             ring.set_eos(PcmRing::OWNER_USB, gen, alt == 0);
             need_rate = alt != 0;
             phase = Phase::idle;
-        } else if (!want && ring.owner() == PcmRing::OWNER_USB) {
+        } else if (!want && holder == PcmRing::OWNER_USB) {
             ring.release(PcmRing::OWNER_USB);
-            phase = Phase::idle;
         }
+        wanted = want;
         const bool mine = want && ring.owner() == PcmRing::OWNER_USB;
+        if (!mine) phase = Phase::idle;
         if (mine && ring.generation() != gen && phase != Phase::flush) {
             gen = ring.generation();   // the consumer reset the ring under us (a flush of its own)
         }
