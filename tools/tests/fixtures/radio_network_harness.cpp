@@ -52,8 +52,10 @@ std::string last_request;
 int esp_transport_write(int,const char* d,int n,int){last_request.assign(d,n);return n;}
 int esp_transport_read(int,char* out,int cap,int){int n=std::min<size_t>(std::min<size_t>(cap,max_read),response.size()-transport_at);memcpy(out,response.data()+transport_at,n);transport_at+=n;return n;}
 void http_close(){s.state.store(ST_CONNECTING);s.tr=0;}
+void close_stream(){http_close();}
+int claims=0;bool paused=false;   // what the radio did to the ring
 namespace audio_core {
- struct PcmRing {enum Owner {OWNER_RADIO=2}; bool claim(Owner){return true;} void set_paused(bool){};
+ struct PcmRing {enum Owner {OWNER_RADIO=2}; bool claim(Owner){++claims;return true;} void set_paused(bool on){paused=on;};
    bool set_eos(Owner,uint32_t,bool){return true;} bool request_flush(Owner,uint32_t){return true;}
    bool flush_pending(){return false;} bool reset(Owner,uint32_t){return true;}
    Owner owner(){return OWNER_RADIO;} uint32_t generation(){return 0;}};
@@ -246,6 +248,14 @@ int main(){
  s.station.store(1);s.tuned.store(0);s.state.store(ST_PLAYING);
  start_station(1);
  if(tunes!=1 || s.tuned.load()!=1) return 1; // requested station is not the tuned station
+ // Chosen with no network: the ring is the radio's and a push's one_shot is gone before the
+ // wait, since the reconnect path only tunes; only the connect waits (deep review 2026-10-31).
+ s.net_up.store(false);s.one_shot.store(true);s.retry=3;s.tr=1;paused=true;claims=0;tunes=0;
+ s.state.store(ST_PLAYING);
+ start_station(0);
+ if(s.state.load()!=ST_RECONNECTING || s.one_shot.load() || s.retry || claims!=1 || paused ||
+    s.tr || tunes || s.tuned.load()!=0) return 4;
+ s.net_up.store(true);
 
  response="HTTP/1.1 200 OK\r\nContent-Type: audio/mpeg\r\nContent-Length: 10000\r\n\r\n";
  response.append(4080-response.size(),'Q');

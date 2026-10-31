@@ -1516,14 +1516,6 @@ void start_station(int idx) {
     }
     // A server left for being too slow is left for that station only (stream_watch.h).
     s.avoid_ip.store(0, std::memory_order_release);
-    if (!s.net_up.load(std::memory_order_acquire)) {
-        // Asked for before the network is up: remember what was wanted and let the
-        // reconnect path bring it in as soon as there is a route.
-        s.station.store(idx, std::memory_order_release);
-        s.tuned.store(idx, std::memory_order_release);
-        s.state.store(ST_RECONNECTING, std::memory_order_release);
-        return;
-    }
     s.station.store(idx, std::memory_order_release);
     s.tuned.store(idx, std::memory_order_release);
     s.one_shot.store(false, std::memory_order_release);
@@ -1538,6 +1530,16 @@ void start_station(int idx) {
     s.pcm_generation = audio_core::pcm_ring().generation();
     audio_core::pcm_ring().set_paused(false);
     audio_core::pcm_ring().set_eos(audio_core::PcmRing::OWNER_RADIO, s.pcm_generation, false);
+    if (!s.net_up.load(std::memory_order_acquire)) {
+        // Asked for before the network is up: only the connecting waits for a route, and
+        // the reconnect path does it as soon as there is one. Everything above must happen
+        // now — that path only tunes, and a station tuned into a ring the radio had not
+        // claimed played silence while it said "playing", and a push's one_shot left set
+        // stopped it outright.
+        close_stream();
+        s.state.store(ST_RECONNECTING, std::memory_order_release);
+        return;
+    }
     if (!tune(url)) {
         s.state.store(ST_RECONNECTING, std::memory_order_release);
     }
