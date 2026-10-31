@@ -1188,8 +1188,10 @@ bool PlayerModule::on_init() {
     state_set("player.dur_s", (int32_t)0);
     state_set("player.index", (int32_t)0);
     state_set("player.count", (int32_t)0);
-    state_set("player.repeat", (int32_t)0);
-    state_set("player.shuffle", false);
+    // What PersistService restored, not the defaults: both keys are persisted, and writing
+    // them here undid repeat and shuffle at every boot. on_update range-checks the repeat.
+    state_set("player.repeat", read_int("player.repeat", 0));
+    state_set("player.shuffle", read_bool("player.shuffle", false));
     state_set("player.seek_s", (int32_t)-1);
 
     if (!player_core::playlist().init()) {
