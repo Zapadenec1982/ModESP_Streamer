@@ -875,7 +875,8 @@ static void handle_post(int socket, rtsp_conn_t *conn,
 // The decode buffer and every PCM ring slot hold AUDIO_MAX_CHANNELS 16-bit
 // channels, the decode buffer MAX_SAMPLES_PER_FRAME frames of them
 // (audio_buffer.h). An SDP outside that is refused before anything is set: the
-// decoder would be handed a capacity the buffer behind it does not have.
+// decoder would be handed a capacity the buffer behind it does not have. So is
+// a rate outside AIRPLAY_RATE_MIN_HZ..AIRPLAY_RATE_MAX_HZ (airplay2_port.h).
 static bool parse_sdp(rtsp_conn_t *conn, const char *sdp, size_t len) {
   (void)len;
 
@@ -903,6 +904,11 @@ static bool parse_sdp(rtsp_conn_t *conn, const char *sdp, size_t len) {
         ESP_LOGW(TAG, "SDP refused: rtpmap has %d channels", ch);
         return false;
       }
+      if (fields >= 1 &&
+          (sr < AIRPLAY_RATE_MIN_HZ || sr > AIRPLAY_RATE_MAX_HZ)) {
+        ESP_LOGW(TAG, "SDP refused: rtpmap rate %d Hz", sr);
+        return false;
+      }
       if (fields >= 1) {
         if (sr > 0) {
           format.sample_rate = sr;
@@ -928,6 +934,11 @@ static bool parse_sdp(rtsp_conn_t *conn, const char *sdp, size_t len) {
          frame_len > MAX_SAMPLES_PER_FRAME || bit_depth != 16)) {
       ESP_LOGW(TAG, "SDP refused: fmtp frame %u, %u-bit, %u channels",
                frame_len, bit_depth, num_ch);
+      return false;
+    }
+    if (matched >= 11 &&
+        (rate < AIRPLAY_RATE_MIN_HZ || rate > AIRPLAY_RATE_MAX_HZ)) {
+      ESP_LOGW(TAG, "SDP refused: fmtp rate %u Hz", rate);
       return false;
     }
     if (matched >= 7) {
@@ -1142,6 +1153,16 @@ static void handle_setup(int socket, rtsp_conn_t *conn,
                 conn->client_control_port = (uint16_t)kv[k].int_value;
               }
             }
+          }
+
+          // As ANNOUNCE refuses it (parse_sdp), before the receiver's format.
+          if (sample_rate < AIRPLAY_RATE_MIN_HZ ||
+              sample_rate > AIRPLAY_RATE_MAX_HZ) {
+            ESP_LOGW(TAG, "SETUP refused: stream at %lld Hz",
+                     (long long)sample_rate);
+            rtsp_send_response(socket, conn, 400, "Bad Request", req->cseq,
+                               NULL, NULL, 0);
+            return;
           }
 
           // Use codec registry to configure audio format

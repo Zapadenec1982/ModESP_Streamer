@@ -215,6 +215,15 @@ No file in `upstream/` is edited. How the behaviour differs from upstream:
     An `ekey` longer than a 32-byte key and its tag (48 bytes) is not decrypted: like one that does
     not decrypt, it leaves the session's derived key (`tools/tests/test_airplay_setup.py`).
 
+17. **A stream's rate is held to 8–192 kHz** (`port/airplay2_port.h`, `port/rtsp_handlers.c`,
+    `port/audio_output_ring.cpp`). Upstream takes the rate from ANNOUNCE's SDP (rtpmap, ALAC fmtp)
+    and from an AirPlay 2 stream's `sr` as sent, and the timing engine and the output divide by
+    it. While another source plays, the output paces its reads by the rate's frame period
+    (`pace_unheard`); a rate in the hundreds of MHz rounds that period to nothing, `ap_play`
+    never sleeps, and the task watchdog restarts the panel. A rate outside 8–192 kHz gets 400:
+    ANNOUNCE changes nothing, SETUP stops before the receiver's format is set. The output ignores
+    such a rate as well (`tools/tests/test_airplay_sdp.py`, `tools/tests/test_airplay_setup.py`).
+
 ## Updating
 
 Clone upstream at the new commit, compare it with `upstream/` file by file, carry the changes over,

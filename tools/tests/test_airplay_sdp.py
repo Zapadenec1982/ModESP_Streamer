@@ -2,7 +2,8 @@
 
 The decode buffer and the PCM ring slots hold AUDIO_MAX_CHANNELS 16-bit channels of at
 most MAX_SAMPLES_PER_FRAME frames (audio_buffer.h). An SDP describing more must be
-refused before the receiver is reconfigured.
+refused before the receiver is reconfigured, and so must a rate outside
+AIRPLAY_RATE_MIN_HZ..AIRPLAY_RATE_MAX_HZ (port/airplay2_port.h).
 Direct run: python tools/tests/test_airplay_sdp.py
 """
 import os
@@ -26,8 +27,12 @@ def production_types():
     request = message[message.index("typedef struct {\n  char method[32];"):
                       message.index("} rtsp_request_t;") + len("} rtsp_request_t;")]
     limits = (UP / "audio/audio_buffer.h").read_text(encoding="utf-8")
-    defines = "\n".join(re.search(rf"^#define {name}\s+\d+$", limits, re.MULTILINE).group(0)
-                        for name in ("AUDIO_MAX_CHANNELS", "MAX_SAMPLES_PER_FRAME"))
+    rates = (PORT / "airplay2_port.h").read_text(encoding="utf-8")
+    defines = "\n".join(re.search(rf"^#define {name}\s+\d+$", text, re.MULTILINE).group(0)
+                        for text, name in ((limits, "AUDIO_MAX_CHANNELS"),
+                                           (limits, "MAX_SAMPLES_PER_FRAME"),
+                                           (rates, "AIRPLAY_RATE_MIN_HZ"),
+                                           (rates, "AIRPLAY_RATE_MAX_HZ")))
     return defines + "\n" + formats + "\n" + request
 
 
@@ -173,6 +178,17 @@ int main(int argc, char **argv) {
         assert(status == 455 && formats == 0 && encryptions == 0);
         assert(conn.protocol_version == 0 && conn.codec[0] == 0);
         break;
+    case 9: /* The timing engine and the output's pace divide by the rate: 8..192 kHz. */
+        refused("a=rtpmap:96 L16/400000000/2\r\n");
+        refused("a=rtpmap:96 L16/0/2\r\n");
+        refused("a=rtpmap:96 AppleLossless\r\n"
+                "a=fmtp:96 352 0 16 40 10 14 2 255 0 0 4000000000\r\n");
+        refused("a=rtpmap:96 AppleLossless\r\n"
+                "a=fmtp:96 352 0 16 40 10 14 2 255 0 0 7999\r\n");
+        announce("a=rtpmap:96 AppleLossless\r\n"
+                 "a=fmtp:96 352 0 16 40 10 14 2 255 0 0 48000\r\n");
+        assert(status == 200 && formats == 1 && last_format.sample_rate == 48000);
+        break;
     default: return 99;
     }
     return 0;
@@ -218,6 +234,7 @@ class AirplaySdpTests(unittest.TestCase):
     def test_fmtp_other_than_16_bit_is_refused(self): self.run_case(6)
     def test_aac_fmtp_is_not_parsed_as_alac(self): self.run_case(7)
     def test_announce_during_a_stream_is_refused(self): self.run_case(8)
+    def test_rate_outside_the_supported_range_is_refused(self): self.run_case(9)
 
 
 if __name__ == "__main__":

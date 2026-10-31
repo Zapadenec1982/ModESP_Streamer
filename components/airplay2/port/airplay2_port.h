@@ -28,6 +28,13 @@ bool airplay2_port_legacy(void);
 /// port/mdns_airplay.c: the counterpart of upstream's mdns_airplay_init(), which it lacks.
 void mdns_airplay_remove(void);
 
+/// The sample rates a stream may declare: in ANNOUNCE's SDP (rtpmap, ALAC fmtp) or as an
+/// AirPlay 2 stream's `sr` (SETUP). Senders use 44.1 and 48 kHz. The timing engine and the
+/// output's pace (port/audio_output_ring.cpp) divide by the rate, so one outside these is
+/// refused before it reaches them.
+#define AIRPLAY_RATE_MIN_HZ 8000
+#define AIRPLAY_RATE_MAX_HZ 192000
+
 /// Whether covers were asked for (airplay2_config_t::artwork), and the way in for one
 /// (port/artwork.c): `len` 0 is "this track has none".
 bool airplay2_port_artwork_wanted(void);

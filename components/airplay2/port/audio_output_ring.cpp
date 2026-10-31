@@ -49,6 +49,7 @@
 
 extern "C" {
 #include "airplay2.h"
+#include "airplay2_port.h"
 #include "audio_output.h"
 #include "audio_receiver.h"
 }
@@ -323,7 +324,11 @@ extern "C" void audio_output_flush(void) {
 }
 
 extern "C" void audio_output_set_source_rate(int rate) {
-    if (rate > 0) g.src_rate.store((uint32_t)rate, std::memory_order_release);
+    // pace_unheard() steps by this rate's frame period. A rate that rounds it to nothing never
+    // lets ap_play sleep, and ap_play outranks IDLE on core 1: the task watchdog restarts the
+    // panel. The handlers refuse such a stream (airplay2_port.h); this holds the pace anyway.
+    if (rate >= AIRPLAY_RATE_MIN_HZ && rate <= AIRPLAY_RATE_MAX_HZ)
+        g.src_rate.store((uint32_t)rate, std::memory_order_release);
 }
 
 extern "C" uint32_t audio_output_get_hardware_latency_us(void) {

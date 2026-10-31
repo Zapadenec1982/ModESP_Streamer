@@ -5,7 +5,8 @@ with, unlocked. An AirPlay 1 SETUP (a Transport header, no streams) calls it, so
 SETUP has made the stream active, until TEARDOWN, another is refused before anything is
 changed, as ANNOUNCE is (test_airplay_sdp.py).
 An ekey is decrypted into a 32-byte key; libsodium writes all of its plaintext, so one that
-would not fit is not handed to it.
+would not fit is not handed to it. An AirPlay 2 stream's sr outside
+AIRPLAY_RATE_MIN_HZ..AIRPLAY_RATE_MAX_HZ is refused before the receiver's format is set.
 Direct run: python tools/tests/test_airplay_setup.py
 """
 import os
@@ -73,48 +74,62 @@ static void unreached(const char *what) {
 static int formats, encryptions, ntp_starts, port_allocs, ptp_stops, stream_types;
 static int transports, event_sockets, replies, status, decrypts, derives;
 static size_t ekey_sent;   /* the ekey the sender's plist carries; 0 = none */
+static bool streams;       /* an AirPlay 2 stream SETUP: one realtime stream... */
+static int64_t stream_sr;  /* ...at this sr */
 static audio_encrypt_t last_encrypt;
+static audio_format_t last_format;
+static void stream_setup_only(const char *what) { if (!streams) unreached(what); }
 static void reset_counts(void) {
     formats = encryptions = ntp_starts = port_allocs = ptp_stops = stream_types = 0;
     transports = event_sockets = replies = status = decrypts = derives = 0;
 }
 bool bplist_get_streams_count(const uint8_t *p, size_t n, size_t *count) {
-    (void)p; (void)n; (void)count; return false;   /* an initial SETUP: no streams */
+    (void)p; (void)n;
+    if (!streams) return false;   /* an initial SETUP: no streams */
+    *count = 1; return true;
 }
 bool bplist_get_stream_info(const uint8_t *p, size_t n, size_t i, int64_t *type,
                             size_t *ekey, size_t *eiv, size_t *shk) {
-    (void)p; (void)n; (void)i; (void)type; (void)ekey; (void)eiv; (void)shk;
-    unreached("bplist_get_stream_info"); return false;
+    (void)p; (void)n; stream_setup_only("bplist_get_stream_info");
+    assert(i == 0); *type = AUDIO_STREAM_REALTIME; *ekey = *eiv = *shk = 0; return true;
 }
 bool bplist_get_stream_kv_info(const uint8_t *p, size_t n, size_t i, bplist_kv_info_t *out,
                                size_t cap, size_t *count) {
-    (void)p; (void)n; (void)i; (void)out; (void)cap; (void)count;
-    unreached("bplist_get_stream_kv_info"); return false;
+    (void)p; (void)n; stream_setup_only("bplist_get_stream_kv_info");
+    static const char *const keys[] = {"ct", "sr", "spf"};
+    const int64_t values[] = {2, stream_sr, 352};
+    assert(i == 0 && cap >= 3);
+    for (size_t k = 0; k < 3; ++k) {
+        memset(&out[k], 0, sizeof(out[k]));
+        strcpy(out[k].key, keys[k]);
+        out[k].value_type = BPLIST_VALUE_INT; out[k].int_value = values[k];
+    }
+    *count = 3; return true;
 }
 bool bplist_find_stream_crypto(const uint8_t *p, size_t n, int64_t type, uint8_t *ekey,
                                size_t ekey_cap, size_t *ekey_len, uint8_t *eiv,
                                size_t eiv_cap, size_t *eiv_len, uint8_t *shk,
                                size_t shk_cap, size_t *shk_len) {
     (void)p; (void)n; (void)type; (void)eiv; (void)eiv_cap; (void)shk; (void)shk_cap;
-    if (!ekey_sent) unreached("bplist_find_stream_crypto");
+    if (!ekey_sent) stream_setup_only("bplist_find_stream_crypto");
     /* As the parser does: cut to the caller's buffer (a 72-byte ekey arrives as 64). */
     *ekey_len = ekey_sent < ekey_cap ? ekey_sent : ekey_cap;
     memset(ekey, 0x77, *ekey_len);
     *eiv_len = *shk_len = 0;
-    return true;
+    return *ekey_len > 0;
 }
 bool bplist_find_data_deep(const uint8_t *p, size_t n, const char *key, uint8_t *out,
                            size_t cap, size_t *len) {
     (void)p; (void)n; (void)key; (void)out; (void)cap; (void)len;
-    unreached("bplist_find_data_deep"); return false;
+    stream_setup_only("bplist_find_data_deep"); return false;
 }
 size_t bplist_build_initial_setup(uint8_t *out, size_t cap, uint16_t port) {
     (void)port; assert(cap >= 8); memcpy(out, "bplist00", 8); return 8;
 }
 size_t bplist_build_stream_setup(uint8_t *out, size_t cap, int64_t type, uint16_t data,
                                  uint16_t control, uint32_t size) {
-    (void)out; (void)cap; (void)type; (void)data; (void)control; (void)size;
-    unreached("bplist_build_stream_setup"); return 0;
+    (void)data; (void)control; (void)size; stream_setup_only("bplist_build_stream_setup");
+    assert(type == AUDIO_STREAM_REALTIME && cap >= 8); memcpy(out, "bplist00", 8); return 8;
 }
 #define crypto_aead_chacha20poly1305_ietf_ABYTES 16U
 static int crypto_aead_chacha20poly1305_ietf_decrypt(
@@ -134,12 +149,12 @@ static void audio_receiver_set_stream_type(audio_stream_type_t type) {
     assert(type == AUDIO_STREAM_REALTIME); ++stream_types;
 }
 static bool rtsp_codec_configure(int64_t type, audio_format_t *fmt, int64_t sr, int64_t spf) {
-    assert(type == 2 && sr == 44100 && spf == 352);
-    strcpy(fmt->codec, "ALAC"); fmt->sample_rate = 44100; fmt->channels = 2;
+    assert(type == 2 && spf == 352 && (streams || sr == 44100));
+    strcpy(fmt->codec, "ALAC"); fmt->sample_rate = (int)sr; fmt->channels = 2;
     return true;
 }
 static void audio_receiver_set_format(const audio_format_t *format) {
-    assert(!strcmp(format->codec, "ALAC")); ++formats;
+    assert(!strcmp(format->codec, "ALAC")); last_format = *format; ++formats;
 }
 static void audio_receiver_set_encryption(const audio_encrypt_t *encrypt) {
     last_encrypt = *encrypt; ++encryptions;
@@ -169,7 +184,7 @@ static void ensure_stream_ports(rtsp_conn_t *conn, bool buffered) {
 }
 static void ptp_clock_stop(void) { ++ptp_stops; }
 static bool audio_stream_uses_buffer(audio_stream_type_t type) {
-    (void)type; unreached("audio_stream_uses_buffer"); return false;
+    stream_setup_only("audio_stream_uses_buffer"); return type == AUDIO_STREAM_BUFFERED;
 }
 static esp_err_t audio_receiver_start_buffered(uint16_t port) {
     (void)port; unreached("audio_receiver_start_buffered"); return ESP_OK;
@@ -179,21 +194,22 @@ static uint16_t audio_receiver_get_buffered_port(void) {
 }
 static bool start_audio_receiver_or_fail(int socket, rtsp_conn_t *conn,
                                          const rtsp_request_t *req, int64_t type) {
-    (void)socket; (void)conn; (void)req; (void)type;
-    unreached("start_audio_receiver_or_fail"); return false;
+    (void)socket; (void)conn; (void)req; stream_setup_only("start_audio_receiver_or_fail");
+    assert(type == AUDIO_STREAM_REALTIME); return true;
 }
 static void audio_receiver_set_playout_latency_samples(uint32_t n) {
-    (void)n; unreached("audio_receiver_set_playout_latency_samples");
+    stream_setup_only("audio_receiver_set_playout_latency_samples");
+    assert(n == AIRPLAY_RT_LATENCY_DEFAULT_SAMPLES);
 }
 static void audio_receiver_stop(void) { unreached("audio_receiver_stop"); }
 static void audio_receiver_set_client_control(uint32_t ip, uint16_t port) {
     (void)ip; (void)port; unreached("audio_receiver_set_client_control");
 }
 static void audio_receiver_set_playing(bool playing) {
-    (void)playing; unreached("audio_receiver_set_playing");
+    stream_setup_only("audio_receiver_set_playing"); assert(playing);
 }
 static void rtsp_events_emit(rtsp_event_t event, const rtsp_event_data_t *data) {
-    (void)event; (void)data; unreached("rtsp_events_emit");
+    (void)data; stream_setup_only("rtsp_events_emit"); assert(event == RTSP_EVENT_PLAYING);
 }
 '''
 
@@ -277,6 +293,24 @@ int main(int argc, char **argv) {
             assert(last_encrypt.key_len == 32 && last_encrypt.key[0] == 0x33);
         }
         break;
+    case 6: { /* A stream at a rate the timing engine and the output's pace cannot divide
+                 by is refused, before the receiver's format is set. */
+        const int64_t refused[] = {400000000, 192001, 7999, 0, -44100};
+        streams = true;
+        for (size_t r = 0; r < sizeof(refused) / sizeof(refused[0]); ++r) {
+            stream_sr = refused[r];
+            setup(AP2_SETUP, AP2_PLIST);
+            assert(status == 400 && formats == 0 && port_allocs == 0 && event_sockets == 0);
+        }
+        break;
+    }
+    case 7: /* 48 kHz is configured and the stream started. */
+        streams = true;
+        stream_sr = 48000;
+        setup(AP2_SETUP, AP2_PLIST);
+        assert(status == 200 && formats == 1 && last_format.sample_rate == 48000);
+        assert(port_allocs == 1 && conn.stream_active && conn.protocol_version == 2);
+        break;
     default: return 99;
     }
     return 0;
@@ -321,6 +355,8 @@ class AirplaySetupTests(unittest.TestCase):
     def test_airplay2_initial_setup_is_not_gated(self): self.run_case(3)
     def test_ekey_that_fits_the_key_is_decrypted(self): self.run_case(4)
     def test_ekey_longer_than_a_key_is_never_decrypted(self): self.run_case(5)
+    def test_stream_rate_outside_the_range_is_refused(self): self.run_case(6)
+    def test_stream_at_48_khz_is_configured(self): self.run_case(7)
 
 
 if __name__ == "__main__":
