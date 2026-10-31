@@ -126,11 +126,13 @@ void host_of(const char* url, char* out, size_t n) {
 
 // ── the list ──
 
+/// The row's texts stay static: VList reads them after this returns, and a station with no name
+/// is titled by its host.
 void fill(int idx, m3w::VItem& it, void*) {
     static radio_core::Station st;
     static char sub[96];
+    static char host[64];
     if (!radio_core::stations().at(idx, st)) { it.title = "—"; return; }
-    char host[64];
     host_of(st.url, host, sizeof(host));
     int slot = -1;
     for (int i = 0; i < N_PRE && slot < 0; i++) if (radio_core::stations().preset(i) == idx) slot = i;
