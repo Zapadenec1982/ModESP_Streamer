@@ -313,22 +313,6 @@ void AudioModule::on_bind(modesp::DriverManager& drivers,
 // Init: ports, EQ file, ASRC, tasks
 // ═══════════════════════════════════════════════════════════════
 
-bool AudioModule::load_eq_file(audio_core::EqBand* bands, int& count) {
-    count = 0;
-    audio_core::EqConfig cfg;
-    // Through UserStore: the EQ someone tuned lives in /userdata since 22.09.2026, and the
-    // image's /data/eq.json is the factory-flat fallback a panel boots with before anyone
-    // has touched a slider (plan item 11.1).
-    char path[160];
-    modesp::UserStore::read_path("eq.json", path, sizeof(path));
-    if (!audio_core::eq_load(path, cfg)) {
-        ESP_LOGW(TAG, "%s missing or unreadable — EQ flat", path);
-        return false;
-    }
-    take_eq(cfg, bands, count);
-    return true;
-}
-
 void AudioModule::take_eq(const audio_core::EqConfig& cfg, audio_core::EqBand* bands, int& count) {
     snprintf(out_mode_, sizeof(out_mode_), "%s", cfg.mode);
     if (strcmp(out_mode_, "2.0") != 0) {
@@ -1475,11 +1459,12 @@ void AudioModule::adopt_clock(uint32_t hz, uint16_t mclk_mult) {
     retime();                          // and this task's own: the fades and the cushion
     publish_consumer();                // the limiter's look-ahead is a number of frames: it moved
     {
+        // The newest set, if the bus gives it. On a miss set_sample_rate() above has already
+        // designed the bands the chain holds for this rate, and the EQ_RELOAD behind the
+        // publish that caused the miss brings the new ones.
         audio_core::EqBand bands[audio_core::MAX_BANDS];
         int count = 0;
-        if (audio_core::eq_bus().read(bands, count) || load_eq_file(bands, count)) {
-            dsp_.set_bands(bands, count);
-        }
+        if (audio_core::eq_bus().read(bands, count)) dsp_.set_bands(bands, count);
         dsp_.set_pre_gain_db(eq_trim_db_);
     }
     dsp_.reset();
@@ -2185,14 +2170,11 @@ void AudioModule::task_loop() {
             case CmdType::EQ_RELOAD: {
                 audio_core::EqBand bands[audio_core::MAX_BANDS];
                 int count = 0;
-                // From memory once the UI has published a set; from the file only when
-                // nothing has been edited yet this boot. Never a filesystem read here.
-                const bool from_bus = audio_core::eq_bus().read(bands, count);
-                if (!from_bus && !load_eq_file(bands, count)) break;  // keep what is designed
-                dsp_.set_bands(bands, count);
-                // The section trim comes with the file; the bus carries bands only, so an
-                // in-memory edit leaves whatever the file said.
-                if (!from_bus) dsp_.set_pre_gain_db(eq_trim_db_);
+                // From memory, never a filesystem read here: the bus has held the document's
+                // bands since on_init. A miss means the main loop is publishing a newer set at
+                // this moment, and that set's own EQ_RELOAD follows it (own_eq); until then
+                // the chain keeps the bands it has (eq_config.h).
+                if (audio_core::eq_bus().read(bands, count)) dsp_.set_bands(bands, count);
                 // What the filters were actually given, sampled where it can be heard.
                 // "The EQ feels weak" needs to be answerable with a number, and the number
                 // has to come from the audio side rather than from the screen that drew it.

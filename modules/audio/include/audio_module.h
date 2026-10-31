@@ -141,7 +141,6 @@ private:
         uint32_t bt_primes = 0, bt_format_revision = 0;
     };
 
-    bool load_eq_file(audio_core::EqBand* bands, int& count);
     /// Section 0 of `cfg` as the chain takes it: its bands, the trim, the output mode.
     void take_eq(const audio_core::EqConfig& cfg, audio_core::EqBand* bands, int& count);
     /// Main task: hand an edited EQ on and write it back when that is not in the way.
