@@ -837,6 +837,7 @@ bool AudioModule::on_init() {
     if (bt_ && xTaskCreatePinnedToCore(bt_rx_task_entry, "audio_bt", 4096, this, 23, &bt_task_, 1) != pdPASS) {
         ESP_LOGW(TAG, "BT reader task not created — BT source unavailable");
         bt_ = nullptr;
+        source_gone(SRC_BT);   // audio.sources offered it above
     }
 
     ESP_LOGI(TAG, "Initialized: main %lu Hz %u-bit%s%s, BT %s, amp %s, heap DMA %u",
@@ -875,11 +876,46 @@ void AudioModule::leveler_schedule(uint32_t dt_ms) {
     state_set("audio.leveler", r == 1);
 }
 
+bool AudioModule::source_on_offer(int32_t src) {
+    switch (src) {
+    case SRC_AUX:
+    case SRC_BT:      return (read_int("audio.sources", 0) & (1 << src)) != 0;   // source_gone() clears BT
+    case SRC_AIRPLAY:
+    case SRC_USB:     return (ring_sources_offered() & (1 << src)) != 0;
+    default:          return true;      // off, the tone, the card and the radio
+    }
+}
+
+void AudioModule::source_gone(int32_t src) {
+    gone_source_.store((src << 8) | (pend_source_ >= 0 ? pend_source_ : source_), std::memory_order_release);
+}
+
 void AudioModule::on_update(uint32_t dt_ms) {
     own_eq();
     if (!main_ || !run_) return;
 
-    const int32_t src  = read_int("audio.source", SRC_OFF);
+    // Bluetooth whose port or reader task would not start after audio.sources offered it: the
+    // bit goes, and a request for it gives way to what the task plays.
+    const int32_t gone = gone_source_.exchange(-1, std::memory_order_acquire);
+    if (gone >= 0) {
+        state_set("audio.sources", read_int("audio.sources", 0) & ~(1 << (gone >> 8)));
+        if (read_int("audio.source", SRC_OFF) == gone >> 8) {
+            last_source_ = gone & 0xFF;
+            state_set("audio.source", last_source_);
+        }
+    }
+    int32_t src = read_int("audio.source", SRC_OFF);
+    // A source this board cannot play goes back to the one that plays rather than on to the
+    // task, which would refuse it and play on while every producer read audio.source as no
+    // longer its own and stopped: silence, with the refused number saved. The panel and the web
+    // offer only what audio.sources has; the API and MQTT take any 0…7.
+    if (src != last_source_ && !source_on_offer(src)) {
+        const int32_t keep = last_source_ >= 0 ? last_source_ : (int32_t)SRC_OFF;
+        ESP_LOGW(TAG, "source %s is not on offer — staying %s", source_name(src), source_name(keep));
+        if (src == pending_source_) pending_source_ = -1;   // judged here, not again below
+        state_set("audio.source", keep);
+        src = keep;
+    }
     int32_t       vol  = read_int("audio.volume", 30);
     const int32_t tone = read_int("audio.tone_hz", 1000);
     const bool    mute = read_bool("audio.mute", false);
@@ -2020,6 +2056,7 @@ void AudioModule::task_loop() {
     if (bt_ && !bt_->start()) {
         ESP_LOGW(TAG, "port_bt start failed — BT source unavailable");
         bt_ = nullptr;
+        source_gone(SRC_BT);
     }
     main_->set_line_input(source_ == SRC_AUX);
     // The clocks run from here on; the converter gets its boot settle from this moment.
@@ -2080,6 +2117,7 @@ void AudioModule::task_loop() {
                 // is playing withdraws a change still waiting, and the gates simply reopen.
                 if (c.value == source_) pend_source_ = -1;
                 else if (!source_refused(c.value)) pend_source_ = c.value;
+                else source_gone(c.value);   // on offer when on_update sent it
                 break;
             case CmdType::MUTE:      muted_ = (c.value != 0); dsp_.set_mute(muted_); break;
             case CmdType::EQ_ENABLE: dsp_.set_eq_enabled(c.value != 0); break;

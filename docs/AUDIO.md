@@ -155,10 +155,10 @@ interleaved stereo float between the producers and the audio task; lock-free on 
   The tone is not in the mask, but `audio.source = 1` always works.
 - A saved source that is not in the mask becomes `off` at start; a ring source whose owner has not
   initialised yet waits for the ring.
-- An unavailable source is refused before the transition begins — what is playing does not go
-  quiet. Switching goes through the gates: the old source plays until both gates are closed, and
-  only in silence does `apply_source()` switch the routes and reset the chain. Selecting the same
-  source again before the transition ends cancels it.
+- An unavailable source is refused before the transition begins: `audio.source` goes back to the
+  source that plays, and that does not go quiet. Switching goes through the gates: the old source
+  plays until both gates are closed, and only in silence does `apply_source()` switch the routes
+  and reset the chain. Selecting the same source again before the transition ends cancels it.
 - Who switches `audio.source` on their own: radio, DLNA, the player, AirPlay — when they are given
   something to play; USB — when the computer started playing and the panel did not (section "USB
   audio"). Bluetooth does not take the source on its own.

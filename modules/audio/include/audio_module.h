@@ -162,6 +162,11 @@ private:
     /// A source this board cannot play, said once in the log. Checked before the fade starts,
     /// so a refused source does not silence the one that is playing.
     bool source_refused(int32_t src);
+    /// Main loop: the same question before a request goes to the task at all.
+    bool source_on_offer(int32_t src);
+    /// Audio task (and on_init): `src` was offered in audio.sources and cannot be played after
+    /// all. on_update takes its bit back and gives a request for it up for the source that stays.
+    void source_gone(int32_t src);
     /// Everything the task counts in frames but means in milliseconds, at out_rate_.
     void retime();
     /// Bring the last frame a source delivered down to silence along the short tail, for a block
@@ -454,6 +459,8 @@ private:
     /// A persisted ring source that was not on offer at init because the ring's owner had
     /// not initialised yet; settled in the report loop once the ring exists. −1 = none.
     int32_t  pending_source_ = -1;
+    /// source_gone(): the source and the one the task stays on, gone << 8 | kept; −1 = none.
+    std::atomic<int32_t> gone_source_{-1};
     bool     last_mute_ = false, last_eq_ = true;
     bool     last_bt_clock_ = true;    ///< audio.bt_clock_follow as last sent to the task
     uint8_t  last_bt_path_  = 0;       ///< the last BT path decision reported (bt_path_)
