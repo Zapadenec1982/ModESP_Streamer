@@ -218,7 +218,8 @@ whole number goes without ".0". Transport:
   `bt.cmd` or `airplay.cmd`;
 - Bluetooth without a phone and AirPlay without a DACP remote (`airplay.remote`) — the buttons are
   inactive; Bluetooth without a phone shows "Turn on visibility" in place of the transport if new
-  phones cannot see the panel;
+  phones cannot see the panel (the satellite's radio or its visibility is off), and the button
+  turns both on;
 - tone, AUX, USB, output off — there is no transport.
 
 Seeking — the progress bar's knob under a finger moves the bar and the time; letting go writes

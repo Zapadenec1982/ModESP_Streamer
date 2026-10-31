@@ -22,11 +22,11 @@
  * shows for it can also be called up with the loudspeaker button (customer, 24.09.2026).
  *
  * Bluetooth with no phone is not a dead end: the line under «Телефон не підключено» says what a
- * phone will find — «видно як «MODEsp»» — or that new phones do not see the panel, and then the
- * transport, which has nobody to command, gives way to the one thing the panel can do about it:
- * «Увімкнути видимість» (an action, not a state; the customer,
- * 20.10.2026). The satellite cannot be asked to call a phone (LINK_PROTOCOL.md), so there is no
- * «connect».
+ * phone will find — «видно як «MODEsp»» — or that new phones do not see the panel (the satellite's
+ * radio or its visibility is off), and then the transport, which has nobody to command, gives way
+ * to the one thing the panel can do about it: «Увімкнути видимість», which turns both on (an
+ * action, not a state; the customer, 20.10.2026). The satellite cannot be asked to call a phone
+ * (LINK_PROTOCOL.md), so there is no «connect».
  *
  * The knob's press is this page's play button, from any page (ui_now_play_pause): the knob has
  * one job everywhere — a turn is the volume, a press plays and pauses (customer, 18.10.2026).
@@ -204,11 +204,12 @@ void list_cb(lv_event_t*) {
     else if (s.source == 5)        ui_shell_go("radio");
 }
 void src_cb(lv_event_t*)    { ui_shell_go("src"); }
-/// «Увімкнути видимість»: the satellite's other settings as they are (BT_CONFIG_SET is whole).
+/// «Увімкнути видимість»: the radio on as well — with it off the satellite is seen by no one
+/// (LINK_PROTOCOL.md, BT_CONFIG) — and its other settings as they are (BT_CONFIG_SET is whole).
 void vis_cb(lv_event_t*) {
     bt_settings::Config cfg;
     bt_settings::config(cfg);
-    if (cfg.known) bt_settings::request_config(cfg.radio, true, cfg.auto_reconnect, cfg.codecs_enabled);
+    if (cfg.known) bt_settings::request_config(true, true, cfg.auto_reconnect, cfg.codecs_enabled);
 }
 void vol_cb(lv_event_t*)    { ui_shell_show_volume(); }
 void sound_cb(lv_event_t*)  { ui_sound_open(); }
@@ -537,23 +538,25 @@ void set_backdrop(uint32_t rgb) {
     lv_obj_set_style_bg_opa(n.page, rgb && !n.plain ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
 }
 
-/// The satellite has told its settings and new phones cannot find it.
+/// The satellite has told its settings and new phones cannot find it: its radio is off, or it is
+/// not discoverable.
 bool bt_hidden() {
     bt_settings::Config cfg;
     bt_settings::config(cfg);
-    return cfg.known && !cfg.discoverable;
+    return cfg.known && (!cfg.radio || !cfg.discoverable);
 }
 
-/// Bluetooth with no phone: what a phone would find — the name the panel is seen by — or that new
-/// phones do not see it; nothing while the satellite has not said (or is not there: the title says).
+/// Bluetooth with no phone: what a phone would find — the name the panel is seen by — or that
+/// Bluetooth is off, or that new phones do not see it; nothing while the satellite has not said (or
+/// is not there: the title says).
 void bt_wait_line(const UiLvglModule::Snapshot& s, char* out, size_t n) {
     out[0] = '\0';
     if (!s.bt_link) return;
     bt_settings::Config cfg;
     bt_settings::config(cfg);
     if (!cfg.known) return;
-    if (!cfg.discoverable) {
-        snprintf(out, n, "%s", tr(S::bt_visible_off));
+    if (!cfg.radio || !cfg.discoverable) {
+        snprintf(out, n, "%s", tr(cfg.radio ? S::bt_visible_off : S::bt_radio_off));
         return;
     }
     char name[40];
