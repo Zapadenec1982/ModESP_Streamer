@@ -136,7 +136,8 @@ struct Shell {
     touch::Slide vol_touch;          ///< a finger on it (touch_gesture.h)
     uint32_t    vol_at = 0;          ///< when it last had a reason to be on screen; 0 = hidden
     bool        vol_drag = false;    ///< a finger is on it: the snapshot does not move it
-    int32_t     vol_posted = -1;
+    int32_t     vol_posted = -1;     ///< the level the glass asked for last: the knob, or a finger on the pop-up
+    uint32_t    vol_posted_at = 0;   ///< when
     // «Скасувати» (ui_shell_undo)
     lv_obj_t*   undo_bar = nullptr;
     lv_obj_t*   undo_lbl = nullptr;
@@ -336,6 +337,9 @@ void build_drawer(lv_obj_t* scr) {
 // a finger on it posts the value it is dragged to.
 
 constexpr uint32_t VOL_MS = 2000;
+/// A level asked for reaches the snapshot within ~0.1 s (the next request drain, then the 20 Hz
+/// mirror, then a refresh); until this long after it, the knob steps from it, not the snapshot.
+constexpr uint32_t VOL_HOLD_MS = 300;
 
 void vol_show() {
     g.vol_at = lv_tick_get();
@@ -366,6 +370,7 @@ void vol_touch_cb(lv_event_t* e) {
     m3w::slider_set(g.vol_sl, pct);
     if (pct != g.vol_posted && g.ctx && g.ctx->mod) {
         g.vol_posted = pct;
+        g.vol_posted_at = lv_tick_get();
         g.ctx->mod->lvgl_post(UiLvglModule::Req::VOLUME, pct);
     }
 }
@@ -930,10 +935,16 @@ void ui_shell_encoder(int32_t delta, uint8_t event, UiCtx& c) {
         return;
     }
     if (!delta || !c.mod || c.s.volume < 0) return;
-    int32_t v = c.s.volume + delta * 2;
+    // From the level asked for last while the snapshot may not have it yet, or a brisk turn
+    // posts one level twice and loses the detent; after that from the snapshot, which is where a
+    // level set on the web or by MQTT shows.
+    const bool fresh = g.vol_posted >= 0 && lv_tick_elaps(g.vol_posted_at) < VOL_HOLD_MS;
+    int32_t v = (fresh ? g.vol_posted : c.s.volume) + delta * 2;
     if (v < 0) v = 0; else if (v > 100) v = 100;
     // A turn is wanting sound at that level: a mute set on the web ends with it, or the knob
     // would turn a silent panel up with nothing to hear.
     if (c.s.mute) c.mod->lvgl_post(UiLvglModule::Req::MUTE, 0);
+    g.vol_posted = v;
+    g.vol_posted_at = lv_tick_get();
     c.mod->lvgl_post(UiLvglModule::Req::VOLUME, v);
 }
