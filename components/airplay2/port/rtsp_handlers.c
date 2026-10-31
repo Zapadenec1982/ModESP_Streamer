@@ -1194,10 +1194,18 @@ static void handle_setup(int socket, rtsp_conn_t *conn,
       uint8_t decrypted_key[32];
       unsigned long long decrypted_len;
 
-      if (crypto_aead_chacha20poly1305_ietf_decrypt(
-              decrypted_key, &decrypted_len, NULL, ekey_encrypted, ekey_len,
-              NULL, 0, nonce, conn->hap_session->shared_secret) == 0 &&
-          decrypted_len >= 16) {
+      // libsodium writes ekey_len - 16 bytes into decrypted_key, and zeroes as
+      // many when the tag does not verify: 48 from a 64-byte ekey, past the end
+      // of the array. One longer than a 32-byte key and its tag holds no key
+      // this receiver could use, so it is treated as one that did not decrypt.
+      if (ekey_len > sizeof(decrypted_key) +
+                         crypto_aead_chacha20poly1305_ietf_ABYTES) {
+        ESP_LOGW(TAG, "SETUP: ekey of %zu bytes ignored", ekey_len);
+      } else if (crypto_aead_chacha20poly1305_ietf_decrypt(
+                     decrypted_key, &decrypted_len, NULL, ekey_encrypted,
+                     ekey_len, NULL, 0, nonce,
+                     conn->hap_session->shared_secret) == 0 &&
+                 decrypted_len >= 16) {
         audio_encrypt.type = AUDIO_ENCRYPT_CHACHA20_POLY1305;
         memcpy(audio_encrypt.key, decrypted_key,
                decrypted_len > 32 ? 32 : decrypted_len);

@@ -208,6 +208,13 @@ No file in `upstream/` is edited. How the behaviour differs from upstream:
     `airplay2_report_volume()` (without `AIRPLAY2_EV_VOLUME`). The client takes its slider from this key
     and sends no level until somebody moves it (`tools/tests/test_airplay_mode.py`).
 
+16. **An `ekey` is decrypted only when its key fits** (`port/rtsp_handlers.c`, `handle_setup`).
+    Upstream decrypts an `ekey` of up to 64 bytes into a 32-byte key on the RTSP task's stack.
+    libsodium writes the whole plaintext, and zeroes as much when the tag does not verify, so up to
+    48 bytes land in 32 — from the network, after the raw pair-verify, which checks no signature.
+    An `ekey` longer than a 32-byte key and its tag (48 bytes) is not decrypted: like one that does
+    not decrypt, it leaves the session's derived key (`tools/tests/test_airplay_setup.py`).
+
 ## Updating
 
 Clone upstream at the new commit, compare it with `upstream/` file by file, carry the changes over,
