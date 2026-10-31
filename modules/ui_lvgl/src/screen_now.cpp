@@ -42,6 +42,7 @@
 #include "cover.h"
 #include "bt_settings.h"
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
 namespace {
@@ -81,6 +82,7 @@ constexpr int32_t PROG_H    = 50;
 constexpr int32_t BAR_Y     = 4;
 constexpr int32_t BAR_H     = 4;
 constexpr int32_t SEEK_KNOB = 16;
+constexpr uint32_t SEEK_HOLD_MS = 2000;   ///< the longest the bar waits at a seek for the position
 // the spectrum strip: whatever the tile leaves below it, one self-drawing object
 constexpr int32_t SPEC_X    = (uig::CONT_W - uih::SPEC_ROW_W) / 2;
 constexpr int32_t SPEC_BASE = uig::CONT_H;
@@ -120,6 +122,8 @@ struct Now {
     lv_obj_t* prog_hit = nullptr;   ///< the touch target: taller than the bar it drives
     touch::Slide prog_touch;        ///< a finger on it (touch_gesture.h)
     bool      seek_drag = false;     ///< a finger is scrubbing: the position's refresh leaves the bar
+    int32_t   seek_to   = -1;        ///< the second the finger has the knob at; once let go, until the position is there
+    uint32_t  seek_at   = 0;         ///< when it let go
     lv_obj_t* prog_fill= nullptr;
     lv_obj_t* prog_knob= nullptr;   ///< at the fill's end, where the bar seeks
     lv_obj_t* t_pos    = nullptr;
@@ -257,11 +261,19 @@ void set_seekable(bool on) {
     uih::show(n.prog_knob, on);
 }
 
-/// A finger that takes the progress bar's knob — where the music is — and goes along moves the
-/// music with it, from there, so it scrubs; a press, a tap or a finger elsewhere on the bar does
-/// not (m3w::slide_touch — a tap meant for the cover or the buttons must not jump the track).
-/// The seek is cheap: the player moves the file position and lets the decoder find the next
-/// frame header.
+/// The time under the bar's left end.
+void show_pos(int32_t sec) {
+    char buf[12];
+    mmss(sec, buf, sizeof(buf));
+    uih::set_text(n.t_pos, n.pos_txt, sizeof(n.pos_txt), buf);
+}
+
+/// A finger that takes the progress bar's knob — where the music is — and goes along scrubs: the
+/// knob and the time follow it from there, and the music goes where it lets go; a press, a tap or
+/// a finger elsewhere on the bar does not (m3w::slide_touch — a tap meant for the cover or the
+/// buttons must not jump the track). One seek, on the release: the bar is read every 15 ms, and
+/// each seek costs the card a fade and a flush and a pushed track a new connection — a seek per
+/// move would fill the player's queue and drop the one that matters, the last.
 void seek_cb(lv_event_t* e) {
     const int32_t w = lv_obj_get_width(n.prog_hit);
     lv_area_t a;
@@ -269,17 +281,25 @@ void seek_cb(lv_event_t* e) {
     int32_t x = lv_obj_get_width(n.prog_fill);
     const m3w::Slid r = m3w::slide_touch(e, n.prog_touch, a.x1 + knob_centre(x), x, w, w);
     const lv_event_code_t code = lv_event_get_code(e);
-    if (code == LV_EVENT_RELEASED || code == LV_EVENT_PRESS_LOST) n.seek_drag = false;
+    if (code == LV_EVENT_RELEASED || code == LV_EVENT_PRESS_LOST) {
+        if (n.seek_drag) {                        // let go of a scrub: its one seek
+            n.seek_drag = false;
+            n.seek_at = lv_tick_get();
+            post(UiLvglModule::Req::SEEK, n.seek_to);
+        }
+        return;
+    }
     if (r != m3w::Slid::MOVE) return;
-    n.seek_drag = true;
     const int32_t dur = n.ctx ? n.ctx->s.play_dur_s : 0;
     if (dur <= 0) return;
     if (w <= 0) return;
     if (x < 0) x = 0; else if (x > w) x = w;
+    n.seek_drag = true;
+    n.seek_to = (int32_t)((int64_t)dur * x / w);
     // Drawn at once, before the player has been anywhere: a bar that waits half a second
     // for the position to catch up feels broken even when it is not.
     set_fill(x < 2 ? 2 : x);
-    post(UiLvglModule::Req::SEEK, (int32_t)((int64_t)dur * x / w));
+    show_pos(n.seek_to);
 }
 
 // ── build ──
@@ -549,6 +569,8 @@ void set_face(Face f, const UiLvglModule::Snapshot& s) {
     const bool is_file = (s.source == 4);
     uih::show(n.transport, !empty);
     n.vis_shown = -1;                             // the next refresh decides on «Увімкнути видимість»
+    n.seek_drag = false;                          // a scrub of another source's track seeks nothing
+    n.seek_to = -1;
     uih::show(n.pick.obj, empty);
     uih::show(n.prog, f == Face::TRACK);
     uih::show(n.wave, radio);
@@ -733,14 +755,20 @@ void refresh(lv_obj_t*, UiCtx& c) {
 
         // progress
         if (s.network_push) set_seekable(s.network_seekable);
+        // After a scrub the bar stays where the finger let go until the position gets there: the
+        // seek reaches the player only now, and a pushed track connects again first. A seek
+        // refused, or slower than SEEK_HOLD_MS, gives the bar back to the position.
+        if (n.seek_to >= 0 && !n.seek_drag &&
+            (std::abs(s.play_pos_s - n.seek_to) <= 1 || lv_tick_elaps(n.seek_at) > SEEK_HOLD_MS))
+            n.seek_to = -1;
+        const bool held = n.seek_drag || n.seek_to >= 0;
+        if (!held) show_pos(s.play_pos_s);
         char buf[12];
-        mmss(s.play_pos_s, buf, sizeof(buf));
-        uih::set_text(n.t_pos, n.pos_txt, sizeof(n.pos_txt), buf);
         if (s.play_dur_s > 0) {
             mmss(s.play_dur_s, buf, sizeof(buf));
             int32_t w = COL_W * s.play_pos_s / s.play_dur_s;
             if (w < 2) w = 2; else if (w > COL_W) w = COL_W;
-            if (!n.seek_drag) set_fill(w);          // under a finger the bar is the finger's
+            if (!held) set_fill(w);                 // under a finger, and after it, the bar is the finger's
         } else {
             // Duration is not known yet: say so with an empty field rather than draw a bar
             // that pretends to know how far through the track we are.

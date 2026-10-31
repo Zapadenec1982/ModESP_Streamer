@@ -221,7 +221,8 @@ whole number goes without ".0". Transport:
   phones cannot see the panel;
 - tone, AUX, USB, output off — there is no transport.
 
-Seeking — `player.seek_s` (card) or `radio.seek_s` (a DLNA track, when `radio.seekable`). Repeat and
+Seeking — the progress bar's knob under a finger moves the bar and the time; letting go writes
+`player.seek_s` (card) or `radio.seek_s` (a DLNA track, when `radio.seekable`) once. Repeat and
 shuffle — `player.repeat`, `player.shuffle`. The list button leads to the list of the source that is
 playing. The moon after "Sound" switches "Volume leveling" (`audio.leveler`, `Req::LEVELER`;
 [AUDIO.md](AUDIO.md)): filled in the accent colour while it is on; the web's Player has the same
