@@ -1124,7 +1124,10 @@ bool promote_prepared() {
     s.src_ch = p->info.channel ? p->info.channel : 2;
     s.direct = direct;
     s.clock = clock;
-    s.wav = type_from_content(nullptr, s.url) == ESP_AUDIO_SIMPLE_DEC_TYPE_WAV;
+    // What the prepared stream's sniff found, not what the URL says: a WAV pushed as
+    // …/WAV-0/ORIGINAL or as .WAV was taken for something else, and seeking or resuming it
+    // from a byte fraction of the RIFF file turned 24-bit audio into full-scale noise.
+    s.wav = p->type == ESP_AUDIO_SIMPLE_DEC_TYPE_WAV;
     s.body_bytes = p->total;
     s.bitrate_bps = audio_core::stream_bps(p->info.bitrate, s.src_rate, s.src_ch, s.src_bits);
     s.bitrate = s.bitrate_bps / 1000;

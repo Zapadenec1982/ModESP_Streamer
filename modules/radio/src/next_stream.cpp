@@ -82,6 +82,7 @@ Prepared *prepare(uint32_t owner, const char *uri, uint32_t serial) {
              (p->size >= 2 && p->prefix[0] == 0xff && (p->prefix[1] & 0xe0) == 0xe0))
         dec.dec_type = ESP_AUDIO_SIMPLE_DEC_TYPE_MP3;
     else { destroy(p); return nullptr; }
+    p->type = dec.dec_type;
     if (esp_audio_simple_dec_open(&dec, &p->decoder) != ESP_AUDIO_ERR_OK) {
         destroy(p); return nullptr;
     }

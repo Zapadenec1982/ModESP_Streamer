@@ -15,6 +15,9 @@ struct Prepared {
     char uri[257]{};
     esp_http_client_handle_t http = nullptr;
     esp_audio_simple_dec_handle_t decoder = nullptr;
+    /// The decoder the sniff chose, which the URL need not name: a DLNA item often has no
+    /// extension at all.
+    esp_audio_simple_dec_type_t type = ESP_AUDIO_SIMPLE_DEC_TYPE_NONE;
     esp_audio_simple_dec_info_t info{};
     uint8_t *prefix = nullptr, *pcm = nullptr;
     size_t size = 0, consumed = 0, pcm_size = 0;
