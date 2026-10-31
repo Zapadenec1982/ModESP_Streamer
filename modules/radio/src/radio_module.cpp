@@ -2012,7 +2012,10 @@ RadioModule::RadioModule() : modesp::BaseModule("radio") {}
 
 bool RadioModule::on_init() {
     state_set("radio.state", "idle");
-    state_set("radio.station", (int32_t)0);
+    // What PersistService restored, not 0: this key is persisted, and writing 0 over it here
+    // put the first station back at every boot, so Play after a power cut tuned station 0
+    // instead of the last one. An index the list no longer has is caught where it is read.
+    state_set("radio.station", read_int("radio.station", 0));
     state_set("radio.name", "");
     state_set("radio.url", "");
     state_set("radio.uuid", "");
