@@ -476,6 +476,11 @@ int rtsp_dispatch(int socket, rtsp_conn_t *conn, const uint8_t *raw_request,
   // Update DACP client session when both identifiers are available
   if (conn->dacp_id[0] != '\0' && conn->active_remote[0] != '\0') {
     dacp_set_session(conn->dacp_id, conn->active_remote, conn->client_ip);
+  } else if (strcasecmp(req.method, "SETUP") == 0) {
+    // A session set up without them has no remote. A session still set is a
+    // previous sender's: an AirPlay 1 slot replaced in its grace period leaves
+    // it (rtsp_server.c), and the panel's buttons would drive that device.
+    dacp_clear_session();
   }
 
   // Find handler in dispatch table

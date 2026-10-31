@@ -224,6 +224,14 @@ No file in `upstream/` is edited. How the behaviour differs from upstream:
     ANNOUNCE changes nothing, SETUP stops before the receiver's format is set. The output ignores
     such a rate as well (`tools/tests/test_airplay_sdp.py`, `tools/tests/test_airplay_setup.py`).
 
+18. **A session without DACP drops the one a replaced slot left** (`port/rtsp_handlers.c`,
+    `rtsp_dispatch`). The DACP session is global. An AirPlay 1 slot waiting out its grace period
+    (paused, its DACP service still advertised) takes any new connection for its sender
+    reconnecting and leaves the session set. An AirPlay 2 sender names no `DACP-ID` or
+    `Active-Remote`, so nothing replaced it, and the panel's pause and next went to the previous
+    device. A SETUP on a connection without both identifiers clears the session; a sender that
+    names them sets its own, as before (`tools/tests/test_airplay_dacp.py`).
+
 ## Updating
 
 Clone upstream at the new commit, compare it with `upstream/` file by file, carry the changes over,
