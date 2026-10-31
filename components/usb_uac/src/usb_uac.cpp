@@ -68,7 +68,7 @@ void device_task(void*) {
 }
 
 State current_state() {
-    if (!g_uac.mounted || g_uac.suspended) return State::waiting;
+    if (!uac_usb_mounted() || g_uac.suspended) return State::waiting;
     return g_uac.alt ? State::playing : State::ready;
 }
 
@@ -122,8 +122,10 @@ void producer_task(void*) {
         // A suspended bus ends the stream as alt 0 would. On this board it is also what pulling
         // the cable looks like (uac_usb.c): the alternate setting stayed 2, and the ring was left
         // in run, starving — 63 000 underruns in eight minutes with nothing plugged in (24.10.2026).
-        // A resume with the setting kept starts the stream again.
-        const uint8_t host_alt = (g_uac.mounted && !g_uac.suspended) ? g_uac.alt : 0;
+        // A resume with the setting kept starts the stream again. A bus reset ends it as well:
+        // TinyUSB drops its configuration there and calls back nothing, so it is TinyUSB that is
+        // asked whether a host has the panel configured.
+        const uint8_t host_alt = (uac_usb_mounted() && !g_uac.suspended) ? g_uac.alt : 0;
         if (g_uac.stream_gen != gen_seen || host_alt != alt || (alt && g_uac.rate != rate)) {
             gen_seen = g_uac.stream_gen;
             alt  = host_alt;

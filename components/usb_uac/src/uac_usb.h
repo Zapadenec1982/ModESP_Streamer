@@ -20,7 +20,6 @@ extern "C" {
 typedef struct {
     volatile uint32_t rate;        ///< Hz, as the host last set the clock (44100 until it does)
     volatile uint8_t  alt;         ///< streaming interface: 0 idle, 1 16-bit, 2 24-in-32
-    volatile uint8_t  mounted;     ///< configured by a host
     volatile uint8_t  suspended;   ///< bus suspended (also what an unplug looks like: no VBUS sense)
     volatile uint8_t  mute;        ///< feature unit, master channel
     volatile int16_t  volume;      ///< feature unit, master channel, 1/256 dB
@@ -56,6 +55,8 @@ void     uac_usb_set_strings(const char* product, const char* serial);
 bool     uac_usb_init(void);
 /// TinyUSB's device task; blocks until there is an event.
 void     uac_usb_task(void);
+/// Configured by a host, as TinyUSB keeps it: a bus reset clears it, and calls back nothing.
+bool     uac_usb_mounted(void);
 
 /// Bytes per frame (both channels) of an alternate setting, 0 for alt 0.
 uint8_t  uac_usb_frame_bytes(uint8_t alt);

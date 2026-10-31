@@ -210,8 +210,12 @@ static uint32_t s_prev_fn;
 static int64_t  s_prev_us;
 static bool     s_prev_valid;
 
-void tud_mount_cb(void)   { g_uac.mounted = 1; g_uac.suspended = 0; }
-void tud_umount_cb(void)  { g_uac.mounted = 0; g_uac.alt = 0; g_uac.stream_gen++; }
+/// A configured panel starts with every interface at alternate setting 0, TinyUSB's own state
+/// included. Reset here because nothing else does after a bus reset — a cable moved to another
+/// computer, a reset-resume: TinyUSB calls back nothing for it, and with VBUS tied (below) no
+/// unplug ever comes. Kept, the old setting played a stream that was not there.
+void tud_mount_cb(void)   { g_uac.suspended = 0; g_uac.alt = 0; g_uac.stream_gen++; }
+void tud_umount_cb(void)  { g_uac.alt = 0; g_uac.stream_gen++; }
 /// Also what pulling the cable looks like on this board: VBUS stays up through the other port
 /// (docs/CONCEPT.md, "Tied VBUS"), so the controller never sees a disconnect — only the bus
 /// going quiet.
@@ -435,6 +439,8 @@ bool uac_usb_init(void) {
 }
 
 void uac_usb_task(void) { tud_task(); }
+
+bool uac_usb_mounted(void) { return tud_mounted(); }
 
 uint8_t uac_usb_frame_bytes(uint8_t alt) {
     return alt == 1 ? 2 * USB_UAC_CHANNELS : alt == 2 ? 4 * USB_UAC_CHANNELS : 0;
