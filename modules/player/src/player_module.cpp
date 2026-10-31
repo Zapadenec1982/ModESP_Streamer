@@ -1009,12 +1009,16 @@ void player_task(void*) {
     int64_t report_at      = 0;
     int64_t busy_us        = 0;
     uint64_t report_base   = 0;
+    int      silent_run    = 0;    // tracks in a row that ended without a frame (Pump::DONE)
     for (;;) {
         modesp::liveness::tick(s.beat);
         const bool got = (xQueueReceive(s.q, &m, pdMS_TO_TICKS(s.state == 1 ? 0 : 50)) == pdTRUE);
         if (!s.run) break;
         if (got) {
-            if (interrupts_pcm(m.type)) s.command_generation = m.generation;
+            if (interrupts_pcm(m.type)) {
+                s.command_generation = m.generation;
+                silent_run = 0;
+            }
             switch (m.type) {
             case Cmd::PLAY:
                 cue_path(m.path);
@@ -1149,8 +1153,21 @@ void player_task(void*) {
             case Pump::DONE: {
                 ESP_LOGI(TAG, "end of %s", s.path);
                 if (!release_tail()) { finish_cancelled_write(); break; }
+                // Not one frame came out of it: an empty file, or one the decoder cannot
+                // read. It must not be what plays next — repeat one, or repeat all over a
+                // single track, reopened it at once with no card read to wait on, and the
+                // task watchdog rebooted the panel — and a card of nothing but such files
+                // must not go round for ever, playing silence.
+                const bool silent = s.frames_out == 0;
+                silent_run = silent ? silent_run + 1 : 0;
                 close_file();                  // the ring keeps the tail; it has not played
-                const int nxt = player_core::playlist().advance(s.shuffle.load(), s.repeat.load());
+                auto& q = player_core::playlist();
+                int nxt = q.advance(s.shuffle.load(), s.repeat.load());
+                if (silent && nxt == q.cursor()) nxt = q.next(s.shuffle.load(), s.repeat.load());
+                if (silent && silent_run >= q.count()) {
+                    ESP_LOGW(TAG, "nothing played in the last %d tracks: stopped", silent_run);
+                    nxt = -1;
+                }
                 if (nxt >= 0 && open_index(nxt, false)) {
                     s.state = 1;
                 } else {
@@ -1159,6 +1176,9 @@ void player_task(void*) {
                     audio_core::pcm_ring().set_eos(audio_core::PcmRing::OWNER_FILE, s.ring_generation, true);
                     s.state = 0;
                 }
+                // A tick between one track and the next, whatever happened: the next pass may
+                // end at once again, and only a voluntary block lets main run (see Pump).
+                sleep_at_least_a_tick(1);
                 yield_deadline = 0;
                 break;
             }
