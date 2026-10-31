@@ -268,6 +268,9 @@ struct RadioTaskState {
     /// The reader is inside a socket read right now, and the transport under it must not be
     /// destroyed. See park_reader().
     std::atomic<bool> in_read{false};
+    /// Bumped by every http_close(), which every new stream passes through: whatever the
+    /// reader reads next is another stream, and its timeouts count from none (reader_task).
+    std::atomic<uint32_t> stream_gen{0};
     char     url[PLAY_URL_LEN] = "";
     /// What was ASKED for, as opposed to `url`, which is what is playing. They differ while
     /// a playlist is being followed, and the request has to survive the trip through the
@@ -541,6 +544,7 @@ void park_reader() {
 
 void http_close() {
     park_reader();
+    s.stream_gen.fetch_add(1, std::memory_order_release);
     if (s.tr) {
         esp_transport_close(s.tr);
         esp_transport_destroy(s.tr);
@@ -1652,6 +1656,7 @@ void finish_or_resume() {
 void reader_task(void*) {
     uint8_t* chunk = s.net_chunk;
     int quiet = 0;
+    uint32_t stream = s.stream_gen.load(std::memory_order_acquire);
     while (s.run) {
         modesp::liveness::tick(s.reader_beat);
         xSemaphoreTake(io_guard(), portMAX_DELAY);
@@ -1659,6 +1664,10 @@ void reader_task(void*) {
         if ((st != ST_BUFFERING && st != ST_PLAYING) || (!s.tr && !s.prepared) || s.eof.load() || s.lost.load() || raw_space() < NET_CHUNK) {
             xSemaphoreGive(io_guard()); sleep_ms(20); continue;
         }
+        // The timeouts of the stream before do not count against this one: carried over,
+        // the eight that gave that one up gave up a reconnect on its first quiet second.
+        const uint32_t gen = s.stream_gen.load(std::memory_order_acquire);
+        if (gen != stream) { stream = gen; quiet = 0; }
         s.in_read.store(true, std::memory_order_release);
         const int r = stream_read(chunk, NET_CHUNK);
         if (r > 0) { quiet = 0; raw_write(chunk, (size_t)r); s.net_bytes.fetch_add(r); }
