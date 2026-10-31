@@ -413,3 +413,38 @@ int main() {
 """
     build_and_run(tmp_path, harness,
                   [ROOT / "components/jsmn", ROOT / "components/modesp_net/include"])
+
+
+def test_auth_reads_back_a_name_with_quotes_as_json(tmp_path):
+    source = (ROOT / "components/modesp_net/src/http_service.cpp").read_text(encoding="utf-8")
+    harness = r"""
+#include <cstdio>
+#include <cstring>
+#include <string>
+#include "modesp/net/json_escape.h"
+using esp_err_t = int;
+constexpr int ESP_OK = 0, ESP_FAIL = -1, HTTPD_500_INTERNAL_SERVER_ERROR = 500;
+constexpr long HTTPD_RESP_USE_STRLEN = -1;
+struct httpd_req_t { int status = 200; std::string resp; };
+int httpd_resp_send_err(httpd_req_t* req, int status, const char*) { req->status = status; return ESP_OK; }
+int httpd_resp_set_type(httpd_req_t*, const char*) { return ESP_OK; }
+int httpd_resp_send(httpd_req_t* req, const char* s, long n) {
+  req->resp.assign(s, n < 0 ? strlen(s) : (size_t)n); return ESP_OK;
+}
+namespace modesp {
+static char s_auth_user[32] = "admin";
+static bool s_auth_enabled = true;
+struct HttpService {
+  static void set_cors_headers(httpd_req_t*) {}
+  static esp_err_t handle_get_auth(httpd_req_t*);
+};
+""" + extract(source, "esp_err_t HttpService::handle_get_auth(") + "\n}\n" + r"""
+int main() {
+  strcpy(modesp::s_auth_user, "my\"box\\");
+  httpd_req_t req;
+  if (modesp::HttpService::handle_get_auth(&req) != ESP_OK ||
+      req.resp != R"({"enabled":true,"username":"my\"box\\"})") return 1;
+  return 0;
+}
+"""
+    build_and_run(tmp_path, harness, [ROOT / "components/modesp_net/include"])

@@ -2037,11 +2037,18 @@ esp_err_t HttpService::handle_static(httpd_req_t* req) {
 esp_err_t HttpService::handle_get_auth(httpd_req_t* req) {
     // GET /api/auth — публічний (без auth), ніколи не повертає пароль
     set_cors_headers(req);
-    char buf[128];
+    // player-fork: the name escaped, as POST unescapes it on the way in — a name holding a quote
+    // or a backslash came back as broken JSON, and the Access page could not load at all.
+    char user[net::json_escaped_capacity(sizeof(s_auth_user) - 1)];
+    if (!net::json_escape(user, sizeof(user), s_auth_user)) {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Invalid username");
+        return ESP_FAIL;
+    }
+    char buf[64 + sizeof(user)];
     snprintf(buf, sizeof(buf),
              "{\"enabled\":%s,\"username\":\"%s\"}",
              s_auth_enabled ? "true" : "false",
-             s_auth_user);
+             user);
     httpd_resp_set_type(req, "application/json");
     httpd_resp_send(req, buf, HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
