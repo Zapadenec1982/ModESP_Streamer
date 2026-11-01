@@ -288,8 +288,8 @@ extern "C" void app_main(void)
         app.state().set("_ota.date", build_dt);
         app.state().set("_ota.board", desc->project_name);
 
-        // Безпечний режим: ключ існує з самого початку, щоб UI/MQTT показували "Норма",
-        // а не порожнє поле. enter_safe_mode() переводить його в true.
+        // Safe mode: the key exists from the start, so the UI and MQTT show "normal" rather
+        // than an empty field. enter_safe_mode() sets it to true.
         app.state().set("system.safe_mode", false);
 
         // OTA статус для cloud feedback (оновлюється з ota_handler.cpp)
