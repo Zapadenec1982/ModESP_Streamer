@@ -1,10 +1,10 @@
 /*
- * «Веб-інтерфейс оновлено · Перезавантажити» (the customer, 14.10.2026). A tab left open across a
- * flash of data.bin keeps running the page it loaded before — no-store does nothing for a page
- * already running — and behaves as the old web did until it is reloaded. So the page notes
- * /build.txt (scripts/deploy.js: a line per deployed file with its hash) the first time the
- * WebSocket opens, and looks again each time it opens again: the panel restarted, or the tab was
- * shown again (stores/state.js wsOpened). Nothing is polled. A different list is said once.
+ * «Веб-інтерфейс оновлено · Перезавантажити». A tab left open across a flash of data.bin keeps
+ * running the page it loaded before — no-store does nothing for a page already running — and
+ * behaves as the old web did until it is reloaded. So the page notes /build.txt
+ * (scripts/deploy.js: a line per deployed file with its hash) the first time the WebSocket opens,
+ * and looks again each time it opens again: the panel restarted, or the tab was shown again
+ * (stores/state.js wsOpened). Nothing is polled. A different list is said once.
  *
  * No imports: tools/tests/test_webui_update.py runs this in Node; App.svelte wires it.
  */

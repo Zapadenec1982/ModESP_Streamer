@@ -5,8 +5,8 @@
 
 :root {
   color-scheme: dark;
-  /* The panel draws Roboto; the web takes the system face (customer, 11.10.2026): Roboto
-     on Android, San Francisco on Apple, no font in the bundle. */
+  /* The panel draws Roboto; the web takes the system face: Roboto on Android, San Francisco on
+     Apple, no font in the bundle. */
   --font: Roboto, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, Menlo, Consolas, "DejaVu Sans Mono", monospace;
 

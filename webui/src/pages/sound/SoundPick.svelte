@@ -1,8 +1,8 @@
 <script>
-  // The sounds as a dropdown — the customer, 15.10.2026: not chips. The Player's sheet,
-  // Налаштування › Звук and the equalizer have it, as the glass does (sound_sheet.cpp
-  // ui_sound_field). `presets` are the ones offered while `preset` plays (GET /api/eq "presets":
-  // the eight, and a kept one while it plays); a choice is the host's to make (`choose`).
+  // The sounds as a dropdown, not chips. The Player's sheet, Налаштування › Звук and the
+  // equalizer have it, as the glass does (sound_sheet.cpp ui_sound_field). `presets` are the ones
+  // offered while `preset` plays (GET /api/eq "presets": the eight, and a kept one while it
+  // plays); a choice is the host's to make (`choose`).
   import { createEventDispatcher } from 'svelte';
   import { t } from '../../stores/i18n.js';
   import { soundName } from '../../lib/sounds.js';

@@ -147,8 +147,8 @@
     cursor: pointer;
   }
 
-  /* player-fork: the one slider of the panel and the web (m3/Slider.svelte; the customer,
-     16.10.2026): a 6 px rail, primary up to a round 20 px knob */
+  /* player-fork: the one slider of the panel and the web (m3/Slider.svelte): a 6 px rail,
+     primary up to a round 20 px knob */
   .rng {
     -webkit-appearance: none;
     appearance: none;

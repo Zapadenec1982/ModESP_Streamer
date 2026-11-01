@@ -1,6 +1,6 @@
 <script>
   // A slider whose zero is in the middle — Бас, Високі and the balance:
-  // the one slider (Slider.svelte; the customer, 16.10.2026) — a 6 px rail, a round 20 px knob,
+  // the one slider (Slider.svelte) — a 6 px rail, a round 20 px knob,
   // the name at the left and the number at the right — with a tick at the centre and the fill
   // running from the centre to the value; the number without a unit ("+2", "0", "−3"). Touch and the mouse are
   // lib/gesture.js's — a press changes nothing, a finger that goes up or down scrolls the page —
@@ -66,7 +66,7 @@
 
 <style>
   /* the name and the number keep the track off the screen's edges: a finger that scrolls has
-     somewhere to go that sets nothing (the customer, 14.10.2026) */
+     somewhere to go that sets nothing */
   .row { display: flex; align-items: center; gap: 16px; min-height: 48px; }
   .name { width: 70px; font-size: 16px; flex: none; }
   .track { position: relative; flex: 1; height: 40px; min-width: 0; touch-action: pan-y; cursor: pointer; }

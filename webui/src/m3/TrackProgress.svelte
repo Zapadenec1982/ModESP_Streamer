@@ -1,7 +1,7 @@
 <script>
   // A track's position, as on the panel (screen_now.cpp): a 4 px line, primary up to where the
-  // track is, m:ss under both ends. Where seeking exists, a knob at the fill's end says so (the
-  // customer, 16.10.2026), a finger drags it along — a press or a finger that goes up or down does
+  // track is, m:ss under both ends. Where seeking exists, a knob at the fill's end says so, a
+  // finger drags it along — a press or a finger that goes up or down does
   // not (lib/gesture.js) — over a target 40 px tall that the layout does not see, and a native
   // range input under it is for the keyboard and screen readers; elsewhere a read-out. `seek`
   // fires with seconds on release.

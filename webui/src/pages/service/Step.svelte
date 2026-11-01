@@ -1,6 +1,6 @@
 <script>
   // One step of a calibration task: its number, a short title, a line or two of what to do, and
-  // the controls the step needs — nothing a later step needs (customer, 12.10.2026).
+  // the controls the step needs — nothing a later step needs.
   export let n = '';
   export let title = '';
   export let done = false;

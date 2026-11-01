@@ -1,7 +1,7 @@
 <script>
   // The long tail's widgets («Інші параметри», lib/longtail.js): the generic ones a module's new key
-  // may come with. The framework's own (Wi-Fi, time, firmware, access, the AP) went 25.10.2026
-  // — their keys are the hand-written pages', so the tail never showed them.
+  // may come with. The framework's own (Wi-Fi, time, firmware, access, the AP) are not here —
+  // their keys are the hand-written pages', so the tail never shows them.
   import ValueWidget from './widgets/ValueWidget.svelte';
   import SliderWidget from './widgets/SliderWidget.svelte';
   import NumberInput from './widgets/NumberInput.svelte';

@@ -2,8 +2,8 @@
   // Налаштування › Колонки: what has been done
   // about the speakers, said in a line, and the way to do it again; the balance, which moved here
   // from Service; and the details — each number with where it came from — and the equalizer, named
-  // as what it is (the customer, 16.10.2026: «Корекція колонок» led to the same EQ the presets
-  // change, so a correction tuned there went with the next preset). `sub`: 'setup', the wizard,
+  // as what it is (a «Корекція колонок» would lead to the same EQ the presets change, so a
+  // correction tuned there would go with the next preset). `sub`: 'setup', the wizard,
   // and 'details', each a page under this one.
   // The rules are the device's and lib/speakers.js says them: nothing here writes without a tap.
   import { onDestroy } from 'svelte';

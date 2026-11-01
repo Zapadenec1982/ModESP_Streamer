@@ -101,9 +101,8 @@
   $: sysPage = sysId ? loadSystem(sysId) : null;
   $: sysProps = sysId === 'speakers' ? { sub: $route[2] || '' } : {};
   // Service and the pages under it: diagnostics, calibration, tools, the long tail. Each its
-  // own file. Calibration is the speakers' port alone since the amplifier's ceiling left it
-  // (18.10.2026); system/service/calibration/port, the address the speakers' pages use, still leads
-  // there.
+  // own file. Calibration is the speakers' port alone; system/service/calibration/port, the
+  // address the speakers' pages use, still leads there.
   const SERVICE_PAGES = {
     '': () => import('./pages/ServicePage.svelte'),
     calibration: () => import('./pages/service/CalibrationPage.svelte'),

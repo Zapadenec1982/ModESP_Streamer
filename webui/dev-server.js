@@ -2,7 +2,7 @@
  * P4 Player web UI dev server — the device's API, faked well enough to work on pages without a
  * panel. Usage: npm run dev → http://localhost:5000
  *
- * State: dev/state.json, a real /api/state of the player (11.10.2026, Bluetooth playing) with
+ * State: dev/state.json, a real /api/state of the player (Bluetooth playing) with
  * names and addresses replaced. Writes to /api/settings land in it and go out over /ws as the
  * panel does; *.cmd keys are acted on roughly (play/pause/stop), never stored. Service's endpoints
  * (log levels, bindings, the screenshot, factory reset) answer as the device's do, and so do these:

@@ -66,7 +66,7 @@
   $: seen = !!d['bt.sat'];
   $: phone = d['bt.state'] === 'connected' || d['bt.state'] === 'streaming';
 
-  // ── calibration in one line: the speakers' port (the amplifier's ceiling left it, 18.10.2026) ──
+  // ── calibration in one line: the speakers' port ──
   $: portLine = s['audio.port_hz'] ? fmt($t['cal.port_is'], { hz: s['audio.port_hz'] }) : $t['cal.port_none'];
   $: tail = longTail($pages);
   $: tailCount = tail.reduce((a, p) => a + p.cards.reduce((b, c) => b + c.widgets.length, 0), 0);

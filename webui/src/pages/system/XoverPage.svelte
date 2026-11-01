@@ -76,7 +76,7 @@
   .name { font-size: 13px; line-height: 17px; font-weight: 500; }
   /* Two by two where four in a row would not hold the longest line: «jeszcze nieobsługiwane» is
      115 px, so a card wants 123 and four of them a 550-px page. At 375 px four in a row left 76 px
-     a card: the Polish ran out of it and «4 Lautsprecher» broke after the 4 (15.10.2026). */
+     a card: the Polish ran out of it and «4 Lautsprecher» broke after the 4. */
   @media (max-width: 600px) {
     .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }

@@ -21,8 +21,7 @@ export function port(s) {
 /**
  * The speakers as catalog keys: `title`, then `line` with its `args` where there is a port to say
  * ('' where the title says it all — closed, or not set up); `again` when the wizard has been
- * through, so the button says «знову». No note under them (the customer, 18.10.2026: values,
- * not explanations).
+ * through, so the button says «знову». No note under them: values, not explanations.
  */
 export function speakerState(s) {
   const type = s['audio.spk_type'] ?? SPK_UNSET;

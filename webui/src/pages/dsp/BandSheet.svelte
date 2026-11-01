@@ -1,12 +1,11 @@
 <script>
   // A band, opened from the equalizer's list: its
   // type, chosen from a list of the six as the glass offers them and by the names REW and
-  // Equalizer APO use (the customer, 16.10.2026: three of them here, six there, and none named
-  // the same), then its frequency, gain and width with − and +, and «Готово». «Увімкнена» on top, as
-  // the glass's band panel has it: off keeps the numbers (`turn`); a step on a band that is off
-  // switches it on, as touching its point does on both (`edit`). Each step is heard at once; the
-  // steps are the panel's (screen_eq.cpp adjust): 1/12 octave, 0.5 dB, 0.1 of Q, a pass's slope
-  // along PASS_Q.
+  // Equalizer APO use, then its frequency, gain and width with − and +, and «Готово». «Увімкнена»
+  // on top, as the glass's band panel has it: off keeps the numbers (`turn`); a step on a band
+  // that is off switches it on, as touching its point does on both (`edit`). Each step is heard
+  // at once; the steps are the panel's (screen_eq.cpp adjust): 1/12 octave, 0.5 dB, 0.1 of Q, a
+  // pass's slope along PASS_Q.
   import { createEventDispatcher } from 'svelte';
   import { t, K, fmt, language } from '../../stores/i18n.js';
   import { decimal } from '../../lib/numbers.js';

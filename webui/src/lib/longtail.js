@@ -54,8 +54,8 @@ export const VIA = {
 /** Left out on purpose. */
 export const DROPPED = [
   // The cards "Відтворення", "DSP" and "Діагностика" of the generated Audio page carry nothing a
-  // person acts on (customer, 12.10.2026): the source and the volume are on the Player, the EQ
-  // on DSP, the load and the underruns in Service's figures.
+  // person acts on: the source and the volume are on the Player, the EQ on DSP, the load and the
+  // underruns in Service's figures.
   'audio.state', 'audio.eq_reload',
   'audio.in_l', 'audio.in_r', 'audio.level_l', 'audio.level_r', 'audio.in_rate', 'audio.asrc_ppm',
   // The generated catalog card's query language ("top:UA", "play row N"): Stations › catalog
@@ -65,8 +65,8 @@ export const DROPPED = [
   'radio.cat_play', 'radio.cat_fav',
   // Never written by the firmware (wifi_service.cpp); the Wi-Fi page shows the scan's signal.
   'wifi.rssi',
-  // The amplifier's ceiling, the drive into it and the bass power cap (customer, 18.10.2026):
-  // «Максимум» is the one limit a person sets, and these stay what the datasheet gives.
+  // The amplifier's ceiling, the drive into it and the bass power cap: «Максимум» is the one
+  // limit a person sets, and these stay what the datasheet gives.
   'audio.amp_clip_db10', 'audio.amp_cal', 'audio.ceiling_dbfs', 'audio.drive_db', 'audio.rms_cap_db10',
 ];
 

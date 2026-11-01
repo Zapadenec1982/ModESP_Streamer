@@ -1,13 +1,12 @@
 <script>
-  // Налаштування › Тонке налаштування (the customer, 18.10.2026): what sat in two places —
-  // «Бас і стерео» under the equalizer and «Для фахівців» folded under the port's measurement — in
-  // one section of its own, names and values only. The web's
-  // alone, as both were: the glass has the loudness as a switch in «Звук» and none of the rest.
+  // Налаштування › Тонке налаштування: «Бас і стерео» and «Для фахівців» in one section of
+  // their own, names and values only. The web's alone: the glass has the loudness as a switch in
+  // «Звук» and none of the rest.
   //
-  // «Звичайна гучність» joined them the same day, from a page of its own that played the old sound
-  // against the new: one slider under the loudness, heard as it moves. It is said on the volume's
-  // scale, which «Максимум» compresses (lib/speakers.js refOf/refShown); its top is the old rule,
-  // the loudness counted from the top of the scale; it is dimmed while the loudness is off.
+  // «Звичайна гучність» is here too: one slider under the loudness, heard as it moves. It is said
+  // on the volume's scale, which «Максимум» compresses (lib/speakers.js refOf/refShown); its top
+  // is the old rule, the loudness counted from the top of the scale; it is dimmed while the
+  // loudness is off.
   //
   // Two of them follow the port (lib/speakers.js port()): with a port frequency the subsonic sits
   // under it and the slider has nothing to set, so it shows that value, dimmed; the lift acts only

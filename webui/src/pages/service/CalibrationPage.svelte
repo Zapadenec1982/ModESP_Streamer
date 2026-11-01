@@ -5,10 +5,9 @@
   // controls outside the steps; the settings the port sets are Налаштування › Тонке налаштування
   // (TuningPage). The Speakers wizard's «Знайти вручну» comes here.
   //
-  // The amplifier's ceiling had a task of its own here — a multimeter, a search by ear, the
-  // supply's sag — and the customer took it out (18.10.2026): «Максимум» is the one limit a person
-  // sets, and the ceiling stays the datasheet's (audio.amp_clip_db10, −9.8 dBFS), a setting the API
-  // still changes. What a person chose here stays in this tab (sessionStorage): a phone that left
+  // The amplifier's ceiling has no task here: «Максимум» is the one limit a person sets, and the
+  // ceiling stays the datasheet's (audio.amp_clip_db10, −9.8 dBFS), a setting the API still
+  // changes. What a person chose here stays in this tab (sessionStorage): a phone that left
   // the page for its spectrum app comes back to the same step. The tone bar is the shell's: a tone
   // shows on every page.
   import { onDestroy } from 'svelte';

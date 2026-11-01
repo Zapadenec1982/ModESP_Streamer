@@ -2,12 +2,11 @@
   // Source: the panel's cards (screen_src.cpp) — only those whose bit is in
   // audio.sources, the active one on primary_container with a check, under each what it would
   // give now. A tap is "listen": the source is set and the Player opens, as on the glass.
-  // One grid, the most listened to first (customer, 18.10.2026): Bluetooth, AirPlay, the radio,
-  // then the card, the media servers and USB — the glass's order. USB took AUX's place
-  // (the customer, 24.10.2026): the line input left the hardware on 15.10.2026. DLNA has no card: an app starts
-  // it and the panel follows by itself; while a pushed track plays, the servers' card shows it.
-  // The lists — the stations, the catalog, the library — are the Player's, for the source that
-  // plays.
+  // One grid, the most listened to first: Bluetooth, AirPlay, the radio, then the card, the media
+  // servers and USB — the glass's order. USB is where AUX was: the line input is not in the
+  // hardware. DLNA has no card: an app starts it and the panel follows by itself; while a pushed
+  // track plays, the servers' card shows it. The lists — the stations, the catalog, the library —
+  // are the Player's, for the source that plays.
   import { now } from '../stores/now.js';
   import { state } from '../stores/state.js';
   import { t, K, plural, language } from '../stores/i18n.js';

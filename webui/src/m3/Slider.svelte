@@ -1,12 +1,12 @@
 <script>
-  // The one slider of the web and the panel (m3w::slider, ui_m3_widgets.cpp; the customer,
-  // 16.10.2026: one style instead of four): a 6 px rail, primary from its left end to a round
-  // 20 px knob, the number to the right of the track, an icon or a name at the left when given.
-  // Бас, Високі and the balance are the same with the zero in the middle (CenterSlider). Touch and
-  // the mouse are lib/gesture.js's: a press changes nothing, a finger that goes up or down scrolls
-  // the page, one that goes along drags. The native <input type="range"> under the track is for
-  // the keyboard and screen readers. `input` fires while it moves, `change` when it lets go; with
-  // `undo`, a snackbar offers to put it back (stores/toast.js).
+  // The one slider of the web and the panel (m3w::slider, ui_m3_widgets.cpp): a 6 px rail,
+  // primary from its left end to a round 20 px knob, the number to the right of the track, an
+  // icon or a name at the left when given. Бас, Високі and the balance are the same with the zero
+  // in the middle (CenterSlider). Touch and the mouse are lib/gesture.js's: a press changes
+  // nothing, a finger that goes up or down scrolls the page, one that goes along drags. The
+  // native <input type="range"> under the track is for the keyboard and screen readers. `input`
+  // fires while it moves, `change` when it lets go; with `undo`, a snackbar offers to put it back
+  // (stores/toast.js).
   import { createEventDispatcher } from 'svelte';
   import { slide, valueAt } from '../lib/gesture.js';
   import { noteUndo } from '../stores/toast.js';
@@ -78,7 +78,7 @@
 
 <style>
   /* the name, the icon and the number keep the track off the screen's edges: a finger that
-     scrolls has somewhere to go that sets nothing (the customer, 14.10.2026) */
+     scrolls has somewhere to go that sets nothing */
   .row { display: flex; align-items: center; gap: 16px; min-height: 48px; min-width: 0; }
   .lead { display: flex; color: var(--on-surface-var); flex: none; }
   .name {

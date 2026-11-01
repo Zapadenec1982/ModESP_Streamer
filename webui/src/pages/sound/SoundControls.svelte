@@ -4,7 +4,7 @@
   // sheet and Налаштування › Звук (`page`), of which the sheet is a shortcut to the top. The
   // presets are the EQ document's (lib/eq.js), so a choice here is the panel's at once, and the
   // other way round; they are a dropdown (SoundPick), as on the equalizer's page. No captions,
-  // resets or notes beyond what a control needs (the customer, 15–16.10.2026).
+  // resets or notes beyond what a control needs.
   import { onMount, onDestroy } from 'svelte';
   import { state } from '../../stores/state.js';
   import { t, fmt } from '../../stores/i18n.js';

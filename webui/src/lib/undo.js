@@ -1,6 +1,6 @@
 /*
- * «Скасувати» after a slider or a drag on the equalizer's graph moved a sound setting (the
- * customer, 14.10.2026, with lib/gesture.js): a snackbar for UNDO_MS, «Бас: 0 → +3».
+ * «Скасувати» after a slider or a drag on the equalizer's graph moved a sound setting (with
+ * lib/gesture.js): a snackbar for UNDO_MS, «Бас: 0 → +3».
  *
  * One snackbar, for the setting moved last. The same setting moved again while it shows keeps
  * where it started; moved back there, the snackbar goes. Its action puts the start back. Taps —

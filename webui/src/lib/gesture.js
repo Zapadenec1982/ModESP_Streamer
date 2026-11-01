@@ -1,6 +1,6 @@
 /*
- * A finger that scrolls the page does not set anything (the customer, 14.10.2026: scrolling a
- * page moved the equalizer, the tone, another setting).
+ * A finger that scrolls the page does not set anything: otherwise scrolling a page moves the
+ * equalizer, the tone, another setting.
  *
  * A slider: the press changes nothing. The gesture becomes the slider's once the finger has gone
  * SLOP px along it, and more along than across; it is the page's if it went up or down first —

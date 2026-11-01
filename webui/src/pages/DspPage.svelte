@@ -1,7 +1,7 @@
 <script>
   // Налаштування › Звук › Еквалайзер: the
-  // equalizer for enthusiasts. The switch; the sounds as a dropdown (SoundPick; chips until the
-  // customer's 15.10.2026); the curve with a point per band that is on; the bands as a list, each
+  // equalizer for enthusiasts. The switch; the sounds as a dropdown (SoundPick); the curve with
+  // a point per band that is on; the bands as a list, each
   // opened in a sheet; «Скинути «Власний»» for «Власний» alone — a genre never changes: an edit
   // of one makes it «Власний», and the page says so;
   // filters in and out as Equalizer APO / REW text; the whole system's curve on request. Under it,

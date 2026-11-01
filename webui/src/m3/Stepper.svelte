@@ -1,6 +1,6 @@
 <script>
-  // A value with − and + at its ends, as on the panel's DSP band panel (screen_eq.cpp): the
-  // customer asked for the buttons at the sides of the value. The parent owns the number and
+  // A value with − and + at its ends, as on the panel's DSP band panel (screen_eq.cpp), so a
+  // thumb aimed at one cannot land on the other. The parent owns the number and
   // its step; this only shows `text` and reports `dec` / `inc`.
   import { createEventDispatcher } from 'svelte';
   import IconButton from './IconButton.svelte';

@@ -1,8 +1,8 @@
 /*
  * The test tone's keys as the device has them (docs/AUDIO.md, "Test tone"), for the port's search
  * and lib/tone.js. The amplifier ceiling's arithmetic — the multimeter's, the search by ear's, the
- * supply's sag — left with its page (18.10.2026). tools/tests/test_webui_service.py holds these to
- * the firmware. No imports: the test loads this file in Node.
+ * supply's sag — left with its page. tools/tests/test_webui_service.py holds these to the
+ * firmware. No imports: the test loads this file in Node.
  */
 
 /** audio.tone_mode: through the DSP and the volume, or past both at an exact DAC level. */
