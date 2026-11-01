@@ -1,4 +1,4 @@
-3bf785214c72e9cb  bundle.js.gz
+78dc9a514c20bbc9  bundle.js.gz
 be165339706dc6ab  chunk-AccessPage.js.gz
 1c76d2c05635bb6f  chunk-BackupPage.js.gz
 ca7301a049005948  chunk-BtPage.js.gz
@@ -33,7 +33,7 @@ e38b86d222642480  chunk-ToneBar.js.gz
 f19f5aa42088868c  chunk-longtail.js.gz
 6d39980f66caa88b  chunk-media.js.gz
 cc3bec8b27c89f4e  chunk-tone.js.gz
-68110491f4a8aa48  bundle.css.gz
+6405ecbe7f2e7497  bundle.css.gz
 2792fcd7a22c9e63  lang/en.json.gz
 326d0c97523df43a  lang/de.json.gz
 01c4b445ec9f3af8  lang/pl.json.gz
