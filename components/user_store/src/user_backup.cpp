@@ -8,8 +8,8 @@
 
 #define JSMN_STATIC          // jsmn is header-only and linked in several places
 #include "jsmn.h"
+#include "jsmn_util.h"
 
-#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 
@@ -20,24 +20,8 @@ namespace {
 /// The envelope and five string values, with room for fields a later format may add.
 constexpr int MAX_TOKENS = 64;
 
-bool key_is(const char* json, const jsmntok_t& t, const char* name) {
-    const int n = t.end - t.start;
-    return t.type == JSMN_STRING && (int)strlen(name) == n && !strncmp(json + t.start, name, n);
-}
-
-/// Tokens `tok[i]` spans, itself included.
-int span(const jsmntok_t* tok, int n, int i) {
-    int k = 1;
-    for (int c = 0; c < tok[i].size && i + k < n; c++) k += span(tok, n, i + k);
-    return k;
-}
-
-int hexval(char c) {
-    if (c >= '0' && c <= '9') return c - '0';
-    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
-    return -1;
-}
+using jsmn_util::key_is;
+using jsmn_util::span;
 
 }  // namespace
 
@@ -82,77 +66,9 @@ bool parse(const char* body, size_t len, Entry* out, size_t cap, size_t& count) 
 }
 
 bool unescape(const char* s, size_t n, char* out, size_t cap, size_t& len) {
-    size_t w = 0;
-    auto put = [&](uint32_t cp) {
-        char b[4];
-        size_t k;
-        if (cp < 0x80)       { b[0] = (char)cp; k = 1; }
-        else if (cp < 0x800) { b[0] = (char)(0xC0 | (cp >> 6)); b[1] = (char)(0x80 | (cp & 0x3F)); k = 2; }
-        else if (cp < 0x10000) {
-            b[0] = (char)(0xE0 | (cp >> 12)); b[1] = (char)(0x80 | ((cp >> 6) & 0x3F));
-            b[2] = (char)(0x80 | (cp & 0x3F)); k = 3;
-        } else {
-            b[0] = (char)(0xF0 | (cp >> 18)); b[1] = (char)(0x80 | ((cp >> 12) & 0x3F));
-            b[2] = (char)(0x80 | ((cp >> 6) & 0x3F)); b[3] = (char)(0x80 | (cp & 0x3F)); k = 4;
-        }
-        if (w + k >= cap) return false;
-        memcpy(out + w, b, k);
-        w += k;
-        return true;
-    };
-    auto hex4 = [&](size_t at, uint32_t& v) {
-        if (at + 4 > n) return false;
-        v = 0;
-        for (size_t k = 0; k < 4; k++) {
-            const int h = hexval(s[at + k]);
-            if (h < 0) return false;
-            v = v * 16 + (uint32_t)h;
-        }
-        return true;
-    };
-    for (size_t i = 0; i < n;) {
-        const unsigned char c = (unsigned char)s[i];
-        if (c < 0x20) return false;
-        if (c != '\\') {
-            if (w + 1 >= cap) return false;
-            out[w++] = (char)c;
-            i++;
-            continue;
-        }
-        if (i + 1 >= n) return false;
-        uint32_t cp = 0;
-        switch (s[i + 1]) {
-        case '"':  cp = '"';  break;
-        case '\\': cp = '\\'; break;
-        case '/':  cp = '/';  break;
-        case 'b':  cp = '\b'; break;
-        case 'f':  cp = '\f'; break;
-        case 'n':  cp = '\n'; break;
-        case 'r':  cp = '\r'; break;
-        case 't':  cp = '\t'; break;
-        case 'u': {
-            if (!hex4(i + 2, cp)) return false;
-            if (cp >= 0xD800 && cp <= 0xDBFF) {          // a surrogate pair: one code point
-                uint32_t lo = 0;
-                if (i + 7 >= n || s[i + 6] != '\\' || s[i + 7] != 'u' || !hex4(i + 8, lo) ||
-                    lo < 0xDC00 || lo > 0xDFFF) return false;
-                cp = 0x10000 + ((cp - 0xD800) << 10) + (lo - 0xDC00);
-                i += 6;
-            } else if (cp >= 0xDC00 && cp <= 0xDFFF) {
-                return false;                             // half a pair
-            }
-            if (cp == 0) return false;                    // a NUL would cut the file short
-            i += 4;
-            break;
-        }
-        default: return false;
-        }
-        if (!put(cp)) return false;
-        i += 2;
-    }
-    out[w] = '\0';
-    len = w;
-    return true;
+    // The files are text with line breaks in it (eq.json is written a field to a line), which
+    // the backup carries escaped.
+    return jsmn_util::unescape(s, n, out, cap, len, jsmn_util::Controls::ESCAPED);
 }
 
 bool is_json_file(const char* name) {

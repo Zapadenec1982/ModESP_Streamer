@@ -8,5 +8,5 @@ idf_component_register(
     SRCS "src/user_store.cpp" "src/user_backup.cpp"
     INCLUDE_DIRS "include"
     REQUIRES safe_file
-    PRIV_REQUIRES joltwallet__littlefs jsmn
+    PRIV_REQUIRES joltwallet__littlefs jsmn jsmn_util
 )
