@@ -65,9 +65,10 @@ struct UiScreenDef {
 };
 
 // ── the sources ──────────────────────────────────────────────────────────────────────────
-// What the glass makes of audio.source — the icon, the name — said once, as the web says it once
-// (webui/src/stores/now.js): an entry for each of the manifest's values (modesp::gen::AUDIO_SOURCE_*;
-// docs/CONCEPT.md, "`audio.source` values"), and DLNA, a track pushed to the radio.
+// What the glass makes of audio.source — the Player's face, the icon, the name — said once, as the
+// web says it once (webui/src/stores/now.js): an entry for each of the manifest's values
+// (modesp::gen::AUDIO_SOURCE_*; docs/CONCEPT.md, "`audio.source` values"), and DLNA, a track pushed
+// to the radio.
 
 /// A source as the glass tells them apart.
 enum class UiSrc : uint8_t {
@@ -83,12 +84,18 @@ enum class UiSrc : uint8_t {
 };
 static_assert((int)UiSrc::DLNA == modesp::gen::AUDIO_SOURCE_MAX + 1, "an entry for every audio.source value");
 
+/// What the Player draws: a track with its position and transport — the card, DLNA, Bluetooth and
+/// AirPlay alike — a station, or neither: the tone, AUX, USB (the computer is its own remote) and
+/// the output off. NONE is a page's "nothing drawn yet".
+enum class PlayerFace : int8_t { NONE = -1, EMPTY, TRACK, RADIO };
+
 /// No name to give: tr() of either is "" (i18n.h).
 constexpr i18n::S  UI_NO_NAME = i18n::S::COUNT;
 constexpr i18n::SU UI_NO_CAPS = i18n::SU::COUNT;
 
 struct UiSrcDef {
-    const char* sym;    ///< the icon: the Player's tile while nothing plays, the Sources page's card
+    PlayerFace  face;   ///< what the Player draws while it plays
+    const char* sym;   ///< the icon: the Player's tile while nothing plays, the Sources page's card
     i18n::S     name;   ///< the standby face's line and the Sources page's card; none for the output
                         ///< off and the tone
     i18n::SU    caps;   ///< the line over the Player's block; none where the sound is played from
@@ -100,15 +107,15 @@ constexpr UiSrcDef ui_src_def(UiSrc src) {
     using i18n::S;
     using i18n::SU;
     switch (src) {
-    case UiSrc::OFF:     return { UI_SYM_POWER,      UI_NO_NAME,     UI_NO_CAPS };
-    case UiSrc::TONE:    return { UI_SYM_GRAPHIC_EQ, UI_NO_NAME,     UI_NO_CAPS };
-    case UiSrc::AUX:     return { UI_SYM_AUX,        S::src_aux,     UI_NO_CAPS };
-    case UiSrc::BT:      return { UI_SYM_BLUETOOTH,  S::src_bt,      SU::src_bt };
-    case UiSrc::CARD:    return { UI_SYM_SD,         S::src_card,    SU::src_card };
-    case UiSrc::RADIO:   return { UI_SYM_RADIO,      S::src_radio,   SU::src_radio };
-    case UiSrc::AIRPLAY: return { UI_SYM_AIRPLAY,    S::src_airplay, SU::src_airplay };
-    case UiSrc::USB:     return { UI_SYM_USB,        S::src_usb,     SU::src_usb };
-    case UiSrc::DLNA:    return { UI_SYM_CAST,       S::src_dlna,    SU::src_dlna };
+    case UiSrc::OFF:     return { PlayerFace::EMPTY, UI_SYM_POWER,      UI_NO_NAME,     UI_NO_CAPS };
+    case UiSrc::TONE:    return { PlayerFace::EMPTY, UI_SYM_GRAPHIC_EQ, UI_NO_NAME,     UI_NO_CAPS };
+    case UiSrc::AUX:     return { PlayerFace::EMPTY, UI_SYM_AUX,        S::src_aux,     UI_NO_CAPS };
+    case UiSrc::BT:      return { PlayerFace::TRACK, UI_SYM_BLUETOOTH,  S::src_bt,      SU::src_bt };
+    case UiSrc::CARD:    return { PlayerFace::TRACK, UI_SYM_SD,         S::src_card,    SU::src_card };
+    case UiSrc::RADIO:   return { PlayerFace::RADIO, UI_SYM_RADIO,      S::src_radio,   SU::src_radio };
+    case UiSrc::AIRPLAY: return { PlayerFace::TRACK, UI_SYM_AIRPLAY,    S::src_airplay, SU::src_airplay };
+    case UiSrc::USB:     return { PlayerFace::EMPTY, UI_SYM_USB,        S::src_usb,     SU::src_usb };
+    case UiSrc::DLNA:    return { PlayerFace::TRACK, UI_SYM_CAST,       S::src_dlna,    SU::src_dlna };
     }
     return ui_src_def(UiSrc::OFF);
 }
@@ -126,6 +133,11 @@ constexpr UiSrc ui_src(int32_t value, bool push) {
     return (UiSrc)value;
 }
 inline UiSrc ui_src(const UiLvglModule::Snapshot& s) { return ui_src(s.source, s.network_push); }
+
+/// The Player's face for what plays. The Player, its transport, the standby face and the module's
+/// "music is playing" all ask this, rather than each spelling the rule again.
+constexpr PlayerFace ui_face(int32_t value, bool push) { return ui_src_def(ui_src(value, push)).face; }
+inline PlayerFace ui_face(const UiLvglModule::Snapshot& s) { return ui_face(s.source, s.network_push); }
 
 // ── widget helpers ───────────────────────────────────────────────────────────────────────
 // These exist so a screen file reads as layout, not as twenty lv_obj_set_style_* calls.

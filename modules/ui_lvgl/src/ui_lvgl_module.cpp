@@ -803,13 +803,15 @@ void UiLvglModule::mirror_state() {
 
     // What the standby face needs to know: is there music to show. A station has its own
     // state; every other source with a track (card, DLNA, Bluetooth, AirPlay) reports through
-    // play_state above. AUX has no state at all — it is an input, and while it is selected the
+    // play_state above, and so does USB, which has none: play_state says whether the computer
+    // sends sound. AUX has no state at all — it is an input, and while it is selected the
     // spectrum is the only thing there is to show of it. On at once, off after four seconds
     // of quiet: a track change or a station rebuffering is a gap, not the end of the music.
-    const bool radio_src = source == AUDIO_SOURCE_RADIO && !network_push;
+    const PlayerFace face = ui_face(source, network_push);
+    const bool reports = face == PlayerFace::TRACK || source == AUDIO_SOURCE_USB;
     const bool playing = source == AUDIO_SOURCE_AUX
-        || (radio_src ? strcmp(radio_state, "playing") == 0
-                      : source >= AUDIO_SOURCE_BT && strcmp(play_state, "playing") == 0);
+        || (face == PlayerFace::RADIO ? strcmp(radio_state, "playing") == 0
+                                      : reports && strcmp(play_state, "playing") == 0);
     if (playing) { sb_music_ = true; sb_quiet_ms_ = 0; }
     else if (sb_music_ && (sb_quiet_ms_ += 50) >= 4000) sb_music_ = false;
 

@@ -308,8 +308,7 @@ void tab_cb(lv_event_t* e) {
 bool on_air(const rc::Row& r) {
     if (!g.ctx) return false;
     const auto& s = g.ctx->s;
-    return s.source == AUDIO_SOURCE_RADIO && !s.network_push && s.radio_station < 0 && r.name[0] &&
-           strcmp(s.radio_name, r.name) == 0;
+    return ui_src(s) == UiSrc::RADIO && s.radio_station < 0 && r.name[0] && strcmp(s.radio_name, r.name) == 0;
 }
 
 void station_sub(const rc::Row& r, char* out, size_t n) {

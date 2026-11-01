@@ -94,8 +94,6 @@ constexpr int32_t SPEC_X    = (uig::CONT_W - uih::SPEC_ROW_W) / 2;
 constexpr int32_t SPEC_BASE = uig::CONT_H;
 constexpr int32_t SPEC_H    = SPEC_BASE - COVER - 16;          // 88
 
-enum class Face : int8_t { NONE = -1, EMPTY, TRACK, RADIO };
-
 struct Now {
     lv_obj_t* page     = nullptr;   ///< the whole screen: the cover's colour behind everything
     lv_obj_t* root     = nullptr;   ///< the content box in it, where the stack holds every other page
@@ -153,7 +151,7 @@ struct Now {
     char  dev_txt[32]     = "";
     char  pos_txt[12]     = "";
     char  dur_txt[12]     = "";
-    Face    face    = Face::NONE;
+    PlayerFace face = PlayerFace::NONE;
     int32_t source  = -2;
     bool    network_push = false;
     int8_t  tran_live = -1;
@@ -211,14 +209,12 @@ void shuf_cb(lv_event_t*)   { post(UiLvglModule::Req::SHUFFLE, -1); }
 /// 1 play/pause, 2 next. Read from the snapshot, not this page's buttons: the knob's press comes
 /// here from every page, and only the page on the glass is refreshed.
 void transport(const UiLvglModule::Snapshot& s, int which) {
-    const bool is_radio = s.source == AUDIO_SOURCE_RADIO && !s.network_push;
-    const bool has_track = s.source == AUDIO_SOURCE_FILE || s.network_push || s.source == AUDIO_SOURCE_BT ||
-                           s.source == AUDIO_SOURCE_AIRPLAY;
-    if (!is_radio && !has_track) return;                 // the tone, AUX, off: nothing to command
+    const PlayerFace face = ui_face(s);
+    if (face == PlayerFace::EMPTY) return;               // the tone, AUX, USB, off: nothing to command
     // nobody to command: no phone; an AirPlay sender that gave no remote (refresh's "live")
     if ((s.source == AUDIO_SOURCE_BT && !s.bt_connected) || (s.source == AUDIO_SOURCE_AIRPLAY && !s.ap_remote))
         return;
-    if (is_radio) {
+    if (face == PlayerFace::RADIO) {
         const bool playing = strcmp(s.radio_state, "playing") == 0;
         post(UiLvglModule::Req::RADIO_CMD, which == 0 ? 4 : which == 2 ? 3 : playing ? 2 : 1);
     } else if (which == 1 && s.source == AUDIO_SOURCE_FILE && strcmp(s.play_state, "playing") != 0 &&
@@ -555,18 +551,18 @@ void bt_wait_line(const UiLvglModule::Snapshot& s, char* out, size_t n) {
     if (name[0]) i18n::fmt(out, n, tr(S::manage_visible_as), {{"name", name}});
 }
 
-void set_face(Face f, const UiLvglModule::Snapshot& s) {
+void set_face(PlayerFace f, const UiLvglModule::Snapshot& s) {
     const auto& t = m3::theme();
     n.face = f;
-    const bool empty = (f == Face::EMPTY);
-    const bool radio = (f == Face::RADIO);
+    const bool empty = (f == PlayerFace::EMPTY);
+    const bool radio = (f == PlayerFace::RADIO);
     const bool is_file = (s.source == AUDIO_SOURCE_FILE);
     uih::show(n.transport, !empty);
     n.vis_shown = -1;                             // the next refresh decides on «Увімкнути видимість»
     n.seek_drag = false;                          // a scrub of another source's track seeks nothing
     n.seek_to = -1;
     uih::show(n.pick.obj, empty);
-    uih::show(n.prog, f == Face::TRACK);
+    uih::show(n.prog, f == PlayerFace::TRACK);
     uih::show(n.wave, radio);
     uih::show(n.rep.obj, is_file);
     uih::show(n.shuf.obj, is_file);
@@ -594,11 +590,9 @@ void refresh(lv_obj_t*, UiCtx& c) {
     const bool is_file = (s.source == AUDIO_SOURCE_FILE);
     const bool is_bt   = (s.source == AUDIO_SOURCE_BT);
     const bool is_ap   = (s.source == AUDIO_SOURCE_AIRPLAY);
-    const bool is_radio = (s.source == AUDIO_SOURCE_RADIO && !s.network_push);
     // Bluetooth and AirPlay have a track, a position and a transport like the card and DLNA,
-    // so they are drawn by the same face; repeat and shuffle stay the card's.
-    const bool has_track = is_file || s.network_push || is_bt || is_ap;
-    const Face face = is_radio ? Face::RADIO : has_track ? Face::TRACK : Face::EMPTY;
+    // so they are drawn by the same face (ui_face); repeat and shuffle stay the card's.
+    const PlayerFace face = ui_face(s);
 
     if (s.source != n.source || s.network_push != n.network_push || face != n.face) {
         n.source = s.source;
@@ -627,15 +621,15 @@ void refresh(lv_obj_t*, UiCtx& c) {
     // TuneBlade, Music Assistant, iTunes, an iPhone with the panel in AirPlay 1 mode. A phone
     // in AirPlay 2 mode gives none: its remote commands ride MRP, which the receiver does not
     // implement (components/airplay2/UPSTREAM.md).
-    const int8_t live = face == Face::EMPTY ? 0
+    const int8_t live = face == PlayerFace::EMPTY ? 0
                       : is_ap ? (s.ap_remote ? 1 : 0)
                       : (!is_bt || s.bt_connected) ? 1 : 0;
     // Bluetooth, no phone, and new phones kept out: the transport gives way to letting them in
-    const int8_t vis = face != Face::EMPTY && is_bt && !s.bt_connected && s.bt_link && bt_hidden() ? 1 : 0;
+    const int8_t vis = face != PlayerFace::EMPTY && is_bt && !s.bt_connected && s.bt_link && bt_hidden() ? 1 : 0;
     if (vis != n.vis_shown) {
         n.vis_shown = vis;
         uih::show(n.visible.obj, vis != 0);
-        uih::show(n.transport, face != Face::EMPTY && !vis);
+        uih::show(n.transport, face != PlayerFace::EMPTY && !vis);
     }
     if (live != n.tran_live) {
         n.tran_live = live;
@@ -686,7 +680,7 @@ void refresh(lv_obj_t*, UiCtx& c) {
     // the phone it plays from, beside «BLUETOOTH»; no other source names its sender
     uih::set_text(n.from_dev, n.dev_txt, sizeof(n.dev_txt), is_bt && s.bt_connected ? s.bt_peer : "");
 
-    if (face == Face::RADIO) {
+    if (face == PlayerFace::RADIO) {
         const bool playing = strcmp(s.radio_state, "playing") == 0;
         // What is playing over who is playing it: the ICY title when the station sends one,
         // the station's name until it does — and the state in words while it is not playing,
@@ -709,7 +703,7 @@ void refresh(lv_obj_t*, UiCtx& c) {
             n.playing = pl;
             lv_label_set_text(n.play.icon, pl ? UI_SYM_STOP : UI_SYM_PLAY);
         }
-    } else if (face == Face::TRACK) {
+    } else if (face == PlayerFace::TRACK) {
         const char* title = s.play_title;
         char cur_name[player_core::Playlist::MAX_NAME];
         if (!title[0] && is_file) {

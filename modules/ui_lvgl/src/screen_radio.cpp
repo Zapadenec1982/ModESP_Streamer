@@ -69,7 +69,7 @@ void post(UiLvglModule::Req kind, int32_t v) {
 }
 
 /// The radio owns the output and plays a station from the list (not a DLNA push).
-bool radio_on(const UiLvglModule::Snapshot& s) { return s.source == AUDIO_SOURCE_RADIO && !s.network_push; }
+bool radio_on(const UiLvglModule::Snapshot& s) { return ui_src(s) == UiSrc::RADIO; }
 
 /// …and is playing it, or on its way to.
 bool radio_live(const UiLvglModule::Snapshot& s) {

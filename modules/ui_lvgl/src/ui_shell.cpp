@@ -44,10 +44,6 @@ namespace {
 
 using i18n::S;
 using i18n::tr;
-using modesp::gen::AUDIO_SOURCE_AIRPLAY;
-using modesp::gen::AUDIO_SOURCE_BT;
-using modesp::gen::AUDIO_SOURCE_FILE;
-using modesp::gen::AUDIO_SOURCE_RADIO;
 
 // ── the pages ──────────────────────────────────────────────────────────────────────────────
 
@@ -580,13 +576,11 @@ void refresh_standby(UiCtx& c) {
 
     // The play_* fields belong to whichever source has a track; with AUX selected they still
     // hold the card's last one, so AUX says only what it is.
-    const bool radio = (s.source == AUDIO_SOURCE_RADIO && !s.network_push);
-    const bool track = s.source == AUDIO_SOURCE_BT || s.source == AUDIO_SOURCE_FILE ||
-                       s.source == AUDIO_SOURCE_AIRPLAY || (s.source == AUDIO_SOURCE_RADIO && s.network_push);
+    const PlayerFace face = ui_face(s);
     const char* name = tr(ui_src_def(ui_src(s)).name);     // "" for the output off and the tone
-    if (radio)      sb_set_line(s.radio_name, s.radio_now, tr(S::src_radio));
-    else if (track) sb_set_line(s.play_artist, s.play_title, name);
-    else            sb_set_line("", "", name);
+    if (face == PlayerFace::RADIO)      sb_set_line(s.radio_name, s.radio_now, name);
+    else if (face == PlayerFace::TRACK) sb_set_line(s.play_artist, s.play_title, name);
+    else                                sb_set_line("", "", name);
 
     float db[audio_core::SPECTRUM_BANDS];
     uih::spectrum_set(g.sb_spec, audio_core::spectrum_bus().read(db) ? db : nullptr);
