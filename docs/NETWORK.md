@@ -300,6 +300,8 @@ Module routes (`http_routes`):
   `400 {"error":"board_mismatch","running","incoming"}`.
 - Three receive timeouts in a row (~90 s) — `408`: a client that vanished without FIN would
   otherwise hold the only httpd task.
+- One update at a time, shared with the MQTT `_ota` command: while one is being written the
+  other is refused (here `409`), and a written image keeps the slot until the restart.
 - Writes to the next slot (`ota_0` / `ota_1`), makes it bootable, stops the modules,
   restarts.
 - Within 60 s the new image must get Wi-Fi and the HTTP server, `audio.state` ≠ `error` and a

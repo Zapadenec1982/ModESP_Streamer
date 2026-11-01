@@ -390,7 +390,7 @@ static void ota_task(void* arg) {
 
 bool start_ota(const OtaParams& params, SharedState* state) {
     // Atomic guard: тільки одна OTA одночасно
-    if (s_ota_in_progress.exchange(true)) {
+    if (!try_begin()) {
         ESP_LOGW(TAG, "OTA already in progress — ignoring");
         return false;
     }
@@ -421,6 +421,14 @@ bool start_ota(const OtaParams& params, SharedState* state) {
 
 bool is_in_progress() {
     return s_ota_in_progress.load();
+}
+
+bool try_begin() {
+    return !s_ota_in_progress.exchange(true);
+}
+
+void end() {
+    s_ota_in_progress.store(false);
 }
 
 } // namespace ota_handler

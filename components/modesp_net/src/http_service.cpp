@@ -23,6 +23,7 @@
 #include "esp_system.h"
 #include "nvs_flash.h"
 #include "modesp/services/device_id.h"
+#include "modesp/services/ota_handler.h"   // the one update at a time, shared with MQTT `_ota`
 #include "esp_ota_ops.h"
 #include "esp_app_format.h"
 #include "esp_sntp.h"
@@ -1397,6 +1398,20 @@ esp_err_t HttpService::handle_post_ota(httpd_req_t* req) {
         return ESP_FAIL;
     }
 
+    // player-fork: the partition is claimed against the MQTT `_ota` download (ota_handler):
+    // esp_ota_begin() gives a second writer the same partition, and the two erase each other's
+    // sectors. Given back on every way out but success — the image then waits for the restart,
+    // and nothing may write the slot until it comes.
+    struct Claim {
+        bool held = ota_handler::try_begin();
+        ~Claim() { if (held) ota_handler::end(); }
+    } claim;
+    if (!claim.held) {
+        ESP_LOGW(TAG, "OTA: refused, another update is being written");
+        httpd_resp_send_custom_err(req, "409 Conflict", "Another firmware update is in progress");
+        return ESP_FAIL;
+    }
+
     ESP_LOGI(TAG, "OTA: Writing to partition '%s' at offset 0x%lx (%d bytes)",
              update_partition->label, (unsigned long)update_partition->address,
              req->content_len);
@@ -1504,6 +1519,7 @@ esp_err_t HttpService::handle_post_ota(httpd_req_t* req) {
     }
 
     ESP_LOGI(TAG, "OTA: Success! Wrote %d bytes to '%s'", received_total, update_partition->label);
+    claim.held = false;   // kept through the restart below
 
     httpd_resp_set_type(req, "application/json");
     httpd_resp_sendstr(req, "{\"status\":\"ok\",\"message\":\"Firmware updated. Restarting...\"}");

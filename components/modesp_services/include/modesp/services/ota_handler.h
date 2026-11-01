@@ -7,7 +7,8 @@
  * SHA256 checksum), writes to OTA partition, and restarts.
  *
  * Runs in a separate FreeRTOS task to avoid blocking MQTT event handler.
- * Only one OTA operation at a time (atomic guard).
+ * Only one OTA operation at a time (atomic guard), shared with every other writer of the
+ * update partition through try_begin()/end().
  *
  * Status feedback via SharedState:
  *   _ota.status   — "idle" | "downloading" | "verifying" | "rebooting" | "error"
@@ -43,6 +44,22 @@ bool start_ota(const OtaParams& params, SharedState* state);
  * Check if OTA is currently in progress.
  */
 bool is_in_progress();
+
+/**
+ * Claim the update partition for one update written by someone else — the HTTP upload.
+ *
+ * esp_ota_begin() hands out a second handle on a partition that already has one, and two
+ * writers then erase each other's sectors, so every writer claims the same guard start_ota()
+ * does. A writer that made the partition bootable keeps the claim until the restart.
+ *
+ * @return true if claimed, false if an update is already running
+ */
+bool try_begin();
+
+/**
+ * Release a claim from try_begin(): the update failed or was abandoned.
+ */
+void end();
 
 } // namespace ota_handler
 } // namespace modesp
