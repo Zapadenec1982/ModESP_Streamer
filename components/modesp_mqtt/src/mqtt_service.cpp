@@ -455,20 +455,24 @@ void MqttService::mqtt_event_handler(void* args, esp_event_base_t base,
 // ── Publish state ───────────────────────────────────────────────
 
 int MqttService::format_value(const StateValue& val, char* buf, size_t buf_size) {
+    int n = 0;
     if (etl::holds_alternative<float>(val)) {
-        return snprintf(buf, buf_size, "%.2f",
-                        static_cast<double>(etl::get<float>(val)));
+        n = snprintf(buf, buf_size, "%.2f",
+                     static_cast<double>(etl::get<float>(val)));
     } else if (etl::holds_alternative<int32_t>(val)) {
-        return snprintf(buf, buf_size, "%ld",
-                        (long)etl::get<int32_t>(val));
+        n = snprintf(buf, buf_size, "%ld",
+                     (long)etl::get<int32_t>(val));
     } else if (etl::holds_alternative<bool>(val)) {
-        return snprintf(buf, buf_size, "%s",
-                        etl::get<bool>(val) ? "true" : "false");
+        n = snprintf(buf, buf_size, "%s",
+                     etl::get<bool>(val) ? "true" : "false");
     } else if (etl::holds_alternative<StringValue>(val)) {
-        return snprintf(buf, buf_size, "%s",
-                        etl::get<StringValue>(val).c_str());
+        n = snprintf(buf, buf_size, "%s",
+                     etl::get<StringValue>(val).c_str());
     }
-    return 0;
+    // player-fork: what is in buf, not what snprintf wanted to write. The callers publish this
+    // many bytes from buf, and a string longer than it sent the stack beyond to the broker.
+    if (n < 0) return 0;
+    return (size_t)n < buf_size ? n : (int)buf_size - 1;
 }
 
 void MqttService::publish_state() {
@@ -485,7 +489,7 @@ void MqttService::publish_state() {
         auto val = state_->get(gen::MQTT_PUBLISH[i]);
         if (!val.has_value()) continue;
 
-        char payload[32];
+        char payload[PAYLOAD_MAX];
         int len = format_value(val.value(), payload, sizeof(payload));
         if (len <= 0) continue;
 
@@ -524,7 +528,7 @@ void MqttService::publish_state() {
         auto val = state_->get(SYS_KEYS[j]);
         if (!val.has_value()) continue;
 
-        char payload[32];
+        char payload[PAYLOAD_MAX];
         int len = format_value(val.value(), payload, sizeof(payload));
         if (len <= 0) {
             // Пустий рядок — публікуємо як "" (1 байт = порожній MQTT payload)
@@ -560,7 +564,7 @@ void MqttService::publish_params() {
         auto val = state_->get(gen::MQTT_SUBSCRIBE[i]);
         if (!val.has_value()) continue;
 
-        char payload[32];
+        char payload[PAYLOAD_MAX];
         int len = format_value(val.value(), payload, sizeof(payload));
         if (len <= 0) continue;
 
