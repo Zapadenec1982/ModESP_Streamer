@@ -8,7 +8,7 @@
  * pressed.
  *
  * The wire itself is a bound driver (drivers/uart_link) behind modesp/hal/byte_link.h, named
- * by bindings.json under the role `sat_link` (item 8.9). This file therefore knows that bytes
+ * by bindings.json under the role `sat_link`. This file therefore knows that bytes
  * arrive and that some are sometimes lost; it does not know what a baud rate is.
  *
  * The wire format is docs/LINK_PROTOCOL.md and lives in components/sat_link, which has no

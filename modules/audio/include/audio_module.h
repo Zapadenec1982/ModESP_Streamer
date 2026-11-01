@@ -132,8 +132,8 @@ private:
         uint32_t edge_openings = 0;
         uint32_t startup_seq = 0, startup_rate = 0;
         audio_core::StartupProbe startup_raw{}, startup_out{};
-        // The output clock as a servo (stage 13). Reported rather than logged, like
-        // everything else the audio task measures.
+        // The output clock as a servo (docs/AUDIO.md, "Playback"). Reported rather than
+        // logged, like everything else the audio task measures.
         int32_t  clock_ppm    = 0;      ///< what the output clock is trimmed to, achieved
         bool     clock_follow = false;  ///< the BT path is riding the clock, not the resampler
         uint32_t bt_asrc_blocks = 0;    ///< blocks that still went through the resampler
@@ -153,7 +153,7 @@ private:
     /// audio.bass_db and audio.treble_db as one command value: bass in the high byte, treble in the
     /// low one, each a signed byte within ±6 (DspChain::set_tone).
     int32_t timbre();
-    /// audio.vol_max, «Максимум»: 40…100 % of the scale (S4).
+    /// audio.vol_max, «Максимум»: 40…100 % of the scale.
     int32_t vol_max();
     void send(CmdType t, int32_t v);
     /// Main loop: the settings to the audio task, each that changed (the .cpp says when).
@@ -295,7 +295,7 @@ private:
     int32_t  last_hp_hz_ = INT32_MIN;
     int32_t  last_bass_xo_ = INT32_MIN, last_rms_cap_ = INT32_MIN;
     int32_t  last_loud_ = INT32_MIN, last_port_ = INT32_MIN;
-    /// «Звичайна гучність» (S6): the reference the audio task has (LOUD_REF).
+    /// «Звичайна гучність»: the reference the audio task has (LOUD_REF).
     int32_t  last_loud_ref_ = INT32_MIN;
     int32_t  last_timbre_ = INT32_MIN, last_balance_ = INT32_MIN;   ///< Бас and Високі packed (timbre()), balance
     float    last_loud_db_ = -1.0f;
@@ -405,7 +405,7 @@ private:
     uint32_t bt_diag_dropped_ = 0;
     modesp::audio::AudioPortDiagnostics bt_diag_rx_{}, bt_diag_tx_{};
 
-    // ── the output clock as the Bluetooth servo (stage 13) ──
+    // ── the output clock as the Bluetooth servo ──
     //
     // The satellite owns the input clock: it is the I2S master of that port and this panel
     // its slave, so the samples arrive at the satellite's rate whatever the P4 believes. The
@@ -460,7 +460,7 @@ private:
     /// The store's version when follow_settings() last read it; 0: not yet, read them.
     uint32_t settings_ver_ = 0;
     /// The volume and «Максимум» to the audio task: the last value, never the command queue,
-    /// which drops what does not fit (S4). audio.vol_eff says when it has been taken.
+    /// which drops what does not fit. audio.vol_eff says when it has been taken.
     audio_core::LevelLatch level_;
     bool     vol_published_ = false;
     /// A persisted ring source that was not on offer at init because the ring's owner had

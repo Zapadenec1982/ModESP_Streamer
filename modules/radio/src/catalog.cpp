@@ -12,7 +12,7 @@
  * The request side runs whatever the source is: browsing does not need the radio to be
  * playing, and choosing a row is what makes it the source.
  *
- * Stage 20а.
+ * What the user sees of it: docs/NETWORK.md, "Radio Browser catalog".
  */
 
 #include "radio_module.h"
@@ -591,7 +591,7 @@ void RadioModule::catalog_update(uint32_t /*dt_ms*/) {
         }
     }
 
-    // ── a station chosen on the browser's catalog page (data/www/radio.html, stage 20д). The
+    // ── a station chosen in the web's catalog (docs/NETWORK.md, "Radio Browser catalog"). The
     // page asks Radio Browser itself; all that reaches the panel is the name, the stream and
     // the uuid, written in that order before the act, in one request. The logo is looked up
     // by the uuid, as for a station from the list. ──

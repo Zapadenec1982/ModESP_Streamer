@@ -393,8 +393,8 @@ void BtModule::on_update(uint32_t dt_ms) {
     drain_frames();                    // frames the wire task collected; handle() runs here
 
     bt_cover::tick(now_ms());
-    // Protocol 1.7. A cover that lost one frame used to be lost for good — the bench log of
-    // 21.09.2026 shows a 53 KiB image thrown away over 501 missing bytes. Ask for it again,
+    // Protocol 1.7. A cover that lost one frame used to be lost for good — a 53 KiB image
+    // was thrown away over 501 missing bytes. Ask for it again,
     // but only of a satellite that said it would answer: an older one never sets the bit,
     // and against it this line does nothing at all, which is the 1.6 behaviour exactly.
     if (linked_ && (peer_caps_ & sat::DEV_CAP_COVER_RETRY)) {
@@ -1013,7 +1013,7 @@ void BtModule::handle(const sat::Frame& f) {
         sat::BtState s;
         if (!sat::parse(f, s)) break;
         state_set("bt.state", state_name(s.state));
-        // Whether A2DP audio is actually flowing, which is the condition item 12.6 acts on.
+        // Whether A2DP audio is actually flowing, which is what gate_on_source() acts on.
         // BT_STREAMING and not TRACK_POS: a phone with no AVRCP metadata never sends a
         // TRACK_POS at all, and it is still decoding into our I2S port.
         streaming_ = (s.state == sat::BT_STREAMING);
@@ -1239,7 +1239,7 @@ void BtModule::handle(const sat::Frame& f) {
 
     default:
         // Anything else is dropped, including a 1.9 satellite's GPIO_MAP: 1.10 retired
-        // the expander's codes 0x30..0x35 (docs/LINK_PROTOCOL.md, section 11).
+        // the expander's codes 0x30..0x35 (docs/LINK_PROTOCOL.md, "Reserved codes and bits").
         break;
     }
 }

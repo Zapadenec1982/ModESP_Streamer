@@ -130,7 +130,7 @@ constexpr double   ASRC_CAPTURE = 0.02;                    // +-2 % while recove
 //
 // There are two of these loops in the chain now — the satellite catches the phone, this
 // panel catches the satellite — and a cascade is only stable while the inner loop is the
-// faster one. The satellite steps once a second (plan item 10.1); this steps four times in
+// faster one. The satellite steps once a second; this steps four times in
 // that second, so by the time the satellite has moved once this loop has already settled
 // against the move rather than chasing it.
 //
@@ -145,7 +145,8 @@ constexpr uint32_t BT_SERVO_MS = 250;
 // coefficients and then RECALIBRATES, spinning on clk_ll_apll_calibration_is_done()
 // (esp32p4/rtc_clk.c) — so every step is a moment of analogue settling on the clock the DAC
 // locks its own PLL to. One of those is what a track-boundary retune costs, and the whole
-// reason stage 14 exists is that the customer's bench can hear it.
+// reason the output clock is set once per source session (docs/AUDIO.md, "Output rate and
+// sessions") is that the customer's bench can hear it.
 //
 // Two parts per million of hysteresis makes the difference between a loop that writes four
 // times a second forever and one that writes when something actually changed. The drift it
@@ -361,7 +362,7 @@ void AudioModule::own_eq() {
     const int64_t now = esp_timer_get_time() / 1000;
     if (!st.take_keep() && web != 0 && now - web < EQ_WEB_QUIET_MS) return;
 
-    // Always to the store: an edit must survive the next full flash (plan item 11.1).
+    // Always to the store: an edit must survive the next full flash.
     // Static: the main task had 468 bytes of stack to spare at its deepest (11.10.2026).
     static char eq_path[160], custom_path[160];
     modesp::UserStore::write_path("eq.json", eq_path, sizeof(eq_path));
@@ -527,7 +528,7 @@ void AudioModule::port_meter_loop() {
         const int32_t f = (int32_t)lroundf(fit.hz);
         switch (fit.status) {
         case PortFit::OK:
-            // Found, and offered — never written (S6): «Прийняти» in the speakers' wizard or
+            // Found, and offered — never written: «Прийняти» in the speakers' wizard or
             // «Застосувати» on the calibration page writes audio.port_hz, as measured. Until then
             // nothing about the sound has changed.
             state_set("audio.port_meas_hz", fit.hz);
@@ -672,7 +673,7 @@ bool AudioModule::on_init() {
     dsp_.set_pre_gain_db(eq_trim_db_);
     dsp_.set_eq_enabled(read_bool("audio.eq_enabled", true));
     {
-        // After power-on no louder than audio.vol_start (S4). The saved value itself comes down,
+        // After power-on no louder than audio.vol_start. The saved value itself comes down,
         // not just the level, so every client shows what plays — and /api/restore, which saves
         // and restarts, lands here too.
         const int32_t saved = read_int("audio.volume", 30);
@@ -691,9 +692,10 @@ bool AudioModule::on_init() {
     last_hp_hz_ = read_int("audio.hp_hz", 40);
     dsp_.set_subsonic((float)last_hp_hz_);
     {
-        // Where the port came from (audio.port_src, S6). Before that key the meter wrote what it
+        // Where the port came from (audio.port_src). Before that key the meter wrote what it
         // found by itself, and a number typed in looked the same: one that is set was set by
-        // somebody, and nothing shows it was measured — as audio.amp_src at S0a.
+        // somebody, and nothing shows it was measured — as audio.amp_src does for the
+        // amplifier's ceiling.
         const int32_t src = read_int("audio.port_src", modesp::gen::AUDIO_PORT_SRC_UNSET);
         if (src == modesp::gen::AUDIO_PORT_SRC_UNSET && read_int("audio.port_hz", 0) > 0)
             state_set("audio.port_src", (int32_t)modesp::gen::AUDIO_PORT_SRC_MANUAL);
@@ -1184,8 +1186,8 @@ void AudioModule::on_update(uint32_t dt_ms) {
             // after it is that one's correction: the trim actually achieved when the clock
             // is following, the resampler's departure from its base ratio when it is not.
             // `asrc` counts the blocks that went through the converter since the format was
-            // adopted — in steady clock-following it does not move, which is the stage's
-            // definition of done stated as a number rather than as a feeling.
+            // adopted — in steady clock-following it does not move, which is the servo
+            // working, stated as a number rather than as a feeling.
             ESP_LOGI(TAG, "BT signal: in %d/%d dBFS, width %d, out %d/%d, %lu Hz announced "
                           "(%d delivered) -> clock %lu Hz, %s %d ppm, asrc %lu, short %lu, "
                           "dropped %lu, primes %lu, resyncs %lu, ring %u%% = %u ms",
@@ -1600,7 +1602,7 @@ void AudioModule::apply_source(int32_t src) {
         // descriptors only when the buffer size changes, and that size depends on the slot
         // width alone (i2s_std.c:136, i2s_get_buf_size). Narrowing to 16 bits therefore
         // returns the wide buffers to a heap that, by the time Wi-Fi and a DLNA stream have
-        // had their share, can no longer produce them again: the bench log reads
+        // had their share, can no longer produce them again: the panel logged
         // ESP_ERR_NO_MEM with 16875 bytes free and a largest block of 6144, and Bluetooth is
         // silent for the rest of the uptime. A clock can be given back. Contiguous DMA
         // memory on this chip cannot.
@@ -2888,7 +2890,7 @@ void AudioModule::task_loop() {
         status_.asrc_ppm = (float)(asrc_base_ > 0.0 ? (asrc_ratio_ / asrc_base_ - 1.0) * 1e6 : 0.0);
             // The clock's side of the same story. asrc_ppm stays what it says it is — what
             // the RESAMPLER is doing — and reads zero while the clock is doing the work,
-            // which is the honest answer and also the one the stage's DoD asks for.
+            // which is the honest answer.
             status_.clock_ppm      = bt_trim_got_;
             status_.clock_follow   = bt_clock_follow_;
             status_.bt_asrc_blocks = bt_asrc_blocks_;

@@ -186,7 +186,7 @@ struct RadioTaskState {
 
     radio_core::StationList list;
     std::atomic<int32_t> station{0};        ///< index into `list`, or TRANSIENT
-    /// A station played from the catalog without being in the list (stage 20б). Station
+    /// A station played from the catalog without being in the list. Station
     /// semantics — it reconnects for ever — which a pushed URL does not have. Written by the
     /// radio task from the CATALOG command that carries its URL, and by a web edit on main
     /// that parks a list station here (apply_station_edit) — both under list_guard(), which
@@ -278,7 +278,7 @@ struct RadioTaskState {
     char     url_req[PLAY_URL_LEN] = "";
     /// The track as the task was asked for it, kept when `url` moves on to a playlist's
     /// stream. radio.url, completed_uri and promoted_uri carry this one, because a control
-    /// point knows its track only by the URL it pushed (deep review 2026-10-12, RP-3).
+    /// point knows its track only by the URL it pushed.
     /// Written by the radio task; main reads it for the report as it read `url`.
     char     asked[PLAY_URL_LEN] = "";
     /// How many times this track has been picked up again after a break.
@@ -807,7 +807,7 @@ Hop http_open_hop(const char* url, char* ct, size_t ct_sz, int64_t range_from,
         } else if (header_is(line, len, "Location", v, vlen)) {
             // Cut short, a signed redirect fails as a 403 or 404 from a server that looks
             // fine (see PLAY_URL_LEN), so one that does not fit is refused, with the reason
-            // in the log (deep review 2026-10-12, RP-5).
+            // in the log.
             if (vlen >= sizeof(location) && code >= 300 && code < 400) {
                 ESP_LOGW(TAG, "redirect target too long (%u bytes)", (unsigned)vlen);
                 http_close();
@@ -865,7 +865,7 @@ Hop http_open_hop(const char* url, char* ct, size_t ct_sz, int64_t range_from,
 /// request and the Location — about 1.6 KB — and it used to call itself for every redirect.
 /// A CDN that answered with four of them (zeno.fm -> surfernetwork, http and https) took
 /// the 12 KB "radio" stack past its end inside the "opening" log line, and the panel
-/// rebooted on the stack guard (coredump, _local/bench/coredump-20261004-2323). Now the
+/// rebooted on the stack guard. Now the
 /// stack holds one hop whatever the chain's length.
 bool http_open(const char* url, char* ct, size_t ct_sz, int redirects = 4,
                int64_t range_from = -1) {
@@ -1000,7 +1000,7 @@ void ring_put(const float* stereo, size_t frames) {
             // Pause is intentional backpressure. Keep this decoded block until
             // Resume instead of silently dropping it after two seconds. It is also progress
             // as far as the liveness watch goes: a DLNA pause past 30 s was reported as a
-            // stuck task (deep review 2026-10-12, RP-7).
+            // stuck task.
             if (ring.paused()) { modesp::liveness::tick(s.beat); spins = 0; continue; }
             // The consumer is not reading: either the source moved away from radio or the
             // audio core is gone. Either way, dropping these frames is right — holding them
@@ -1225,8 +1225,8 @@ Pump pump() {
     raw_drop(raw.consumed);
     if (err == ESP_AUDIO_ERR_BUFF_NOT_ENOUGH) {
         // The frame's PCM does not fit, and the decoder keeps it until it does. Read as
-        // "nothing decoded yet" it was asked again with the same buffer for ever, in silence
-        // (deep review 2026-10-12, RP-4). Grow as asked and try again, or give the track up.
+        // "nothing decoded yet" it was asked again with the same buffer for ever, in silence.
+        // Grow as asked and try again, or give the track up.
         if (out.needed_size > s.pcm_cap && out.needed_size <= PCM_MAX) {
             if (void* p = heap_caps_realloc(s.pcm, out.needed_size,
                                             MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT)) {
@@ -1419,7 +1419,7 @@ void save_stations() {
     radio_core::stations().copy(s.list);
     const size_t w = radio_core::serialize(s.list, buf.p, buf.n);
     if (!w) { ESP_LOGW(TAG, "station list too large to write"); return; }
-    // write -> read back -> rename (safe_file, plan item 11.2). The old fopen/fwrite left a
+    // write -> read back -> rename (safe_file). The old fopen/fwrite left a
     // truncated list on a power cut, and a truncated list is not a smaller list: radio_core
     // ::parse rejects it, and load_stations() then overwrites it with the built-in defaults.
     // Someone's stations were one badly timed reset away from being replaced by ours.
@@ -1435,9 +1435,9 @@ void load_stations() {
     // answer. UserStore::begin() has already run by now — ConfigService brings it up while
     // it mounts, and config is CRITICAL, so it is done before any module inits.
     //
-    // The scratch stays the PSRAM one from item 7.3. The persistence work arrived with a
-    // `static char buf[8192]` here, which is the 8 KB of .bss that item deleted; taking it
-    // back would have undone half that stage without a compiler saying a word.
+    // The scratch stays the PSRAM one. The persistence work arrived with a `static char
+    // buf[8192]` here: 8 KB of internal .bss, which this board is short of (docs/CONCEPT.md,
+    // "Board constraints"), and no compiler says a word about it.
     modesp::UserStore::write_path("stations.json", s_stations_path, sizeof(s_stations_path));
     StationScratch buf(STATIONS_JSON_MAX);
     size_t n = 0;
@@ -1454,7 +1454,7 @@ void load_stations() {
         if (w) safe_file::save(s_stations_path, buf.p, w);
     }
     // Hand it to the store the screen reads from; the list itself stays here, and the task
-    // that tunes copies a URL out of it under list_guard() (RP-6).
+    // that tunes copies a URL out of it under list_guard().
     radio_core::stations().set(s.list);
     ESP_LOGI(TAG, "%d stations", s.list.count);
 }
@@ -1505,7 +1505,7 @@ const radio_core::Station* station_at(int idx) {
 
 /// The URL of the station at `idx`, copied while the list cannot change. A pointer into the
 /// list was held through the fade and the old stream's close — a second or more — and a web
-/// edit in that time put another station's URL under it (deep review 2026-10-12, RP-6).
+/// edit in that time put another station's URL under it.
 /// False if there is no such station. Radio task.
 bool station_url(int idx, char* out, size_t n) {
     xSemaphoreTake(list_guard(), portMAX_DELAY);
@@ -1702,7 +1702,7 @@ void radio_task(void*) {
             case Cmd::PLAY: start_station(s.station.load()); break;
             case Cmd::STOP: stop_station(); break;
             case Cmd::TUNE: start_station(m.value); break;
-            // Nothing sends NEXT/PREV since RP-1: on_update resolves the neighbour on main,
+            // Nothing sends NEXT/PREV: on_update resolves the neighbour on main,
             // publishes radio.station and sends TUNE. Resolving it here left radio.station
             // behind, and main's pick check tuned straight back.
             case Cmd::NEXT:
@@ -2161,7 +2161,7 @@ void RadioModule::on_update(uint32_t dt_ms) {
             // Worked out HERE and published at once, as play_catalog does. Left to the task,
             // `station` moved there while radio.station still held the old index until the
             // next report, and the station pick below read that as a pick of the old station
-            // and tuned it straight back (deep review 2026-10-12, RP-1).
+            // and tuned it straight back.
             state_set("audio.source", AUDIO_SRC_RADIO);
             const int32_t count = s.list.count;
             if (!count) break;

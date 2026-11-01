@@ -3,9 +3,8 @@
  * @brief The radio's picture: the song's cover by the station's ICY title, else the
  *        station's logo; shown as CoverSource::Radio.
  *
- * Stage 20г/20б. The judgement is components/
- * radio_catalog (radio_art.h); this is the fetching. The task and its buffers are made on
- * first use, so a panel that never plays the radio pays nothing.
+ * The judgement is components/radio_catalog (radio_art.h); this is the fetching. The task
+ * and its buffers are made on first use, so a panel that never plays the radio pays nothing.
  */
 
 #pragma once

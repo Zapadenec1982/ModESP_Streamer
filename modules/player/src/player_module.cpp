@@ -882,8 +882,8 @@ Pump pump() {
     if (err == ESP_AUDIO_ERR_BUFF_NOT_ENOUGH) {
         // The frame's PCM does not fit, and the decoder keeps it until it does: 24-bit FLAC
         // at 96 kHz or in 5.1 runs past 32 KB. Read as "nothing decoded yet" it was asked
-        // again with the same buffer for ever, in silence (deep
-        // review 2026-10-12, RP-4). Grow as asked and try again, or end the track.
+        // again with the same buffer for ever, in silence. Grow as asked and try again, or
+        // end the track.
         if (out.needed_size > s.pcm_cap && out.needed_size <= PCM_MAX) {
             if (void* p = heap_caps_realloc(s.pcm, out.needed_size,
                                             MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT)) {
@@ -1458,7 +1458,7 @@ void PlayerModule::on_update(uint32_t dt_ms) {
         state_set("player.dir", rel);
         if (rel[0] && strcmp(rel, last_dir_) != 0) {
             snprintf(last_dir_, sizeof(last_dir_), "%.*s", (int)sizeof(last_dir_) - 1, rel);
-            // write -> read back -> rename (safe_file, plan item 11.2). A truncated resume
+            // write -> read back -> rename (safe_file). A truncated resume
             // point is a path to a file that does not exist, and the queue is rebuilt from
             // it at boot — so the failure mode is "the card comes up empty", not "the
             // cursor is in the wrong place".

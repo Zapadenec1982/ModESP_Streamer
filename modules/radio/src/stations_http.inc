@@ -50,9 +50,9 @@ int32_t moved_to(int32_t idx, const radio_core::StationList& to) {
 /// station that is on is first parked in the transient slot — the radio task then reads its
 /// URL from there, the same URL — the list is copied, and only then is the station pointed at
 /// its new index. The park and the copy happen under list_guard(), so the task's copy is of
-/// the old list or the new one and never of half of each; it holds no pointer into either
-/// (deep review 2026-10-12, RP-6). A station that was deleted while it played stays parked:
-/// it goes on playing, as a catalog station would, until something else is tuned.
+/// the old list or the new one and never of half of each; it holds no pointer into either.
+/// A station that was deleted while it played stays parked: it goes on playing, as a catalog
+/// station would, until something else is tuned.
 bool apply_station_edit(int32_t& station) {
     if (s_edit_state.load(std::memory_order_acquire) != EDIT_POSTED) return false;
     StationEdit& e = *station_edit();

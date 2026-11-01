@@ -7,7 +7,7 @@
  * to ESP-Hosted. Playback is a separate step and needs a decoder decision
  * (docs/CONCEPT.md, "Pinned dependencies").
  *
- * How the card is brought up is drivers/sdmmc_card's business (item 8.9): the power rail, the
+ * How the card is brought up is drivers/sdmmc_card's business: the power rail, the
  * retries, the FAT mount and the reason ESP-Hosted must not have its host torn down all live
  * there now, with the evidence for them. What is left here is the part that is about a
  * PLAYER rather than about a card: mount at init — with the Wi-Fi link already up, so that
@@ -127,7 +127,7 @@ const char* StorageModule::mount_point() const {
 
 bool StorageModule::mounted() const { return vol_ && vol_->mounted(); }
 
-/// Deliberately does NOT unmount (deep review CO-1). stop_all() is only ever followed by
+/// Deliberately does NOT unmount. stop_all() is only ever followed by
 /// esp_restart(), and it stops modules in reverse init order, which puts this module ahead of
 /// the player — whose task may at that moment be inside an fread or a cover read on the card.
 /// Unmounting under it frees the FIL, the FAT context and the diskio impl that read is still

@@ -512,8 +512,8 @@ bool DlnaModule::on_init() {
              0x50344453u /* "P4DS" */, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
     snprintf(d.udn, sizeof(d.udn), "P4_DMR_%s", modesp::device_id());
     // The friendly name people see in the list of devices: the panel's one name (device_name.h),
-    // as AirPlay and Bluetooth have it, with no hex tail (the review of 17.10.2026, finding 13: it
-    // was «P4 Player D12C4C»). Control points know the renderer by its UUID, which stays. A new
+    // as AirPlay and Bluetooth have it, with no hex tail (it was «P4 Player D12C4C»). Control
+    // points know the renderer by its UUID, which stays. A new
     // name reaches DLNA at the next start.
     device_name::get(d.friendly, sizeof(d.friendly));
     dlna_core::xml_reply(d.friendly, d.friendly_xml, sizeof(d.friendly_xml));
