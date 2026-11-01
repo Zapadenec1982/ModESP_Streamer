@@ -198,10 +198,10 @@ TEST_CASE("reports from several threads are all counted, and the bus still runs 
 }
 
 TEST_CASE("a reporter held up between its count and the store cannot leave a smaller count published") {
-    // The interleaving behind a 195 == 200 in the case above (14.10.2026, under a firmware
-    // build), made to happen every time: A counts the first error and is preempted as it
-    // leaves the critical section, B reports the second from start to finish, A runs on. A
-    // used to write the count it left with, 1, over B's 2, and the key stayed one short.
+    // The interleaving behind a 195 == 200 in the case above (seen under a firmware build),
+    // made to happen every time: A counts the first error and is preempted as it leaves the
+    // critical section, B reports the second from start to finish, A runs on. A used to write
+    // the count it left with, 1, over B's 2, and the key stayed one short.
     std::vector<int32_t> published;   // before rig: the store keeps a pointer to it
     Rig rig;
     rig.state.set_persist_callback(record_count, &published);

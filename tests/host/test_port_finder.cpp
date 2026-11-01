@@ -228,7 +228,7 @@ TEST_CASE("port finder: a closed box has no dip, and silence is not heard") {
     CHECK(s.run(none, g).status == PortFit::NOT_HEARD);
 }
 
-TEST_CASE("port finder: the SC-G101 on 04.10.2026 is not applied unasked") {
+TEST_CASE("port finder: the SC-G101's sweep is not applied unasked") {
     // The panel's own sweep, microphone at the woofer: dBFS at the microphone, tone and noise,
     // at -42.5 dBFS of drive (measure1.log). It found 67.7 Hz with 17 dB above and 4 dB below and
     // wrote it into the port setting; a finger on the dust cap put the still cone at 63 Hz, where

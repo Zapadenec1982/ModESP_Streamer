@@ -3,12 +3,12 @@
  * @brief A finger that scrolls does not set anything — the glass's rules.
  *
  * modules/ui_lvgl/include/touch_gesture.h, the same rules as the web's lib/gesture.js
- * (tools/tests/test_webui_gesture.py). The customer, 14.10.2026: scrolling caught the sliders and
- * the equalizer. A press changes nothing; a slider is the finger's once it went 8 px along, more
+ * (tools/tests/test_webui_gesture.py). Without them scrolling catches the sliders and the
+ * equalizer. A press changes nothing; a slider is the finger's once it went 8 px along, more
  * along than across, and the page's if it went up or down first; a tap changes nothing; an EQ
  * point moves after a 300 ms hold or 8 px; «Скасувати» says where a setting started. And on the
- * glass since 15.10.2026: only a finger on the knob takes a slider, and the knob follows it
- * from where it stood instead of jumping to it.
+ * glass only a finger on the knob takes a slider, and the knob follows it from where it stood
+ * instead of jumping to it.
  */
 
 #include "doctest.h"
@@ -69,7 +69,7 @@ TEST_CASE("touch: a press, a tap and a swipe down change nothing; along, the sli
 }
 
 TEST_CASE("touch: only the knob takes a finger, and the knob follows it without a jump") {
-    // the customer, 15.10.2026: a touch on the track away from the knob moved the slider
+    // a touch on the track away from the knob must not move the slider
     CHECK(finger({{150, 100}, {190, 100}}) == std::make_pair(Slide::MISS, 40));
     CHECK(finger({{0, 100}, {200, 100}}) == std::make_pair(Slide::MISS, 40));
     CHECK(finger({{80 + touch::GRAB, 100}, {200, 100}}).first == Slide::DRAG);        // the edge of the reach

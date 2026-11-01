@@ -21,7 +21,7 @@ namespace {
 
 const std::string kTmp = MODESP_TEST_TMP;
 std::string path_of(const char* name) { return kTmp + "/eqstore_" + name; }
-/// The owner's two files, as tools/user_data.py backed them up from the panel on 14.10.2026.
+/// The owner's two files, as tools/user_data.py backed them up from the panel.
 const std::string kOwner = std::string(MODESP_ROOT) + "/tests/host/fixtures/eq_owner/";
 
 /// A file, and everything the store or safe_file keeps beside it.
@@ -317,7 +317,7 @@ TEST_CASE("store: the panel's whole document goes in as it is, and the web's kee
     CHECK(f.st.web_touched_at() == 12345);
 }
 
-TEST_CASE("files: the owner's eq.json and eq_custom.json of 14.10.2026 - the same bands bit for bit, the same «Власний»") {
+TEST_CASE("files: the owner's eq.json and eq_custom.json - the same bands bit for bit, the same «Власний»") {
     Pair f;
     const std::string eq0 = slurp(kOwner + "eq.json"), custom0 = slurp(kOwner + "eq_custom.json");
     REQUIRE(!eq0.empty());

@@ -2,9 +2,8 @@
  * @file test_bt_volume_gate.cpp
  * @brief Which levels a phone sets become the room's volume (modules/bt/include/bt_volume_gate.h).
  *
- * Customer report, 13.10.2026: the radio was playing, a phone connected over Bluetooth and the
- * room jumped to the phone's level. These pin the rule that replaced "every level the phone
- * sets is taken".
+ * The radio was playing, a phone connected over Bluetooth and the room jumped to the phone's
+ * level. These pin the rule that replaced "every level the phone sets is taken".
  */
 
 #include "doctest.h"
@@ -77,8 +76,8 @@ TEST_CASE("bt volume: only the levels a connection brings are answered with the 
 }
 
 TEST_CASE("bt volume: picking Bluetooth tells the phone the room's level, once") {
-    // Customer, 13.10.2026: a Pixel's presses while AirPlay played were thrown back every time,
-    // which read as volume that lagged; he chose that the other source keeps its volume.
+    // A Pixel's presses while AirPlay played were thrown back every time, which read as volume
+    // that lagged; the other source keeps its volume.
     Gate g;
     g.on_state(true);
     g.tick(Gate::HOLD_MS);

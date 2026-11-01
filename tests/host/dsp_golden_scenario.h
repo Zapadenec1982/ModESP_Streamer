@@ -2,7 +2,7 @@
  * @file dsp_golden_scenario.h
  * @brief One fixed run of the whole DspChain — the panel's settings and every kind of change —
  *        reduced to a 64-bit FNV-1a hash of every output sample's bits. test_dsp_passes.cpp holds
- *        it to the value the chain gave before the speed-ups of 15.10.2026, so a change that
+ *        it to the value the chain gave before the one-pass speed-ups, so a change that
  *        moves a single bit anywhere in the chain is seen. Public API only: the same file runs
  *        against an older chain unchanged.
  */
@@ -30,7 +30,7 @@ inline audio_core::EqBand band(audio_core::BandType t, float f, float g, float q
     return b;
 }
 
-/// The panel's EQ on 15.10.2026 (GET /api/eq, «Власний»): all ten bands on.
+/// The panel's EQ (GET /api/eq, «Власний»): all ten bands on.
 inline std::vector<audio_core::EqBand> panel_eq() {
     using audio_core::BandType;
     return {
@@ -42,10 +42,10 @@ inline std::vector<audio_core::EqBand> panel_eq() {
     };
 }
 
-/// What the panel had set when the baseline was measured (WS snapshot, 15.10.2026): subsonic
-/// 40 Hz, loudness 60 %, drive 5 dB, mono bass 80 Hz, the bass limiter at 250 Hz, the EQ on —
-/// plus the port lift (62 Hz +4 dB; the panel had it off with its speaker type) for an odd
-/// number of subsonic sections, and Бас/Високі +6, at volume 4 % so the loudness runs.
+/// What the panel had set when the baseline was measured (WS snapshot): subsonic 40 Hz,
+/// loudness 60 %, drive 5 dB, mono bass 80 Hz, the bass limiter at 250 Hz, the EQ on — plus the
+/// port lift (62 Hz +4 dB; the panel had it off with its speaker type) for an odd number of
+/// subsonic sections, and Бас/Високі +6, at volume 4 % so the loudness runs.
 inline void panel_settings(audio_core::DspChain& c) {
     const auto eq = panel_eq();
     c.set_bands(eq.data(), (int)eq.size());

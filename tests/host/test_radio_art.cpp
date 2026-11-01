@@ -2,10 +2,10 @@
  * @file test_radio_art.cpp
  * @brief Covers for a station's ICY title: which title is a song, which hit is that song.
  *
- * The search answers are Deezer's, recorded on 05.10.2026 for titles the panel actually
- * received or that stand for a case: a hit and a cover version of it, a Ukrainian artist the
- * service spells in Latin, a namesake that must not be taken, a subtitle the station left
- * off, and nothing found at all.
+ * The search answers are Deezer's, recorded for titles the panel actually received or that
+ * stand for a case: a hit and a cover version of it, a Ukrainian artist the service spells in
+ * Latin, a namesake that must not be taken, a subtitle the station left off, and nothing found
+ * at all.
  */
 
 #include "doctest.h"

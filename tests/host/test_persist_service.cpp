@@ -3,11 +3,11 @@
  * @brief PersistService at boot: what it restores, and where it may still look for the
  *        positional "p<i>" keys of the format before BUG-012.
  *
- * On 05.10.2026 radio.cat_quality, a state added to the radio manifest with default 1, came
- * up on the panel as 3. A positional key left by an older firmware sat at its index in
- * STATE_META, and the migration — which ran on every boot, for every persisted state without
- * a hashed key — took it, stored it under the hashed key and erased the original. So the
- * cases here are the devices that boot meets:
+ * radio.cat_quality, a state added to the radio manifest with default 1, came up on the panel
+ * as 3. A positional key left by an older firmware sat at its index in STATE_META, and the
+ * migration — which ran on every boot, for every persisted state without a hashed key — took
+ * it, stored it under the hashed key and erased the original. So the cases here are the devices
+ * that boot meets:
  *
  *   - a device that has run the hashed format, with positional leftovers: none of them may
  *     reach a state, not even on the first boot of this code
@@ -201,7 +201,7 @@ TEST_CASE("persist: a device that has run the hashed format takes no positional 
     {
         Boot first;
         CHECK(first.i32(s.a) == other_i32(s.a));          // its own value, from its hashed key
-        CHECK(first.i32(s.b) == def_i32(s.b));            // the 05.10.2026 case: default, not p<i>
+        CHECK(first.i32(s.b) == def_i32(s.b));            // the cat_quality case: default, not p<i>
         CHECK(first.boolean(s.c) == def_bool(s.c));
         CHECK_FALSE(stored(hashed(s.b.meta->key)));       // and nothing stale was persisted
         CHECK_FALSE(stored(hashed(s.c.meta->key)));

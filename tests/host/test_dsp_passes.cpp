@@ -1,6 +1,6 @@
 /**
  * @file test_dsp_passes.cpp
- * @brief HOST tests for the speed-ups of 15.10.2026 (components/audio_dsp):
+ * @brief HOST tests for the DSP speed-ups (components/audio_dsp):
  *        none of them changes a bit of the output. The
  *        filter sections run two to a pass (DspChain::Passes, svf_stereo2) give what one section
  *        a pass gives, through every kind of change; in the steady state they really make half
@@ -94,13 +94,13 @@ TEST_CASE("one pass: the panel's settings take half the passes, and an odd secti
     }
 }
 
-TEST_CASE("one pass: the whole chain still gives, bit for bit, what it gave before 15.10.2026") {
+TEST_CASE("one pass: the whole chain still gives, bit for bit, what it gave before the speed-ups") {
     // dsp_golden_scenario.h: the panel's settings, every kind of change, 900 blocks, every
-    // output sample's bits hashed. The values are the chain of main 4b8d2b2 — before any of the
-    // speed-ups — built with g++ and glibc (-O0 and -O2 alike). A speed-up that moves one bit
-    // anywhere changes them; a deliberate change to the sound has to change them here, with
-    // its reason. Another C library rounds sinf, expf, powf in the designs its own way, so
-    // elsewhere the hashes are only printed.
+    // output sample's bits hashed. The values are the chain's before any of the speed-ups,
+    // built with g++ and glibc (-O0 and -O2 alike). A speed-up that moves one bit anywhere
+    // changes them; a deliberate change to the sound has to change them here, with its reason.
+    // Another C library rounds sinf, expf, powf in the designs its own way, so elsewhere the
+    // hashes are only printed.
     const struct { float fs; uint64_t want; } runs[] = {
         {192000.0f, 0x7903ebca4168c82aull}, {96000.0f, 0x4e5106105010ddd6ull},
         {48000.0f, 0x9776851a312ecb3aull},  {44100.0f, 0xc3be15339476ea87ull},

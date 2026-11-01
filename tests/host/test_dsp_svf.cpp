@@ -92,7 +92,7 @@ EqBand band(BandType t, float f, float g, float q) {
     return b;
 }
 
-/// The customer's EQ as it was on the panel (backup of 26.09.2026).
+/// The customer's EQ as it was on the panel (from a backup).
 std::vector<EqBand> customer_eq() {
     return {
         band(BandType::LOW_SHELF, 40, 2.6f, 0.71f),  band(BandType::PEAK, 62, 1.8f, 1.0f),

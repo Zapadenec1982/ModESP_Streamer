@@ -45,7 +45,7 @@ TEST_CASE("the real p4_player board and bindings load, and the numbers match the
     CHECK(std::string(b.dsi_displays[0].chip.c_str()) == "st7701");
     CHECK(b.dsi_displays[0].lanes == 2);
     CHECK(b.dsi_displays[0].v_res == 800);
-    CHECK(b.dsi_displays[0].rotation == 270);   // microphone up (customer, 25.09.2026; was 90)
+    CHECK(b.dsi_displays[0].rotation == 270);   // microphone up
     CHECK(b.dsi_displays[0].ldo_chan == 3);
     CHECK(b.dsi_displays[0].ldo_mv == 2500);
 
@@ -84,7 +84,7 @@ TEST_CASE("the real p4_player board and bindings load, and the numbers match the
 
     REQUIRE(b.uart_buses.size() == 1);
     CHECK(b.uart_buses[0].baud_rate == 460800u);
-    CHECK(b.uart_buses[0].rx_buffer == 8192);   // 178 ms of wire at 460800; see 5222100
+    CHECK(b.uart_buses[0].rx_buffer == 8192);   // 178 ms of wire at 460800 (uart_link_driver.cpp)
 
     CHECK(b.remote_devices.empty());
 

@@ -3,9 +3,9 @@
  * @brief When the radio leaves a server that cannot keep up, and where it goes
  *        (modules/radio/include/stream_watch.h).
  *
- * The numbers are the bench's of 05.10.2026: nightride at 320 kbit/s needs 40 000 B/s and got
- * 28 742-29 604 B/s from its far server, the buffer at 0 %; from a near one 40 000 B/s with
- * the buffer at 96-99 %.
+ * The numbers are the bench's: nightride at 320 kbit/s needs 40 000 B/s and got
+ * 28 742-29 604 B/s from its far server, the buffer at 0 %; from a near one 40 000 B/s with the
+ * buffer at 96-99 %.
  */
 
 #include "doctest.h"

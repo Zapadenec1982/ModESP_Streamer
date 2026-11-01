@@ -47,7 +47,7 @@ struct Hp8 {
 
 double db(double x) { return 20.0 * std::log10(std::fabs(x) + 1e-30); }
 
-/// What the customer's panel runs (04.10.2026): port 62 Hz +4 dB, loudness 90 %, subsonic 50 Hz,
+/// The customer's panel's settings: port 62 Hz +4 dB, loudness 90 %, subsonic 50 Hz,
 /// bass limiter at 120 Hz, volume 30 %. And a second case: one 62 Hz band, +6 dB at Q 5.
 struct Setup {
     const char* name;

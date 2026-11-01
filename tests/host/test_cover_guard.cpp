@@ -152,7 +152,7 @@ cover_guard::Frame frame(bool progressive, std::initializer_list<uint8_t> hv) {
     return f;
 }
 
-/// The largest free PSRAM block the bench reported with the player running (05.10.2026).
+/// The largest free PSRAM block the bench reported with the player running.
 constexpr size_t BENCH_LARGEST = 23068672;
 
 }  // namespace

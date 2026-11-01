@@ -2,9 +2,9 @@
  * @file test_airplay_meta.cpp
  * @brief Which AirPlay metadata records reach the tile (modules/airplay/include/airplay_meta.h).
  *
- * Customer, 13.10.2026: on an Apple Music radio station the cover and the title vanished for a
- * second and came back, every ~15 s. The iPhone sends the station's name with no artist between
- * the track's records, and an empty cover between the track's covers.
+ * On an Apple Music radio station the cover and the title vanished for a second and came back,
+ * every ~15 s. The iPhone sends the station's name with no artist between the track's records,
+ * and an empty cover between the track's covers.
  */
 
 #include "doctest.h"

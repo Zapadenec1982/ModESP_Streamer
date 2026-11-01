@@ -3,8 +3,8 @@
  * @brief When the panel sends PLAY for a phone that plays while no stream comes
  *        (modules/bt/include/bt_stall_kick.h).
  *
- * Customer report, 13.10.2026: after the panel was restarted twice, Bluetooth was selected, the
- * phone said it played, and nothing was heard until the satellite was restarted by hand.
+ * After the panel was restarted twice, Bluetooth was selected, the phone said it played, and
+ * nothing was heard until the satellite was restarted by hand.
  */
 
 #include "doctest.h"

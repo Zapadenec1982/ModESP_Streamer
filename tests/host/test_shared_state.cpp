@@ -92,7 +92,7 @@ TEST_CASE("the manifests mark the keys that carry a path or a URI") {
         CHECK_FALSE(gen::is_long_state_key(key));
     }
     // Not paths, but titles someone reads whole: an audiobook chapter name ran past the
-    // 64-byte inline value on 12.10.2026, so the Bluetooth title is long like AirPlay's.
+    // 64-byte inline value, so the Bluetooth title is long like AirPlay's.
     for (const char* key : {"bt.title", "airplay.title", "dlna.title", "player.title"}) {
         INFO("key: ", key);
         CHECK(gen::is_long_state_key(key));
@@ -271,7 +271,7 @@ TEST_CASE("a NULL string value is stored as empty rather than dereferenced") {
 
 // ── Text that is not ASCII ──
 //
-// Seen on 12.10.2026: bt.title over the WebSocket ended in "…Слаане�". The BT module cut the
+// Seen on the panel: bt.title over the WebSocket ended in "…Слаане�". The BT module cut the
 // phone's title to 63 bytes on a byte count, the cut fell inside "ц", and the JSON writer
 // replaced the half letter with U+FFFD. Every string reaches the store through
 // set(const char*), so that is where the cut is made on a character boundary — for the

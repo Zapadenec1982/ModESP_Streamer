@@ -343,9 +343,9 @@ TEST_CASE("HELLO carries the version the two sides must agree on") {
 }
 
 TEST_CASE("the first TRACK_META after a connection is empty, and that parses") {
-    // Measured on the bench 18.09.2026: the phone answered the first metadata request with
-    // three empty fields and filled them in about ten seconds later. An empty string is a
-    // legal message, not a short read, and the host must not treat it as a fault.
+    // Measured on the bench: the phone answered the first metadata request with three empty
+    // fields and filled them in about ten seconds later. An empty string is a legal message,
+    // not a short read, and the host must not treat it as a fault.
     Loop    l;
     uint8_t buf[64];
     Packer  p(buf, sizeof buf);

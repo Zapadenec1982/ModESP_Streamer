@@ -290,10 +290,10 @@ TEST_CASE("ring: init(0) and init(1) are refused rather than producing a useless
 }
 
 TEST_CASE("ring: flush acknowledgement publishes reset before the producer resumes") {
-    // e4c0665: reset() used to clear flush_ BEFORE resetting the indices, so a producer that
-    // resumed the instant the flag dropped could write frames the reset then erased. The
-    // producer here does exactly that — its wait on the flag is the handoff under test and
-    // it writes straight after — and every frame it writes must come out the other side.
+    // reset() used to clear flush_ BEFORE resetting the indices, so a producer that resumed the
+    // instant the flag dropped could write frames the reset then erased. The producer here does
+    // exactly that — its wait on the flag is the handoff under test and it writes straight
+    // after — and every frame it writes must come out the other side.
     //
     // Bounded: 2000 rounds or two seconds, whichever comes first (the 50 000 rounds this ran
     // took forty minutes on a loaded machine), and the waits back off to short sleeps rather
@@ -432,11 +432,11 @@ TEST_CASE("ring: the rate handshake plays the previous track's tail before the c
 }
 
 TEST_CASE("ring: an answer that comes after the producer stopped waiting is still followed") {
-    // 05.10.2026: an AirPlay session started while the output was still moving out of
-    // another source. The producer's bounded wait ran out, it started on the fallback, and
-    // the consumer's answer — 44.1 kHz — arrived after it had stopped looking. Read once,
-    // the handshake left 44.1 kHz frames converted to 48 playing at 44.1 for the whole
-    // session: 8 % slow, and a drop every 0.6 s to keep up.
+    // An AirPlay session started while the output was still moving out of another source. The
+    // producer's bounded wait ran out, it started on the fallback, and the consumer's answer —
+    // 44.1 kHz — arrived after it had stopped looking. Read once, the handshake left 44.1 kHz
+    // frames converted to 48 playing at 44.1 for the whole session: 8 % slow, and a drop every
+    // 0.6 s to keep up.
     PcmRing r;
     REQUIRE(r.init(16));
     r.ask_rate(44100);
@@ -487,9 +487,9 @@ TEST_CASE("ring: a new owner is a new rate question, and the same owner keeps it
 }
 
 TEST_CASE("ring: every owner is read back as itself, and its frames still flow") {
-    // USB audio, 24.10.2026: OWNER_USB is 4, and with the old two-bit owner field its claim
-    // set READING — owner() answered NONE and read() refused for ever. Each owner, the new
-    // one included, must survive a claim whole and leave the consumer able to read.
+    // USB audio: OWNER_USB is 4, and with the old two-bit owner field its claim set READING —
+    // owner() answered NONE and read() refused for ever. Each owner, the new one included, must
+    // survive a claim whole and leave the consumer able to read.
     const PcmRing::Owner owners[] = {PcmRing::OWNER_FILE, PcmRing::OWNER_RADIO,
                                      PcmRing::OWNER_AIRPLAY, PcmRing::OWNER_USB};
     PcmRing r;

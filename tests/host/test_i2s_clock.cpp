@@ -72,7 +72,7 @@ TEST_CASE("the master sets the PLL to twice its MCLK at 512x too") {
 TEST_CASE("32-bit slots are paid for with the fastest PLL the chip makes, not a faster output") {
     // The output stays where the stream is; the PLL goes as high as 125 MHz allows, and the
     // slave spends the headroom on looks per bit. 512x left exactly eight at every rate, and
-    // eight lost ~0.15 % of the frames at 96 kHz (bench 27-30.09.2026).
+    // eight lost ~0.15 % of the frames at 96 kHz on the bench.
     struct Want { uint32_t hz; uint16_t mult; uint32_t pll; uint32_t looks; };
     const Want wants[] = {
         {44100u, 1280, 112896000u, 20},

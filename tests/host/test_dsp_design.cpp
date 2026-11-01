@@ -54,12 +54,12 @@ const float PRESETS[][10] = {
     {2.6f, 1.8f, 1.7f, 1.5f, 0.2f, -1.7f, -2.1f, -2.1f, -1.5f, 5.0f},   // "Софт-рок"
     {6.1f, 4.2f, 3.3f, 1.4f, -0.1f, 0.1f, -1.3f, -2.9f, -3.7f, 0.3f},
     {4.9f, 3.4f, 3.0f, 1.1f, -2.3f, -2.4f, -1.1f, 1.3f, 4.3f, 6.1f},
-    {3.3f, 1.9f, 0.5f, -0.2f, -0.2f, 0.7f, 1.0f, 0.4f, 1.3f, 3.3f},       // "Джаз" (2026-10-14)
+    {3.3f, 1.9f, 0.5f, -0.2f, -0.2f, 0.7f, 1.0f, 0.4f, 1.3f, 3.3f},       // "Джаз"
     {5.3f, 3.3f, 1.8f, 0.4f, -0.6f, -0.1f, 0.3f, 0.6f, 1.0f, 2.1f},       // "Хіп-хоп"
 };
 constexpr int SOFT_ROCK = 16;
 
-/// The EQ on the customer's panel (backup of 26.09.2026): "Софт-рок" as the earlier fit made it.
+/// The EQ on the customer's panel (from a backup): "Софт-рок" as the earlier fit made it.
 std::vector<EqBand> customer_eq() {
     const float g[10] = {2.6f, 1.8f, 1.7f, 1.5f, 0.2f, -1.7f, -2.1f, -2.1f, -1.4f, 4.2f};
     return preset(g);

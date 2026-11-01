@@ -95,8 +95,8 @@ TEST_CASE("a rejected candidate leaves the live file exactly as it was") {
 
     CHECK_FALSE(safe_file::save(s.live.c_str(), text.data(), text.size(), reject_all));
 
-    // This is the failure that cost a flashed panel on 18.09.2026: a file the boot parser
-    // would refuse reached flash because nothing ran the parser before the swap.
+    // This is the failure that cost a flashed panel: a file the boot parser would refuse
+    // reached flash because nothing ran the parser before the swap.
     CHECK(get(s.live) == "the configuration someone is using");
     CHECK_FALSE(there(s.candidate()));
 }
