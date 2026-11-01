@@ -1,5 +1,5 @@
 <script>
-  // Налаштування («Система» until S1): the panel's
+  // Налаштування: the panel's
   // groups (screen_set.cpp) — Sound, Device, Links, Services — and what the glass does not do: the
   // clock, the login, firmware, a backup of the user's files. Each page under it is its own file,
   // fetched the first time it is opened. No Home Assistant row: MQTT stays off (customer,
@@ -35,7 +35,7 @@
     ? [s['wifi.ssid'], s['wifi.ip']].filter(Boolean).join(' · ')
     : s['wifi.mode'] === 'ap' ? $t['sys.wifi_ap'] : $t['sys.wifi_off'];
   $: btSub = !s['bt.link'] ? $t['sys.bt_none'] : s['bt.peer'] || $t['sys.bt_ready'];
-  // what has been done about the speakers, in the words of their page (S6)
+  // what has been done about the speakers, in the words of their page
   $: spk = speakerState(s);
   $: spkSub = spk.line ? fmt($t[spk.line], spk.args) : $t[spk.title];
 

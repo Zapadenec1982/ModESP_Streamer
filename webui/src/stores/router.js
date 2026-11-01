@@ -7,8 +7,8 @@ import { canonical } from '../lib/routes.js';
  *
  *   #/player  #/source  #/system                  the three sections, as in the panel's drawer
  *   #/stations  #/stations/<top|countries|…>     the station list and the catalog
- *   #/library  #/dlna                             the card's tracks, the DLNA media servers (W6)
- *   #/system/sound/eq                             the equalizer, Налаштування › Звук (S1)
+ *   #/library  #/dlna                             the card's tracks, the DLNA media servers
+ *   #/system/sound/eq                             the equalizer, Налаштування › Звук
  *   #/system/language  #/system/service           pages under Налаштування
  *   #/system/service/<calibration|screenshot|…>   pages under Service; calibration/port its 2nd task
  *
@@ -87,7 +87,7 @@ export function done(path) {
 /** Where a page belongs when nobody led to it: its parent in the map. */
 function parentOf(r) {
   if (r[0] === 'stations') return 'player';
-  // a page under one of Налаштування's pages goes back to that page (S6: the wizard to Колонки)
+  // a page under one of Налаштування's pages goes back to that page (the wizard to Колонки)
   if (r[0] === 'system' && r.length > 2 && ['service', 'sound', 'speakers'].includes(r[1])) return `system/${r[1]}`;
   if (r[0] === 'system' && r.length > 1) return 'system';
   if (r[0] === 'components') return 'system/service';

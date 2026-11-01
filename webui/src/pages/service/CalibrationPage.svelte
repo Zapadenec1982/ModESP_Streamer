@@ -46,10 +46,10 @@
   $: measuring = !!s['audio.port_meas'];
   $: measCh = s['audio.port_meas_ch'] ?? 1;
   $: measHz = Number(ro('audio.port_meas_hz')) || 0;
-  $: measSays = msg($t, ro('audio.port_meas_status') || '');   // a message of the catalog (U8.5)
+  $: measSays = msg($t, ro('audio.port_meas_status') || '');   // a message of the catalog
   // the meter and what it found are shown at once, and taken back if the device refuses them
   const portMeas = (on) => act(() => writeNow({ 'audio.port_meas': on }));
-  // The meter offers what it found and writes nothing (S6): «Застосувати» writes it, as measured.
+  // The meter offers what it found and writes nothing: «Застосувати» writes it, as measured.
   $: measFound = meterOutcome(ro('audio.port_meas_status'), measuring) === 'found' && measHz > 0;
   const portApply = () => act(async () => {
     const keys = portWrites(measHz, true);
@@ -59,7 +59,7 @@
   const measChSend = createSettingSender('audio.port_meas_ch', { debounceMs: 0 });
 
   // The port off and the volume at most 20 % for as long as the tone plays: keys the device never
-  // saves and drops with the tone (S0b), so closing the page mid-search changes nothing.
+  // saves and drops with the tone, so closing the page mid-search changes nothing.
   function portStart() {
     act(() => playTone({ mode: CHAIN, hz: w.hz }, { extra: { 'audio.cal_port_off': true, 'audio.cal_vol_cap': 20 } }));
   }
@@ -67,7 +67,7 @@
     w = { ...w, hz: Math.max(20, Math.min(100, Math.round(hz))) };
     if (s['audio.source'] === 1) act(() => playTone({ mode: CHAIN, hz: w.hz }));
   }
-  // found by hand: written with where it came from, and the speakers are ported (S6)
+  // found by hand: written with where it came from, and the speakers are ported
   const portWrite = () => act(async () => {
     const keys = portWrites(w.hz, false);
     await stopTone({ restore: true, extra: keys });

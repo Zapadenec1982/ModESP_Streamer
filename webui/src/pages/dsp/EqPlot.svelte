@@ -5,7 +5,7 @@
   // its own frequency, which is where a shelf or a pass actually is.
   //
   // The bands that are on have a point, labelled with the band's place in the set as the glass
-  // labels it; one that is off is not drawn (S7: deleting a band turns it off). The curve has its
+  // labels it; one that is off is not drawn (deleting a band turns it off). The curve has its
   // area filled to 0 dB; with `stages` (lib/syscurve.js) the whole system's curve is over it, dashed.
   //
   // A band is taken by its point only (lib/gesture.js, the customer, 14.10.2026): a finger

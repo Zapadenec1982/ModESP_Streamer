@@ -5,7 +5,7 @@
  * State: dev/state.json, a real /api/state of the player (11.10.2026, Bluetooth playing) with
  * names and addresses replaced. Writes to /api/settings land in it and go out over /ws as the
  * panel does; *.cmd keys are acted on roughly (play/pause/stop), never stored. Service's endpoints
- * (log levels, bindings, the screenshot, factory reset) answer as the device's do, and so do W6's:
+ * (log levels, bindings, the screenshot, factory reset) answer as the device's do, and so do these:
  * the card's library, the DLNA browser (its servers appear 2.5 s after a search), the cover.
  * Pages: data/ui.json, as the build generated it. Languages: src/i18n/<lang>.json at /lang/.
  */
@@ -142,7 +142,7 @@ function wifiJoin(ssid, password) {
   }, 6000);
 }
 
-// Service (W5). The console's log levels as GET/POST /api/loglevel keep them (log_policy.cpp): a
+// Service. The console's log levels as GET/POST /api/loglevel keep them (log_policy.cpp): a
 // "*" puts the kept tags back at INFO. The calibration tone turns itself off after 60 s, and the
 // port measurement walks its statuses in ~15 s, as audio_module.cpp does. The diagnostics move a
 // little every 2 s without a WebSocket delta, as on the device: only /api/state shows them.
@@ -167,7 +167,7 @@ function portMeasure() {
   meter = steps.map(([ms, d]) => setTimeout(() => loud(d), ms));
   meter.push(setTimeout(() => {
     meter = null;
-    // found and offered, not written (S6): «Прийняти» or «Застосувати» writes audio.port_hz
+    // found and offered, not written: «Прийняти» or «Застосувати» writes audio.port_hz
     loud({ 'audio.tone_mode': was.mode, 'audio.tone_hz': was.hz, 'audio.source': was.src, 'audio.port_meas': false,
            'audio.port_meas_hz': 63.4, 'audio.port_meas_status': `@cal.m_found${U}hz=63` });
   }, 15000));
@@ -203,7 +203,7 @@ function screenshotBmp() {
   return buf;
 }
 
-// W6. The card's index as GET /api/library pages it (modules/ui_lvgl/src/ui_web_media.cpp), the
+// The card's index as GET /api/library pages it (modules/ui_lvgl/src/ui_web_media.cpp), the
 // DLNA browser as GET /api/dlna/browser shows it and dlna.browse_cmd drives it (components/
 // dlna_client: twelve rows a page, a revision on every snapshot, a command for another revision
 // ignored), and the Player's picture as GET /api/cover sends it, named by ui.cover.

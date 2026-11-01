@@ -1,7 +1,6 @@
 <script>
-  // The web UI of P4 Player: the panel's four sections, in the
-  // panel's colours, as a companion for settings and control: Player and Source (W1), Stations
-  // (W2), DSP (W3), System (W4) and Service (W5); the card's library and the DLNA browser (W6).
+  // The web UI of P4 Player: the panel's sections, in the panel's colours, as a companion for
+  // settings and control; its addresses are listed in stores/router.js.
   // The generated pages live on only as Service's long tail.
   import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
@@ -64,15 +63,15 @@
   // The promise is kept: the second visit is instant.
   let stationsPage = null;
   $: if ($route[0] === 'stations' && !stationsPage) stationsPage = import('./pages/StationsPage.svelte');
-  // the equalizer (the DSP page until S1): Налаштування › Звук › Еквалайзер
+  // the equalizer: Налаштування › Звук › Еквалайзер
   let dspPage = null;
   $: if (key === 'system/sound/eq' && !dspPage) dspPage = import('./pages/DspPage.svelte');
-  // W6: the card's library and the DLNA browser, each its own file.
+  // The card's library and the DLNA browser, each its own file.
   let libraryPage = null;
   $: if (key === 'library' && !libraryPage) libraryPage = import('./pages/LibraryPage.svelte');
   let dlnaPage = null;
   $: if (key === 'dlna' && !dlnaPage) dlnaPage = import('./pages/DlnaPage.svelte');
-  // System's own pages (W4), each fetched the first time it is opened.
+  // System's own pages, each fetched the first time it is opened.
   const SYSTEM_PAGES = {
     wifi: () => import('./pages/system/WifiPage.svelte'),
     bt: () => import('./pages/system/BtPage.svelte'),
@@ -96,12 +95,12 @@
     if (!systemLoaded.has(id)) systemLoaded.set(id, SYSTEM_PAGES[id]());
     return systemLoaded.get(id);
   };
-  // Колонки has pages of its own under it — the wizard, the details — taken as `sub` (S6)
+  // Колонки has pages of its own under it — the wizard, the details — taken as `sub`
   $: sysId = $route[0] === 'system' && SYSTEM_PAGES[$route[1]] &&
     ($route.length === 2 || ($route.length === 3 && $route[1] === 'speakers')) ? $route[1] : null;
   $: sysPage = sysId ? loadSystem(sysId) : null;
   $: sysProps = sysId === 'speakers' ? { sub: $route[2] || '' } : {};
-  // Service and the pages under it (W5): diagnostics, calibration, tools, the long tail. Each its
+  // Service and the pages under it: diagnostics, calibration, tools, the long tail. Each its
   // own file. Calibration is the speakers' port alone since the amplifier's ceiling left it
   // (18.10.2026); system/service/calibration/port, the address the speakers' pages use, still leads
   // there.

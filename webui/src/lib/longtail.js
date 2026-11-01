@@ -20,7 +20,7 @@ export const SHOWN = [
   // DSP, and the sound (Player's sheet, Налаштування › Звук)
   'audio.eq_enabled', 'audio.loudness', 'audio.loud_db', 'audio.bass_db', 'audio.treble_db',
   'audio.vol_max', 'audio.vol_start',
-  // Налаштування › Колонки (S6)
+  // Налаштування › Колонки
   'audio.balance_db10',
   // System
   'ui.backlight', 'ui.standby_bl', 'radio.covers',

@@ -2,7 +2,7 @@
   // Player: a remote, not a second player
   // (customer, 11.10.2026). Where the sound comes from; the cover, big; what plays, its codec; the
   // transport with a big pause; a thin volume that shows its number while it moves; one «Звук»
-  // button for the sheet with the sounds, Бас, Високі and the loudness (S3), and the moon beside it,
+  // button for the sheet with the sounds, Бас, Високі and the loudness, and the moon beside it,
   // «Вирівнювання гучності» (audio.leveler, as on the glass). Below, what can be done
   // about the source that plays. The faces, texts and commands are the panel's (stores/now.js after
   // screen_now.cpp), and so is the background: the shell tints the page with ui.cover_rgb.

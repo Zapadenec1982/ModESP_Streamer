@@ -2,7 +2,7 @@
   // The speakers' wizard. Step 1 asks what
   // the speakers are; closed ones need nothing more and «Готово» says so. Step 2 finds the port —
   // here with the panel's microphone on a bench, or by hand on the calibration page; the phone's
-  // microphone is the app's (§9.1). Nothing is written by a choice, a skip or a measurement: only
+  // microphone is the app's. Nothing is written by a choice, a skip or a measurement: only
   // «Готово» and «Прийняти» write (lib/speakers.js wizardWrites, tested).
   import { onDestroy } from 'svelte';
   import { state } from '../../stores/state.js';

@@ -1,5 +1,5 @@
 <script>
-  // Source, stage W1: the panel's cards (screen_src.cpp) — only those whose bit is in
+  // Source: the panel's cards (screen_src.cpp) — only those whose bit is in
   // audio.sources, the active one on primary_container with a check, under each what it would
   // give now. A tap is "listen": the source is set and the Player opens, as on the glass.
   // One grid, the most listened to first (customer, 18.10.2026): Bluetooth, AirPlay, the radio,

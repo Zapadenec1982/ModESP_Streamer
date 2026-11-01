@@ -1,7 +1,7 @@
 <script>
   // What the test tone is doing, held under the top bar while a page scrolls: the frequency, the
   // level, the channel, how long until the device turns a calibration tone off by itself — and
-  // the button that stops it now. The shell holds it (S0a, 14.10.2026): a tone left playing on
+  // the button that stops it now. The shell holds it: a tone left playing on
   // the way out of calibration, or started by another client, shows on every page, and a tone
   // through the DSP never turns itself off.
   import { onDestroy } from 'svelte';

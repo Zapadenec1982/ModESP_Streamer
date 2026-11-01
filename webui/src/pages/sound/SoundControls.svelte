@@ -46,7 +46,7 @@
   const treble = createSettingSender('audio.treble_db', { debounceMs: 120, live: true });
   const loudness = createSettingSender('audio.loudness', { debounceMs: 0 });
   const eqEnabled = createSettingSender('audio.eq_enabled', { debounceMs: 0 });
-  // the volume's two (S4), on the page only
+  // the volume's two, on the page only
   const volMaxS = createSettingSender('audio.vol_max', { debounceMs: 150, live: true });
   const volStartS = createSettingSender('audio.vol_start', { debounceMs: 0 });
   const START_STEPS = [0, 10, 20, 30, 40, 50];     // 0: as it was
@@ -134,7 +134,7 @@
 <div class="rule"></div>
 
 {#if page}
-  <!-- «Максимум» compresses the scale: 100 % from any client is this (S4) -->
+  <!-- «Максимум» compresses the scale: 100 % from any client is this -->
   <h3 class="cap">{$t['sound.volume']}</h3>
   <Slider name={$t['sound.vol_max']} label={$t['sound.vol_max']} min={40} max={100} step={5} value={volMax}
           format={(v) => `${v} %`} on:input={(e) => volMaxS.send(e.detail)} undo={(v) => volMaxS.send(v)} />

@@ -3,7 +3,7 @@
  * A scheme is offered as working only once the firmware says it plays it, in audio.out_caps
  * (components/audio_dsp/include/out_caps.h, the same bits); the rest are «ще не підтримується».
  * A firmware that does not say has the one stereo pair this board was built with. Which scheme
- * plays is stereo until the outputs' profile (the four-channel DAC plan, stage 0) says another.
+ * plays is stereo until the outputs' profile says another (docs/CONCEPT.md, "Outputs").
  *
  * No imports: tools/tests/test_webui_xover.py runs this in Node.
  */

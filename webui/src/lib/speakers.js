@@ -76,7 +76,7 @@ export const subUnder = (hz) => Math.round(0.8 * hz);
 
 /**
  * «Звичайна гучність»: the reference for the volume that plays — % of the effective level, which
- * «Максимум» compresses (S4), held to 20…100 as the device holds it — and back to the volume
+ * «Максимум» compresses, held to 20…100 as the device holds it — and back to the volume
  * scale for saying it.
  */
 export function refOf(volume, volMax = 100) {

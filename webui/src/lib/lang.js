@@ -26,7 +26,7 @@ export function chosen(pick, panel, nav) {
 }
 
 /**
- * The pick to keep from before U8.6. The old key was written on every start, picked or not, so
+ * The pick to keep from an older build. The old key was written on every start, picked or not, so
  * its value says nothing — unless it is not the browser's own language, which only a pick could
  * have made it. That one stays this browser's pick; the rest go with the panel.
  */

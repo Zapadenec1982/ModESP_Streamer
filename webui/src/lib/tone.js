@@ -12,7 +12,7 @@ import { CHAIN, TONE_DEFAULTS } from './calib.js';
  * TONE_RAW_MAX_MS). Mode 0 goes off by itself too, after 2 min with nothing about it changed
  * (TONE_CHAIN_IDLE_MS). None of the tone keys persists; until one is written the device reads the
  * defaults in calib.js. Nor do audio.cal_port_off and audio.cal_vol_cap, which a step may send
- * with its tone and the device drops when the tone stops (S0b).
+ * with its tone and the device drops when the tone stops.
  *
  * A step that plays a tone sends every key it needs in one body, the source last, so the device
  * never starts the tone with the previous step's level (/api/settings sets keys in order, and the

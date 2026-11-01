@@ -22,7 +22,7 @@ import { humanError } from '../lib/errors.js';
 
 const PICK = 'modesp-lang-pick';    // this browser's own choice; absent: as the panel
 const PANEL = 'modesp-lang-panel';  // ui.lang as last seen, so a visit does not open in another
-const OLD = 'modesp-lang';          // before U8.6, written on every start (lib/lang.js migratedPick)
+const OLD = 'modesp-lang';          // older builds wrote it on every start (lib/lang.js migratedPick)
 export { LANGS };
 /** Each language by its own name: a person looks for the one they read. */
 export const LANG_NAMES = { uk: 'Українська', en: 'English', de: 'Deutsch', pl: 'Polski' };
