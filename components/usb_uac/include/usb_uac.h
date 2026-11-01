@@ -7,12 +7,13 @@
  * sets the pace and nothing resamples. UAC2 is in every desktop OS's own driver (Windows 10 1703+,
  * macOS, Linux).
  *
- * Stage U1: audio.source 7. While the module says USB is the output (set_output), a producer task
- * writes what the computer sends into the player's ring as OWNER_USB, asks the ring for the
- * computer's rate — a new session whenever it changes, the customer's choice of 24.10.2026 — and
- * steers the computer by the ring's fill: the feedback endpoint asks for a little more or a little
- * less than nominal, so the ring stays where the consumer wants it however far the two clocks are
- * apart. While USB is not the output the stream is drained and measured, and dropped.
+ * USB is audio.source 7 (docs/CONCEPT.md, "`audio.source` values"). While the module says USB is
+ * the output (set_output), a producer task writes what the computer sends into the player's ring
+ * as OWNER_USB, asks the ring for the computer's rate — a new session whenever it changes, the
+ * customer's choice of 24.10.2026 — and steers the computer by the ring's fill: the feedback
+ * endpoint asks for a little more or a little less than nominal, so the ring stays where the
+ * consumer wants it however far the two clocks are apart. While USB is not the output the stream
+ * is drained and measured, and dropped.
  */
 
 #pragma once

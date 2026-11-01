@@ -1,6 +1,6 @@
 /**
  * @file uac_tone.h
- * @brief One clean tone, followed through the recurrence a sampled sinusoid obeys — the U0
+ * @brief One clean tone, followed through the recurrence a sampled sinusoid obeys — the
  *        stream check (usb_uac.h). Pure C++: tests/host/test_uac_tone.cpp runs it on the PC.
  *
  * x[n] = 2c·x[n−1] − x[n−2], c = cos(2πf/fs). Each second fits c by least squares; the next second
