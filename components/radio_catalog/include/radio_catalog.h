@@ -90,10 +90,29 @@ struct PageStats {
 int parse_page(const char* json, size_t len, void* scratch, size_t scratch_sz,
                Quality q, Row* out, int max, PageStats* stats = nullptr);
 
+/// The name a lookup by uuid is asked of: Radio Browser's servers behind one name, answering on
+/// port 80.
+constexpr const char* LOOKUP_HOST = "all.api.radio-browser.info";
+
+/// "/json/stations/byuuid?uuids=a,b,…": one request for `n` stations. The length, or 0 when it
+/// does not fit or a uuid is empty.
+size_t byuuid_path(const char* const* uuids, int n, char* out, size_t out_sz);
+
 /// /json/stations/byuuid?uuids=… → the first station's favicon, whatever its codec (it is
 /// a station already playing). False when there is none or it does not fit `out`.
 bool parse_favicon(const char* json, size_t len, void* scratch, size_t scratch_sz,
                    char* out, size_t out_sz);
+
+/// A station's logo address as a lookup by uuid gives it.
+struct Favicon {
+    char uuid[UUID_LEN] = "";
+    char url[URL_LEN]   = "";   ///< "" when the station lists none, or one that does not fit
+};
+
+/// /json/stations/byuuid?uuids=a,b,… → each station's uuid and favicon, in the answer's order,
+/// up to `max`. −1 when the body is not a JSON array.
+int parse_favicons(const char* json, size_t len, void* scratch, size_t scratch_sz,
+                   Favicon* out, int max);
 
 /// What an image body is, by its first bytes: the two formats components/cover decodes.
 enum class Image : uint8_t { NONE, JPEG, PNG };

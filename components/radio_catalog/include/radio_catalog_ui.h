@@ -1,7 +1,8 @@
 /**
  * @file radio_catalog_ui.h
- * @brief What the panel's catalog screen and the radio module share: the screen's asks, and
- *        what it draws besides the page — the request's state, the countries, the genres.
+ * @brief What the panel's screens and the radio module share: the catalog screen's asks, and
+ *        what it draws besides the page — the request's state, the countries, the genres — and
+ *        the presets' logos the Player draws.
  *
  * The screen runs in the LVGL task, which may not write SharedState: the main loop owns it.
  * So the screen leaves what it wants in asks(), the radio module turns each ask into the same
@@ -15,6 +16,7 @@
 #pragma once
 
 #include "radio_catalog.h"
+#include "station_logo.h"
 
 #include <atomic>
 #include <cstddef>
@@ -93,6 +95,11 @@ struct Genres {
     Genre item[MAX_GENRES];
 };
 Published<Genres>& genres();
+
+/// The logos the panel has for the stations on presets (station_logo.h), as the Player's preset
+/// buttons draw them. Written by the radio module (modules/radio/src/logos.cpp) whenever a logo
+/// arrives or the presets change; the generation is the Player's cue to copy it again.
+Published<station_logo::Shelf>& logo_shelf();
 
 enum class AskKind : uint8_t {
     QUERY,          ///< spec: a new request, from its first page

@@ -237,6 +237,35 @@ int parse_page(const char* json, size_t len, void* scratch, size_t scratch_sz,
     return array ? kept : -1;
 }
 
+size_t byuuid_path(const char* const* uuids, int n, char* out, size_t out_sz) {
+    if (!uuids || n <= 0 || !out || !out_sz) return 0;
+    jsmn_util::Appender add(out, out_sz);
+    add("%s", "/json/stations/byuuid?uuids=");
+    for (int i = 0; i < n; i++) {
+        if (!uuids[i] || !uuids[i][0]) return 0;
+        add(i ? ",%s" : "%s", uuids[i]);
+    }
+    return add.size();
+}
+
+int parse_favicons(const char* json, size_t len, void* scratch, size_t scratch_sz,
+                   Favicon* out, int max) {
+    const int n = tokenize(json, len, scratch, scratch_sz);
+    const jsmntok_t* tok = static_cast<const jsmntok_t*>(scratch);
+    int got = 0;
+    const bool array = n > 0 && for_each_object_in(tok, n, 0, [&](int obj) {
+        if (got >= max) return;
+        Favicon f;
+        const int u = field(json, tok, n, obj, "stationuuid");
+        if (u < 0 || !copy_str(json, tok[u], f.uuid, sizeof(f.uuid)) || !f.uuid[0]) return;
+        // A logo URL cut short is a broken one: whole, or none.
+        const int v = field(json, tok, n, obj, "favicon");
+        if (v < 0 || !copy_str(json, tok[v], f.url, sizeof(f.url))) f.url[0] = '\0';
+        out[got++] = f;
+    });
+    return array ? got : -1;
+}
+
 bool parse_favicon(const char* json, size_t len, void* scratch, size_t scratch_sz,
                    char* out, size_t out_sz) {
     if (!out || !out_sz) return false;

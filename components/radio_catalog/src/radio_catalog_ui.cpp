@@ -42,6 +42,7 @@ T& single() {
 Published<Status>&    status()    { return single<Published<Status>>(); }
 Published<Countries>& countries() { return single<Published<Countries>>(); }
 Published<Genres>&    genres()    { return single<Published<Genres>>(); }
+Published<station_logo::Shelf>& logo_shelf() { return single<Published<station_logo::Shelf>>(); }
 Asks&                 asks()      { return single<Asks>(); }
 
 int order_countries(CountryCount* items, int n, const char* first) {

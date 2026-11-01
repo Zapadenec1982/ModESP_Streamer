@@ -93,6 +93,7 @@ set(MODULE_SOURCES
     "${ROOT}/components/radio_catalog/src/radio_art.cpp"     # a cover for a station's ICY title
     "${ROOT}/components/cover/src/cover_tone.cpp"            # the colour of a cover tile, pure
     "${ROOT}/components/radio_catalog/src/radio_catalog_ui.cpp" # what the catalog screen and the radio module share
+    "${ROOT}/components/radio_catalog/src/station_logo.cpp"  # the presets' logos kept on the panel
     "${ROOT}/components/audio_resampler/resampler.c"         # vendored dbry resampler, plain C
     "${ROOT}/components/audio_pipe/src/audio_pipe.cpp"       # PCM conversion + stream length/seek arithmetic
     "${ROOT}/components/sat_link/src/sat_link.cpp"           # COBS + CRC16 framing for the BT satellite
@@ -143,6 +144,7 @@ set(TEST_SOURCES
     "${CMAKE_SOURCE_DIR}/test_stations.cpp"
     "${CMAKE_SOURCE_DIR}/test_radio_catalog.cpp"
     "${CMAKE_SOURCE_DIR}/test_radio_art.cpp"
+    "${CMAKE_SOURCE_DIR}/test_station_logo.cpp"      # components/radio_catalog/include/station_logo.h — the presets' logos
     "${CMAKE_SOURCE_DIR}/test_resampler.cpp"
     "${CMAKE_SOURCE_DIR}/test_resampler_fixed_phase.cpp"
     "${CMAKE_SOURCE_DIR}/test_resampler_safety.cpp"
