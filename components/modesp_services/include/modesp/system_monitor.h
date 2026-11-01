@@ -39,7 +39,7 @@ public:
     /// stall, and ~400 in a 5 s window is a loop that no longer fits 100 Hz at all.
     void note_loop_overrun() { ++loop_overruns_; }
 
-    // Порогові значення heap (bytes)
+    // Alarm thresholds, bytes of free internal heap (system.heap_internal), not of the whole heap
     uint32_t heap_warning_threshold  = 20000;
     uint32_t heap_critical_threshold = 10000;
 

@@ -121,19 +121,22 @@ void SystemMonitor::on_update(uint32_t dt_ms) {
     state_set("system.main_loop_overruns", static_cast<int32_t>(loop_overruns_), false);
     loop_overruns_ = 0;
 
-    if (free_heap < heap_critical_threshold && !heap_critical_sent_) {
+    // The alarms watch internal RAM (system.heap_internal), the kind that runs out. With
+    // CONFIG_SPIRAM_USE_MALLOC=y the whole heap also counts every free byte of PSRAM, tens of
+    // MB, so a threshold on it could never trip. Without PSRAM the two are nearly one number.
+    if (free_internal < heap_critical_threshold && !heap_critical_sent_) {
         heap_critical_sent_ = true;
         error_service_.report("sys_monitor", -100,
                              ErrorSeverity::CRITICAL, "Heap critically low!");
-        ESP_LOGE(TAG, "CRITICAL: Free heap %lu < %lu", free_heap, heap_critical_threshold);
-    } else if (free_heap < heap_warning_threshold && !heap_warning_sent_) {
+        ESP_LOGE(TAG, "CRITICAL: Free internal heap %lu < %lu", free_internal, heap_critical_threshold);
+    } else if (free_internal < heap_warning_threshold && !heap_warning_sent_) {
         heap_warning_sent_ = true;
         error_service_.report("sys_monitor", -101,
                              ErrorSeverity::WARNING, "Heap low");
-        ESP_LOGW(TAG, "WARNING: Free heap %lu < %lu", free_heap, heap_warning_threshold);
+        ESP_LOGW(TAG, "WARNING: Free internal heap %lu < %lu", free_internal, heap_warning_threshold);
     }
 
-    if (free_heap > heap_warning_threshold) {
+    if (free_internal > heap_warning_threshold) {
         heap_warning_sent_ = false;
         heap_critical_sent_ = false;
     }
