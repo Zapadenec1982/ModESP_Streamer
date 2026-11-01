@@ -201,7 +201,9 @@ struct RadioTaskState {
     std::atomic<uint8_t> state{ST_IDLE};
 
     esp_transport_handle_t tr = nullptr;
-    bool                   tr_ssl = false;
+    /// The last connection was TLS. Read by main (stream_tls): a station asked for over http://
+    /// can still end up on TLS, through a redirect or a playlist.
+    std::atomic<bool>      tr_ssl{false};
     esp_audio_simple_dec_handle_t dec = nullptr;
     audio_core::RateConverter conv;
 
@@ -1966,6 +1968,17 @@ const char* current_uuid() {
     return st ? st->uuid : "";
 }
 
+/// The stream holds the panel's one TLS session (docs/NETWORK.md, "Stream"): the station was
+/// asked for over https://, or its connection ended up on TLS through a redirect or a playlist.
+/// While it does, a logo is fetched over plain HTTP or not at all.
+bool stream_tls() {
+    if (s.tr_ssl.load(std::memory_order_acquire)) return true;
+    const int32_t idx = s.station.load(std::memory_order_acquire);
+    const radio_core::Station* lst = idx == TRANSIENT ? nullptr : s.list.at(idx);
+    const char* url = idx == TRANSIENT ? cat_ask().shown.url : lst ? lst->url : "";
+    return strncmp(url, "https://", 8) == 0;
+}
+
 #include "stations_http.inc"
 
 /// radio.list_rev as last published; the store's generation is never all ones.
@@ -2352,11 +2365,8 @@ void RadioModule::on_update(uint32_t dt_ms) {
             if (s.one_shot.load(std::memory_order_acquire)) {
                 radio_art_task::station("", "", false);       // a pushed track: no station
             } else {
-                const bool cat = (idx == TRANSIENT);
-                const radio_core::Station* lst = cat ? nullptr : s.list.at(idx);
-                const char* url = cat ? cat_ask().shown.url : lst ? lst->url : "";
-                radio_art_task::station(current_uuid(), cat ? cat_ask().shown_favicon : "",
-                                        strncmp(url, "https://", 8) != 0);
+                radio_art_task::station(current_uuid(), idx == TRANSIENT ? cat_ask().shown_favicon : "",
+                                        !stream_tls());
             }
         }
     }
