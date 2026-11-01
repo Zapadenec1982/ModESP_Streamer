@@ -845,19 +845,25 @@ void BtModule::report() {
 }
 
 void BtModule::link_lost(const char* why) {
-    bt_cover::clear();
+    drop_link();
+    ESP_LOGW(TAG, "link lost (%s)", why);
+}
+
+void BtModule::drop_link() {
     linked_ = false;
     state_set("bt.link", false);
+    // What the satellite said about the phone goes with it. Left behind, a satellite that went
+    // quiet left the Player looking exactly like a playing one — a title, a codec and a frozen
+    // bar, for good — and a "playing" that kept standby bright, kept USB from taking the output
+    // (usb_audio's panel_playing) and, on the next link, had the stall kick send a PLAY to a
+    // phone paused meanwhile.
     state_set("bt.state", "off");
     state_set("bt.peer", "");
-    // The announced stream format belongs to the connection that announced it. Leaving it
-    // behind let a stale rate drive the converter's ratio after the satellite came back on a
-    // different one, and the servo has nowhere near the authority to argue with an 8.8 %
-    // error. Zero means "measure it" and the measurement is self-correcting.
-    state_set("bt.rate_hz", (int32_t)0);
-    sat::stream_control().clear();
+    state_set("bt.codec", "");
+    clear_track();
     // Nobody left to be a slave: the link's clock lines go back to being inputs.
     sat::stream_control().set_host_clocks(false);
+    state_set("bt.link_master", false);
     modern_format_ = false;
     // The capabilities belonged to that satellite. A replacement may be an older build, and
     // assuming the old bits would send it a message it has never heard of.
@@ -868,6 +874,8 @@ void BtModule::link_lost(const char* why) {
     // unpaired, replaced or restarted in between.
     streaming_   = false;
     auto_paused_ = false;
+    // stall_ is left alone: a pause somebody asked for holds across a lost link, as the
+    // satellite's suspend does (bt_stall_kick.h).
     // And the volume must be pushed again on the next link, or a reconnecting phone shows its
     // own slider while the room plays at the panel's level.
     vol_echo_ = -1;
@@ -876,7 +884,23 @@ void BtModule::link_lost(const char* why) {
     // answered over a link that is gone.
     bt_settings::set_link(false, false);
     bt_settings::pair_abandon();
-    ESP_LOGW(TAG, "link lost (%s)", why);
+}
+
+void BtModule::clear_track() {
+    bt_cover::clear();
+    // The announced stream format belongs to the connection that announced it. Leaving it
+    // behind let a stale rate drive the converter's ratio after the satellite came back on a
+    // different one, and the servo has nowhere near the authority to argue with an 8.8 %
+    // error. Zero means "measure it" and the measurement is self-correcting.
+    sat::stream_control().clear();
+    state_set("bt.rate_hz", (int32_t)0);
+    state_set("bt.bits", (int32_t)0);
+    state_set("bt.title", "");
+    state_set("bt.artist", "");
+    state_set("bt.album", "");
+    state_set("bt.pos_s", (int32_t)0);
+    state_set("bt.dur_s", (int32_t)0);
+    state_set("bt.play_state", "idle");
 }
 
 void BtModule::on_frame(void* ctx, const sat::Frame& f) {
@@ -923,14 +947,7 @@ void BtModule::handle(const sat::Frame& f) {
             // sulks. So we say it once and keep answering pings.
             ESP_LOGE(TAG, "satellite speaks protocol %u.%u, we speak %u.%u — link refused",
                      h.major, h.minor, sat::PROTO_MAJOR, sat::PROTO_MINOR);
-            bt_cover::clear();
-            linked_ = false;
-            sat::stream_control().clear();
-            sat::stream_control().set_host_clocks(false);
-            modern_format_ = false;
-            peer_caps_ = 0;
-            state_set("bt.link", false);
-            bt_settings::set_link(false, false);
+            drop_link();
             break;
         }
         // 1.9: drive BCLK/WS only while this HELLO says the satellite is a slave. Cleared
@@ -999,19 +1016,10 @@ void BtModule::handle(const sat::Frame& f) {
         // along is not taken (bt_volume_gate.h).
         if (vol_gate_.on_state(s.state >= sat::BT_CONNECTED)) vol_echo_ = -1;
         if (s.state < sat::BT_CONNECTED) {
-            bt_cover::clear();
-            sat::stream_control().clear();
-            state_set("bt.rate_hz", (int32_t)0);
-            state_set("bt.bits", (int32_t)0);
-            // The track left with the phone. A title and a frozen progress bar left behind
-            // is how a disconnected player looks exactly like a playing one — the same
-            // reason the cover above it is cleared here.
-            state_set("bt.title", "");
-            state_set("bt.artist", "");
-            state_set("bt.album", "");
-            state_set("bt.pos_s", (int32_t)0);
-            state_set("bt.dur_s", (int32_t)0);
-            state_set("bt.play_state", "idle");
+            // The track left with the phone, and its cover with it. A title and a frozen
+            // progress bar left behind is how a disconnected player looks exactly like a
+            // playing one.
+            clear_track();
             // A pause we placed on the phone that has just left must not be resumed on the
             // next phone that connects.
             auto_paused_ = false;

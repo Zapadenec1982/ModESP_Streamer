@@ -587,7 +587,8 @@ the I2S line GPIO33/30/31, everything else over the UART link; the byte contract
   asked for is not cancelled.
 - Metadata: `bt.state`, `bt.peer`, `bt.title`, `bt.artist`, `bt.album`, `bt.pos_s`, `bt.dur_s`,
   `bt.play_state`; the cover — `modules/bt/src/bt_cover.cpp` (`docs/LINK_PROTOCOL.md`,
-  "Cover art"). Disconnecting the phone clears the track and the format.
+  "Cover art"). Disconnecting the phone clears the track and the format; losing or refusing the
+  link to the satellite clears them too, with `bt.state`, `bt.peer` and `bt.codec`.
 - Settings and pairing (a satellite with `DEV_CAP_BT_SETTINGS`): `GET`/`POST /api/bt`,
   `bt.cfg_rev`, `bt.pair_*`. The satellite's first name becomes the panel's name if that is not set
   yet; after that a satellite with a different name is given the panel's name

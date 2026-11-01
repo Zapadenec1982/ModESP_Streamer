@@ -64,6 +64,12 @@ private:
     void gate_on_source(uint32_t dt_ms);
     void say_hello();
     void link_lost(const char* why);
+    /// Everything the satellite told this side, forgotten: what a lost link and a refused one
+    /// (another proto_major) have in common. link_lost() is this and a line in the log.
+    void drop_link();
+    /// The track the phone was playing, its play state, the stream's format and the cover: what
+    /// goes when the phone leaves and when the satellite does.
+    void clear_track();
     void report();
     /// UART overruns, dropped frames and sequence gaps into SharedState.
     void publish_wire_counters();

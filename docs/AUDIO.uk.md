@@ -556,7 +556,8 @@ I2S-лінією GPIO33/30/31, усе інше — UART-лінком; байто
   (`bt_stall_kick.h`); пауза, яку попросила людина, не скасовується.
 - Метадані: `bt.state`, `bt.peer`, `bt.title`, `bt.artist`, `bt.album`, `bt.pos_s`, `bt.dur_s`,
   `bt.play_state`; обкладинка — `modules/bt/src/bt_cover.cpp` (`docs/LINK_PROTOCOL.uk.md`,
-  «Обкладинка»). Від'єднання телефона очищає трек і формат.
+  «Обкладинка»). Від'єднання телефона очищає трек і формат; втрачений чи відхилений зв'язок
+  із супутником очищає їх теж, разом з `bt.state`, `bt.peer` і `bt.codec`.
 - Налаштування й спарювання (супутник з `DEV_CAP_BT_SETTINGS`): `GET`/`POST /api/bt`, `bt.cfg_rev`,
   `bt.pair_*`. Перше ім'я супутника стає іменем панелі, якщо його ще не задано; далі супутнику
   з іншим ім'ям передається ім'я панелі (`modules/bt/include/device_name.h`, `docs/NETWORK.uk.md`).
