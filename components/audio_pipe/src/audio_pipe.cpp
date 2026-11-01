@@ -136,8 +136,8 @@ bool RateConverter::ensure(uint32_t src_rate, uint32_t dst_rate) {
     dst_  = dst_rate;
     // The heap figures are here on purpose: this is the moment the filter bank is built,
     // and the bank used to be ~31 KB of internal RAM in 192-byte pieces (see bank_calloc()
-    // in components/audio_resampler/resampler.c). A bench run that wants to confirm stage 7
-    // reads this line and the "Radio: stream heap" one next to it.
+    // in components/audio_resampler/resampler.c). A bench run that wants to confirm the bank
+    // left internal RAM reads this line and the "Radio: stream heap" one next to it.
     ESP_LOGI(TAG, "resampler %lu -> %lu Hz, %d phases, built in %lld ms; "
                   "internal %u, DMA %u (largest %u)",
              (unsigned long)src_rate, (unsigned long)dst_rate,

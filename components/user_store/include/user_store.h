@@ -14,7 +14,7 @@
  * the files back into the image. Its own docstring says what this class is: "the fix is to
  * stop storing user files next to build output."
  *
- * So there are two partitions now (plan item 11.1, partitions_p4_16mb.csv):
+ * So there are two partitions (partitions_p4_16mb.csv):
  *
  *   data      build output   rewritten by every `idf.py flash`
  *   userdata  a person's own NO image in the build, so a flash never touches it

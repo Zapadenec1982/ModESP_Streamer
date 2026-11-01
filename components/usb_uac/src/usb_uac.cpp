@@ -177,7 +177,7 @@ void producer_task(void*) {
             // Every stream, the first since the claim too: fade out what is left, and let the
             // reset make the consumer prime again. Without it a stream restarted at the same
             // rate met a consumer reading an empty ring with no cushion — six underruns at the
-            // start of a 48 kHz run (U1, 24.10.2026) — and a new rate would retune under the
+            // start of a 48 kHz run — and a new rate would retune under the
             // old rate's tail. The first stream is no different: a claim made while the
             // computer was silent marks the ring ended, an ended ring stops the consumer's
             // priming, and a first stream at the clock's own rate (nothing to retune, so nothing

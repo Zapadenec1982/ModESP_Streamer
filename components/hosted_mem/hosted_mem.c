@@ -21,8 +21,8 @@
  * _aligned variant — it put the staging buffers and the TX aggregate in PSRAM and never
  * reached these copies. Up to CONFIG_ESP_HOSTED_HOST_SDIO_RX_Q_SIZE (20) received frames sit
  * in the queue at once, 1536 bytes each: ~33 KB of the memory the I2S descriptors, the SD
- * card and everything else asking for MALLOC_CAP_DMA also need. The bench logs of 20.09
- * show 30-33 KB free during DLNA, sometimes 12.5 KB; on 22.09 it was 2535 bytes.
+ * card and everything else asking for MALLOC_CAP_DMA also need. Measured during DLNA:
+ * 30-33 KB free, sometimes 12.5 KB, once 2535 bytes.
  *
  * When the allocation fails, a received frame is skipped with no log line and no counter,
  * and an outgoing one (an ACK, a ping reply) is refused with ESP_ERR_NO_MEM, which lwIP

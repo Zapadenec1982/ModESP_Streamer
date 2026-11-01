@@ -239,7 +239,7 @@ public:
     /// whether the EQ is on or not. They count in B, a change crossfades as an EQ edit does,
     /// and at 0 dB a shelf is a wire, bit-exact.
     void set_tone(float bass_db, float treble_db);
-    /// The balance (S3): `db` > 0 turns the LEFT channel down by that much, so the image moves
+    /// The balance: `db` > 0 turns the LEFT channel down by that much, so the image moves
     /// right; < 0 the right channel; within ±BAL_MAX_DB. Only ever down, so it costs no
     /// headroom. After the stereo stage, before the bass limiter, gliding as the volume does;
     /// 0 is a wire, bit-exact.

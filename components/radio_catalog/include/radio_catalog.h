@@ -1,7 +1,7 @@
 /**
  * @file radio_catalog.h
  * @brief The station catalog: what to ask Radio Browser, what its answer means, and the
- *        page the screen reads (stage 20).
+ *        page the screen reads (docs/NETWORK.md, "Radio Browser catalog").
  *
  * Pure: no IDF, no network, no filesystem. The radio module fetches and this decides the
  * rest — the request path, the parse, which rows this device can play, the repeats — which

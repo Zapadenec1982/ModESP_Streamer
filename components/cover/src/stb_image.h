@@ -4482,7 +4482,7 @@ static int stbi__parse_zlib(stbi__zbuf *a, int parse_header)
 {
    int final, type;
 #ifdef STBI_MAX_DEFLATE_BLOCKS
-   // player-fork (CV-1-R2): a crafted PNG whose IDAT is a long run of empty DEFLATE blocks
+   // player-fork: a crafted PNG whose IDAT is a long run of empty DEFLATE blocks
    // makes this loop rebuild both fixed Huffman tables (stbi__zbuild_huffman) for every block,
    // so block count, not output size, drives CPU. Enough of them starve IDLE0 and panic the
    // task watchdog. The caller caps the image before decode and a per-row-flushing encoder

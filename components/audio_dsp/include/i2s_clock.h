@@ -105,10 +105,10 @@ constexpr uint32_t i2s_master_apll_hz(uint32_t rate_hz, uint16_t mclk_multiple) 
 // The difference between two crystals does not have to be eaten by a resampler; it can be
 // eaten by the clock. The satellite is the I2S master of the input port and this panel is
 // its slave, so the samples arrive at the satellite's rate whatever the P4 thinks — and the
-// P4's own output runs a few parts per million away from it. Today a resampler absorbs that,
+// P4's own output runs a few parts per million away from it. A resampler can absorb that,
 // at 192 float multiply-accumulates per output frame and about a quarter of core 1. Moving
 // the OUTPUT clock those few ppm instead absorbs it for nothing, and makes the Bluetooth
-// path bit-exact on the way through (plan stage 13).
+// path bit-exact on the way through (docs/AUDIO.md, "Playback").
 
 /// How far the clock may be trimmed, either way.
 ///

@@ -49,7 +49,7 @@ extern "C" {
 /// 32 microframes of the widest format: 3.3 KB, ~4.3 ms at 96 kHz/24-bit. The producer empties it
 /// every millisecond into the player's ring, which is the elastic buffer (usb_uac.cpp); this only
 /// has to cover the producer's wake-up. Internal RAM: it was 64 (6.6 KB) while TinyUSB's own
-/// FIFO-count feedback needed it half full (U0).
+/// FIFO-count feedback needed it half full.
 #define CFG_TUD_AUDIO_FUNC_1_EP_OUT_SW_BUF_SZ   (32 * CFG_TUD_AUDIO_FUNC_1_EP_OUT_SZ_MAX)
 
 #ifdef __cplusplus

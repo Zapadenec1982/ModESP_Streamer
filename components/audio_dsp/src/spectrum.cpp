@@ -134,7 +134,7 @@ void SpectrumAnalyzer::analyse() {
     // The plain-C FFT, not the P4 assembly one (dsps_fft2r_fc32 → _arp4 on this chip). On
     // 25.09.2026 one build died in the assembly one ~5 s in, the moment a source started:
     // "Illegal instruction", the inner loop left after 29 of its 64 passes and the PC 0x44 bytes
-    // BEFORE the function (bench_logs/panic-20260925-arp4-fft holds the ELF and the dump). That
+    // BEFORE the function. That
     // loop runs on the core's hardware-loop unit (esp.lp.setup) against two of the unit's rules,
     // ESP32-P4 v1.3 TRM §1.7.1.5: its start and end are not word-aligned, and its last
     // instruction is a 16-bit one. The offsets are fixed inside the function, so every build

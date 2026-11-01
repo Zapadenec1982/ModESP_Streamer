@@ -146,7 +146,7 @@ void UserStore::begin() {
     // Left on the default deliberately - LITTLEFS_MALLOC_STRATEGY_SPIRAM would move it off
     // internal RAM, but it would put buffers used during flash operations in PSRAM, and
     // internal RAM is the thing this board is short of for reasons that are cheaper to fix
-    // elsewhere (stage 7). Worth measuring on the bench next to the stage 7 numbers.
+    // elsewhere (docs/CONCEPT.md, "Board constraints"). Worth measuring on the bench.
 
     const esp_err_t err = esp_vfs_littlefs_register(&conf);
     if (err != ESP_OK) {

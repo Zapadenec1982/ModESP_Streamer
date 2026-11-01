@@ -24,8 +24,7 @@ namespace audio_core {
 static constexpr int MAX_SECTIONS = 2;   ///< two DACs; see docs/CONCEPT.md, "Outputs"
 
 /// The shape of eq.json this build understands. Written by eq_serialize(), checked by
-/// eq_parse(): a file from the future is REFUSED rather than read with today's rules
-/// (plan item 11.2).
+/// eq_parse(): a file from the future is REFUSED rather than read with today's rules.
 ///
 /// A missing "version" means 1 — the field was added before anything shipped, and a file
 /// without it is either hand-written or from the very first layout; both parse correctly

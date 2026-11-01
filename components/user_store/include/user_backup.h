@@ -55,7 +55,7 @@ bool is_json_object(const char* s, size_t n);
 /// A restore refuses a file over it before anything is staged. A file its reader cuts short
 /// is not restored smaller, it is lost: a cut stations.json fails to parse and the radio
 /// writes its built-in list over it, and a file over safe_file::MAX_COPY_BYTES is never put
-/// in place at all (deep review CO-3). The numbers are copies of the readers' own limits,
+/// in place at all. The numbers are copies of the readers' own limits,
 /// which live where this component cannot reach; tests/host/test_user_backup.cpp pins them.
 size_t max_bytes(const char* name);
 

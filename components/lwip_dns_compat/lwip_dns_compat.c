@@ -23,7 +23,7 @@
  * later, then 30. On 11.10.2026 the panel sat on a network whose provider answered DNS but
  * nothing else, and rebooted every 40-80 s: "Instruction access fault", MEPC 0, RA 0, S1 =
  * sntp_request, task tiT, with 91.236.251.24 and 91.236.251.5 (pool.ntp.org) in the dumped
- * stack 24 bytes apart (_local/logs/sntp-dns-panic-20261011). On a network that answers NTP
+ * stack 24 bytes apart. On a network that answers NTP
  * it does not happen at all — the next request is an hour later and the record has expired.
  *
  * HOW

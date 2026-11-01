@@ -6,7 +6,7 @@
 /// (docs/LINK_PROTOCOL.md, "3.5 Who clocks I2S (1.9)"), and this UART carries everything that is
 /// not audio — what is playing, what the phone did to the volume and which transport button we
 /// want pressed.
-/// Nothing else travels on it (docs/LINK_PROTOCOL.md, section 11).
+/// Nothing else travels on it (docs/LINK_PROTOCOL.md, "Reserved codes and bits").
 ///
 /// Framing is COBS between 0x00 delimiters. That choice is what lets a receiver drop a
 /// frame it cannot hold, or lose a byte to noise, and be back in step at the very next

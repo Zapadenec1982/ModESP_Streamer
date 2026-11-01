@@ -116,7 +116,7 @@ bool eq_parse(const char* json, size_t len, EqConfig& cfg) {
     const int n = jsmn_parse(&p, json, len, tok, MAX_TOKENS);
     if (n < 1 || tok[0].type != JSMN_OBJECT) return false;
 
-    // Schema gate, before anything is read out of the file (plan item 11.2). eq_serialize
+    // Schema gate, before anything is read out of the file. eq_serialize
     // has always stamped "version": 2 and nothing ever looked at it, so a file written by a
     // LATER build would be read with today's rules: the fields this parser does not know
     // would be dropped silently, and the first touch of a slider would write the file back
@@ -275,7 +275,7 @@ bool eq_save(const char* path, const EqConfig& cfg) {
     if (len == 0) return false;
 
     // One implementation of write -> read back -> rename, shared with the station list, the
-    // resume point and POST /api/bindings (plan item 11.2). This used to be its own copy,
+    // resume point and POST /api/bindings. This used to be its own copy,
     // and that copy did `remove(path)` before the rename on the belief that LittleFS would
     // not replace an existing target. It does — lfs_rename commits the replace in one
     // metadata operation — so the remove bought nothing and opened a window in which the EQ
