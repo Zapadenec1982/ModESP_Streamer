@@ -110,6 +110,33 @@ eq(p.down(100, 100, 0), 'drag', 'a mouse moves it at once');
 """)
 
 
+def test_a_preset_tunes_on_a_tap_and_stores_on_a_hold():
+    run("""
+eq(g.PRESS_HOLD_MS, 500, 'the hold: the glass\\'s long press');
+let p = g.holdGesture();
+p.down(100, 100);
+eq(p.end(), 'tap', 'let go at once: a tap');
+
+p = g.holdGesture();
+p.down(100, 100);
+eq(p.move(104, 105), 'press', '6 px: still a press');
+eq(p.end(), 'tap', 'and a tap');
+
+p = g.holdGesture();
+p.down(100, 100);
+eq(p.move(103, 104), 'press', 'a finger that shook');
+eq(p.held(), 'hold', 'long enough: the hold');
+eq(p.move(160, 100), 'hold', 'moving after it changes nothing');
+eq(p.end(), 'hold', 'and letting go is no tap');
+
+p = g.holdGesture();
+p.down(100, 100);
+eq(p.move(100, 92), 'scroll', '8 px up: the page scrolls');
+eq(p.held(), 'scroll', 'the time running out stores nothing');
+eq(p.end(), 'scroll', 'nor tunes');
+""")
+
+
 def test_the_snackbar_puts_back_where_it_started():
     run("""
 let clock = 0, shown = [], hidden = [], reverted = [], next = 0;
