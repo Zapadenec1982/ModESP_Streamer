@@ -60,6 +60,13 @@ uint32_t cover_backdrop(uint32_t rgb);
 bool cover_set_jpeg(const uint8_t* jpg, size_t len, CoverSource source = CoverSource::File,
                     uint32_t expected_generation = UINT32_MAX);
 
+/// A small picture of `len` bytes of JPEG or PNG for a button — a station's logo on a preset —
+/// into the caller's `out`, `side` x `side` RGB565: the whole picture fitted in, centred, and its
+/// transparent pixels and the margins on a ground of its own (cover_thumb.h). The same decoders
+/// and limits as a tile: baseline JPEG on the engine, PNG and progressive JPEG on the software
+/// decoder's task at the caller's priority. False for anything else, or a picture over the limits.
+bool cover_thumb(const uint8_t* img, size_t len, uint16_t* out, int side);
+
 /// This track has no artwork. Publishes "none", so the card empties instead of keeping the
 /// previous album's picture next to a different track.
 void cover_clear(CoverSource source = CoverSource::File);

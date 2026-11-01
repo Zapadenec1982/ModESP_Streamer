@@ -57,9 +57,11 @@ int cover_soft_info(const unsigned char* jpg, int len, int* w, int* h) {
     return stbi_info_from_memory(jpg, len, w, h, &comp);
 }
 
-unsigned char* cover_soft_decode(const unsigned char* jpg, int len, int* w, int* h) {
-    int comp = 0;
-    return stbi_load_from_memory(jpg, len, w, h, &comp, 3);   // forced to RGB, 8 bits each
+/// `comp` channels of 8 bits each: 3 for RGB (a cover), 4 for RGBA (a logo, whose transparent
+/// pixels go over a ground of their own).
+unsigned char* cover_soft_decode(const unsigned char* jpg, int len, int* w, int* h, int comp) {
+    int in_comp = 0;
+    return stbi_load_from_memory(jpg, len, w, h, &in_comp, comp);
 }
 
 void cover_soft_free(unsigned char* px) { stbi_image_free(px); }

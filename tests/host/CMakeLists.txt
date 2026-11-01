@@ -155,6 +155,7 @@ set(TEST_SOURCES
     "${CMAKE_SOURCE_DIR}/test_sat_link.cpp"
     "${CMAKE_SOURCE_DIR}/test_cover_assembly.cpp"
     "${CMAKE_SOURCE_DIR}/test_cover_guard.cpp"       # components/cover/include/cover_guard.h — the software decoder's budget
+    "${CMAKE_SOURCE_DIR}/test_cover_thumb.cpp"       # components/cover/include/cover_thumb.h — a logo fitted into a preset's disc
     "${CMAKE_SOURCE_DIR}/test_cover_png_zlib.cpp"    # components/cover/src/stb_image.h — the PNG DEFLATE-block cap
     "${CMAKE_SOURCE_DIR}/test_cover_tone.cpp"        # components/cover/src/cover_tone.cpp — the Player's background
     "${CMAKE_SOURCE_DIR}/test_uac_tone.cpp"          # components/usb_uac/include/uac_tone.h — the USB stream check
