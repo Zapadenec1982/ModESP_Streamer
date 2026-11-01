@@ -4,8 +4,8 @@
  *        (type-string → factory; колишній module-local DisplayBackendRegistry).
  *
  * Started as the display registry and now covers every family that a MODULE resolves in its
- * own on_bind() instead of DriverManager creating it: display, lcd, storage (item 8.9) and
- * link (item 8.9). They share one invariant worth pinning per family — a module-bound type is
+ * own on_bind() instead of DriverManager creating it: display, lcd, storage and
+ * link. They share one invariant worth pinning per family — a module-bound type is
  * invisible to is_known(), so DriverManager skips its binding silently rather than warning
  * about a driver it was never meant to create.
  *
@@ -198,7 +198,7 @@ TEST_CASE("lcd registry: unknown/null + idempotent + reset") {
 }
 
 
-// ── storage family (player-fork, item 8.9): a mountable volume of files ──
+// ── storage family (player-fork): a mountable volume of files ──
 
 namespace {
 
@@ -296,7 +296,7 @@ TEST_CASE("storage registry: null args, idempotent, reset") {
 }
 
 
-// ── link family (player-fork, item 8.9): the wire to a co-processor ──
+// ── link family (player-fork): the wire to a co-processor ──
 
 namespace {
 

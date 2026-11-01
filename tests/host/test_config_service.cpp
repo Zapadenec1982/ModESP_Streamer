@@ -99,7 +99,7 @@ TEST_CASE("the real p4_player board and bindings load, and the numbers match the
 
     // The last two rows say which UART the satellite is on and which slot holds the card,
     // which used to be the literals "uart_sat" and "sd_0" inside modules/bt and
-    // modules/storage (item 8.8). Whether or not they name a driver, hardware_for() must
+    // modules/storage. Whether or not they name a driver, hardware_for() must
     // still answer (module, role) -> hardware id: that is what a module asks when it needs
     // a board resource it is not given a driver for, such as the audio module's BT port.
     char hw[modesp::MAX_HAL_ID_LEN + 1] = "";
@@ -115,15 +115,15 @@ TEST_CASE("the real p4_player board and bindings load, and the numbers match the
     CHECK(hw[0] == 0);
     CHECK_FALSE(t.hardware_for("nobody", "card", hw, sizeof hw));
 
-    // The card slot now names a driver of its own (item 8.9): drivers/sdmmc_card owns the
+    // The card slot names a driver of its own: drivers/sdmmc_card owns the
     // controller, the power rail and the FAT mount, and modules/storage asks the registry
     // for it in on_bind() like every other module-bound backend. Not "sdmmc": a driver
     // folder is an IDF component and that name is ESP-IDF's own SD/MMC protocol component,
     // which a driver of that name shadows — the build then fails inside esp_hosted.
     // The satellite's UART names drivers/uart_link for the same split: the wire is the
-    // driver's, and what is said over it is modules/bt's. Between them, item 8.9 leaves this
-    // board with no driver-less binding at all - so the case 8.8 introduced is pinned by its
-    // own fixture below, not by this file.
+    // driver's, and what is said over it is modules/bt's. Between them, this board has no
+    // driver-less binding at all - so that case is pinned by its own fixture below, not by
+    // this file.
     for (const auto& b : t.bindings) {
         INFO("role: ", b.role.c_str());
         if (b.role == "card") {
@@ -153,10 +153,10 @@ TEST_CASE("a bindings file with addresses and per-binding settings parses them")
 }
 
 TEST_CASE("a binding with no 'driver' parses as a plain hardware assignment") {
-    // Item 8.8: such a row says which board resource plays a role for a module, and the
-    // module then uses the HAL resource directly - DriverManager creates nothing for it and
-    // must not warn about it either. boards/p4_player had two of these until item 8.9 gave
-    // both a driver, which is why this lives in a fixture now: the parser still has to accept
+    // Such a row says which board resource plays a role for a module, and the module then
+    // uses the HAL resource directly - DriverManager creates nothing for it and must not warn
+    // about it either. boards/p4_player had two of these until both were given a driver,
+    // which is why this lives in a fixture now: the parser still has to accept
     // the missing field, and hardware_for() still has to answer for it.
     REQUIRE(modesp::ConfigService::load_bindings_file(
         (kBroken + "/bindings_assignment.json").c_str(), g_table));
@@ -189,7 +189,7 @@ TEST_CASE("a board.json bigger than the parse buffer is refused, not parsed trun
 }
 
 TEST_CASE("a panel entry that leaves out a timing is refused, not defaulted") {
-    // Item 8.8. hal_types.h used to carry the JC4880P443C's numbers as struct defaults, so
+    // hal_types.h used to carry the JC4880P443C's numbers as struct defaults, so
     // an entry missing a line parsed fine and the panel was driven at ANOTHER panel's
     // timings — a rolling or torn picture with nothing in the log naming the missing field.
     // The fixture omits 'vfp' and nothing else.

@@ -48,7 +48,7 @@ struct Hp8 {
 double db(double x) { return 20.0 * std::log10(std::fabs(x) + 1e-30); }
 
 /// What the customer's panel runs (04.10.2026): port 62 Hz +4 dB, loudness 90 %, subsonic 50 Hz,
-/// bass limiter at 120 Hz, volume 30 %. And the review's own case: one 62 Hz band, +6 dB at Q 5.
+/// bass limiter at 120 Hz, volume 30 %. And a second case: one 62 Hz band, +6 dB at Q 5.
 struct Setup {
     const char* name;
     bool customer;
@@ -179,9 +179,9 @@ TEST_CASE("fade gate: opens in 20 ms and closes in 100 ms at every rate, along s
     CHECK(smootherstep(0.5f) == doctest::Approx(0.5f));
 }
 
-TEST_CASE("a pause through the chain is silent, and the reset lands in silence (A02)") {
+TEST_CASE("a pause through the chain is silent, and the reset lands in silence") {
     // Before the output gate the chain was reset once the limiters' look-ahead had played out,
-    // while the filters still rang: -19.7 dBFS above 500 Hz on this tone with the review's band,
+    // while the filters still rang: -19.7 dBFS above 500 Hz on this tone with the single band,
     // -36.8 with the customer's settings. Both are measured by the probe in the commit message.
     for (const Setup su : {Setup{"review band 62 Hz +6 dB Q5", false}, Setup{"customer", true}}) {
         for (double fs : {48000.0, 192000.0}) {
@@ -206,9 +206,9 @@ TEST_CASE("a pause through the chain is silent, and the reset lands in silence (
     }
 }
 
-TEST_CASE("a source change closes over the old source while it still plays (A01)") {
+TEST_CASE("a source change closes over the old source while it still plays") {
     // apply_source() used to reset the chain the moment the command came: the next block was
-    // silence after a block of music, -13.5 dBFS above 500 Hz with the review's band. Now the old
+    // silence after a block of music, -13.5 dBFS above 500 Hz with the single band. Now the old
     // source keeps delivering while both gates close, and only then does the switch happen.
     for (double fs : {48000.0, 192000.0}) {
         double worst = -300.0;

@@ -2,10 +2,10 @@
  * @file test_shared_state.cpp
  * @brief SharedState: the inline string, the side table, and what iteration hands over.
  *
- * The store is the contract between every module on this board, and stage 7 changed what it
- * can hold: the inline string came down from 256 to 64 so that 189 map slots stop paying for
- * a value only a dozen keys ever need, and the keys that DO need it — the paths and the URIs,
- * marked `"long": true` in their manifest — moved to a side table.
+ * The store is the contract between every module on this board, and what it can hold is a
+ * memory decision: the inline string came down from 256 to 64 so that 189 map slots stop
+ * paying for a value only a dozen keys ever need, and the keys that DO need it — the paths and
+ * the URIs, marked `"long": true` in their manifest — moved to a side table.
  *
  * What is worth testing about that is not the sizes. It is the three places where the split
  * could lie about a value:

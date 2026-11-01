@@ -2,8 +2,8 @@
  * @file test_eq_curve_vectors.cpp
  * @brief The vectors the web's copy of the EQ maths is held to (webui/src/lib/eqmath.js).
  *
- * The web draws the DSP page's curve itself, so its design must be this one: the DoD
- * is the same curve on the glass and in the browser. This test computes, with the
+ * The web draws the DSP page's curve itself, so its design must be this one: the same
+ * curve on the glass and in the browser. This test computes, with the
  * firmware's own functions, each band's response (matched, and bilinear — the fallback the JS
  * also carries) and the summed curve, for bands that reach every type and every branch, at the
  * rates the panel runs, and holds the committed fixture to them. tools/tests/test_webui_eqmath.py

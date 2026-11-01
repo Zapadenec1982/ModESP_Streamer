@@ -2,7 +2,7 @@
  * @file test_eq_store.cpp
  * @brief The EQ document both editors share (components/audio_dsp: eq_presets, eq_store,
  *        eq_web) — the «Власний» rules, refused stale edits, when and how the files are
- *        written (S2: the eight sounds, the name in the file, the copies kept), and what GET
+ *        written (the eight sounds, the name in the file, the copies kept), and what GET
  *        and POST /api/eq carry.
  */
 
@@ -95,7 +95,7 @@ EqConfig with_sound(const EqConfig& from, int p) {
     return c;
 }
 
-/// What a build before S2 writes: the same file without "preset" — it did not know the field.
+/// What an older build writes: the same file without "preset" — it did not know the field.
 void save_as_older_build(const std::string& path, EqConfig c) {
     c.preset[0] = '\0';
     REQUIRE(eq_save(path.c_str(), c));
@@ -324,7 +324,7 @@ TEST_CASE("files: the owner's eq.json and eq_custom.json of 14.10.2026 - the sam
     REQUIRE(!custom0.empty());
     spit(f.eq, eq0);
     spit(f.custom, custom0);
-    // as the build before S2 read them: the same parser, which knew no "preset"
+    // as an older build read them: the same parser, which knew no "preset"
     EqConfig want_cfg, want_custom;
     REQUIRE(eq_parse(eq0.c_str(), eq0.size(), want_cfg));
     REQUIRE(eq_parse(custom0.c_str(), custom0.size(), want_custom));
@@ -485,7 +485,7 @@ TEST_CASE("files: the name only names - bands that are not that sound play as sa
 
 TEST_CASE("files: update, a new sound, a rollback, a preset there, an update again - nothing is lost") {
     Pair f;
-    // The build before S2: «Свій» playing, in eq.json; eq_custom.json is an older set.
+    // An older build: «Свій» playing, in eq.json; eq_custom.json is an older set.
     const EqConfig mine = own_set(10, 1.5f), stale = own_set(10, -3.0f);
     save_as_older_build(f.eq, mine);
     save_as_older_build(f.custom, stale);
@@ -754,7 +754,7 @@ TEST_CASE("web: numbers out of reach of the panel's page are held to it") {
 }
 
 TEST_CASE("web: an imported set of three bands is «Власний», and a restart and a sound chosen meanwhile keep it") {
-    // S7: «Імпорт фільтрів» posts a file's bands as they are — three here, not ten — and S2 keeps
+    // «Імпорт фільтрів» posts a file's bands as they are — three here, not ten — and the store keeps
     // «Власний» of any count
     Pair f;
     EqStore st;

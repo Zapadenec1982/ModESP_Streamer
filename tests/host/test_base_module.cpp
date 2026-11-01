@@ -10,7 +10,7 @@
  * That is not hypothetical. `audio.cpu_pct` and `audio.in_rate` are published as floats by
  * the audio module and were read with read_int by the panel, so the CPU indicator showed 0
  * on every build that ever shipped and the technical line under a Bluetooth track stayed
- * blank (plan 2026-09-21, item 12.4). read_number exists so a caller that wants a number
+ * blank. read_number exists so a caller that wants a number
  * does not have to know which of the two numeric types the writer picked, and these cases
  * pin the conversion at the edges where it is easiest to get wrong.
  */

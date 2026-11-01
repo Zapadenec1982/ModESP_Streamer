@@ -463,7 +463,7 @@ TEST_CASE("ring: an answer that comes after the producer stopped waiting is stil
 }
 
 TEST_CASE("ring: a new owner is a new rate question, and the same owner keeps its own") {
-    // Review of 12.10.2026: the session's clock is chosen by its first track's question, but
+    // The session's clock is chosen by its first track's question, but
     // the consumer read whatever rate the ring held — the boot default, or the previous
     // producer's — before the new one had asked, settled the session on it, and a 44.1 kHz
     // album after boot played converted to 48 kHz for its whole length.
@@ -553,7 +553,7 @@ TEST_CASE("fallback_rate: a rate refused inside the range falls back to its fami
 }
 
 TEST_CASE("the session's clock lock survives a reset between tracks") {
-    // Stage 14: the output clock is settled once, by the first track a source plays, and the
+    // The output clock is settled once, by the first track a source plays, and the
     // producer reads this to know it need not drain the previous track's tail before asking
     // for a rate. reset() runs BETWEEN tracks of the same session — a flush, a seek, a new
     // file — and clearing the lock there would quietly let the next track retune the clock,

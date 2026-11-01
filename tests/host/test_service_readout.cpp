@@ -212,8 +212,8 @@ TEST_CASE("the main stack margin grades in bytes, not words") {
     CHECK(svc::stack_free(0)    == svc::Grade::Bad);
 }
 
-TEST_CASE("free DMA-internal grades against stage 7's bench DoD") {
-    // "вільна DMA-internal ≥ 80 КБ". The wave began
+TEST_CASE("free DMA-internal grades against the 80 KB target") {
+    // 80 KB is the target the memory work was held to. It began
     // at 28 275 B, which is what the failure looked like, and that number must land in Bad.
     CHECK(svc::dma_free(80 * 1024)     == svc::Grade::Ok);
     CHECK(svc::dma_free(80 * 1024 - 1) == svc::Grade::Warn);

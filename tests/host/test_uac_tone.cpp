@@ -1,7 +1,7 @@
 /**
  * @file test_uac_tone.cpp
- * @brief HOST tests for the USB audio stream check (components/usb_uac/include/uac_tone.h, stage
- *        U0): a clean tone is measured to a fraction of a hertz and counts no breaks — at 16-bit
+ * @brief HOST tests for the USB audio stream check (components/usb_uac/include/uac_tone.h): a
+ *        clean tone is measured to a fraction of a hertz and counts no breaks — at 16-bit
  *        quantisation too, and a low tone at 96 kHz, where its float block sums are tightest;
  *        one lost packet and one repeated packet are each one break; music and a tone being
  *        retuned count nothing.

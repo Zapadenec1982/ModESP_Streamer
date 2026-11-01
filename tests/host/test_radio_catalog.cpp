@@ -299,7 +299,7 @@ TEST_CASE("not a station array, an empty one, and a body cut off mid-read") {
 TEST_CASE("a body nested deeper than any stack is skipped, not recursed into") {
     // Pages come over plain HTTP, so how deep a body nests is up to whoever answers.
     // Skipping a value recursed once per level, and a few hundred levels overflowed the
-    // 8 KB catalog task and rebooted the panel (deep review 2026-10-12, RP-2).
+    // 8 KB catalog task and rebooted the panel.
     Row rows[4];
     std::string nest(5000, '[');
     nest += std::string(5000, ']');

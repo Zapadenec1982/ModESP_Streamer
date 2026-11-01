@@ -90,7 +90,7 @@ TEST_CASE("which files are JSON, and what counts as one") {
 TEST_CASE("max_bytes: what each file's reader takes whole, and safe_file can put in place") {
     // Copies of the readers' limits (user_backup.cpp names each source). A restore used to
     // stage any size: a 30 KB stations.json went in, was read cut short, and the radio wrote
-    // its built-in list over it; past 64 KB a file was never installed (deep review CO-3).
+    // its built-in list over it; past 64 KB a file was never installed.
     CHECK(user_backup::max_bytes("stations.json") == 24 * 1024 - 1);   // STATIONS_JSON_MAX - 1
     CHECK(user_backup::max_bytes("eq.json") == 4096 - 1);              // eq_config MAX_FILE - 1
     CHECK(user_backup::max_bytes("eq_custom.json") == 4096 - 1);

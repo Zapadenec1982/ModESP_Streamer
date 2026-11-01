@@ -138,8 +138,8 @@ TEST_CASE("a parked input port keeps its slot width, and the crystal can still c
     // PLL. What it must NOT do is narrow the slots: IDF reallocates the DMA descriptors
     // only when the buffer size changes, and that size follows the slot width alone — so a
     // port that narrows to 16 bits hands its wide buffers back to a heap that, once Wi-Fi
-    // and a stream have had their share, cannot produce them again. The bench log for that
-    // is ESP_ERR_NO_MEM, 16875 bytes free, largest block 6144, Bluetooth silent until reboot.
+    // and a stream have had their share, cannot produce them again. The panel logged that as
+    // ESP_ERR_NO_MEM, 16875 bytes free, largest block 6144, Bluetooth silent until reboot.
     //
     // So the park rate is chosen for the width the port is already at. This pins that the
     // choice is possible at all, which is the part that is not obvious: at 32 bits the
@@ -160,7 +160,7 @@ TEST_CASE("a parked input port keeps its slot width, and the crystal can still c
     CHECK_FALSE(i2s_slave_clock_fits(I2S_XTAL_HZ, 40000, 32));
 }
 
-// ── trimming the output clock in parts per million (stage 13) ─────────────────────────────
+// ── trimming the output clock in parts per million ────────────────────────────────────────
 //
 // The satellite is the I2S master of the input port and this panel its slave, so the samples
 // arrive at the satellite's rate whatever the P4 believes. Today a resampler eats the
@@ -216,11 +216,11 @@ TEST_CASE("a trim beyond the authority, or beyond the PLL, is refused rather tha
     CHECK_FALSE(i2s_trim_fits(70000000, 10));
 }
 
-TEST_CASE("item 13.4: the slave's source clock survives the trim at 96 kHz in 32-bit slots") {
+TEST_CASE("the slave's source clock survives the trim at 96 kHz in 32-bit slots") {
     // The tightest case on this board. The output runs at 512x so the PLL is 1024 times the
-    // rate, and a 32-bit slave needs 1018.88 times it — half a percent of margin, which the
-    // plan assumed covers 100 ppm. It does, by a factor of fifty, and this is the check the
-    // plan asked for rather than the assumption.
+    // rate, and a 32-bit slave needs 1018.88 times it — half a percent of margin, which is
+    // taken to cover 100 ppm. It does, by a factor of fifty, and this checks it rather than
+    // assuming it.
     const uint32_t pll = i2s_master_apll_hz(96000, 512);
     REQUIRE(pll == 98304000u);
     REQUIRE(i2s_slave_clock_fits(pll, 96000, 32));

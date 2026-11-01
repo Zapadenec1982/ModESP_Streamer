@@ -154,8 +154,8 @@ TEST_CASE("eq_parse: garbage and truncation leave a flat EQ, not a half-read one
 }
 
 TEST_CASE("eq_parse: a field it does not know is skipped whole, however it nests") {
-    // Skipping counts a value's tokens in a loop rather than by recursion (deep review
-    // 2026-10-12, RP-2 follow-up). One token too few or too many and what follows is misread.
+    // Skipping counts a value's tokens in a loop rather than by recursion. One token too few
+    // or too many and what follows is misread.
     const char* json = R"({"x":[[1,{"a":[2,{}]}],[]],"mode":"2.1",
         "outputs":[{"id":"dac0","extra":{"k":[[3],{"z":null}]},"gain_db":-1.5,
                     "bands":[{"type":"peak","odd":[[[4]]],"f":1000,"gain":2,"q":1,"on":true}]}],
@@ -293,8 +293,8 @@ TEST_CASE("the shipped data/eq.json parses and drives a flat response") {
 }
 
 TEST_CASE("eq_parse: a file from a later schema is refused, not read with today's rules") {
-    // The version field has been written since the first release and nothing ever read it
-    // (plan item 11.2). If a later build adds a field — a second section that actually does
+    // The version field has been written since the first release and nothing ever read it.
+    // If a later build adds a field — a second section that actually does
     // something, a crossover type — this parser would drop it, and the first slider move
     // would write the file back without it. Refusing gives a flat EQ and a log line; the
     // file itself stays whole.

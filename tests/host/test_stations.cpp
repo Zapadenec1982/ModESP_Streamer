@@ -93,8 +93,8 @@ TEST_CASE("a full list with uuids fits the tokens") {
 }
 
 TEST_CASE("a field the list does not know is skipped whole, however it nests") {
-    // Skipping counts a value's tokens in a loop rather than by recursion (deep review
-    // 2026-10-12, RP-2). One token too few or too many and what follows is misread.
+    // Skipping counts a value's tokens in a loop rather than by recursion. One token too few
+    // or too many and what follows is misread.
     const char* json =
         "{\"x\":[[1,{\"a\":[2,{}]}],[]],"
         "\"stations\":["

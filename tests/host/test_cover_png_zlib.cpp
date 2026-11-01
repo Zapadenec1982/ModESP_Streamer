@@ -5,7 +5,7 @@
  * components/cover/src/cover_soft.c defines STBI_MAX_DEFLATE_BLOCKS and components/cover/src/
  * stb_image.h honours it in stbi__parse_zlib. A PNG whose IDAT is a long run of empty DEFLATE
  * blocks makes stb rebuild both fixed Huffman tables for every block, so byte length drives
- * CPU and the core-0 cover task misses the 5 s task watchdog (CV-1-R2, deep review 2026-10-12).
+ * CPU and the core-0 cover task misses the 5 s task watchdog.
  * This compiles stb the way cover_soft.c does, with the cap on, and drives it through the public
  * zlib entry points - so it needs no PNG framing, only a hand-built raw DEFLATE stream.
  */
