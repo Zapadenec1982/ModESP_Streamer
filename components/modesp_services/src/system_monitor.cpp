@@ -96,11 +96,20 @@ void SystemMonitor::on_update(uint32_t dt_ms) {
     uint32_t free_dma      = heap_caps_get_free_size(MALLOC_CAP_DMA);
     uint32_t free_psram    = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
 
+    // The lowest free internal RAM since boot. The allocator keeps a low-water mark per heap
+    // and lowers it inside every allocation, so this is a field read and not a walk, and it
+    // holds a dip that came and went between two reports, which a minimum of 5 s samples
+    // such as system.heap_min cannot. It sums per-region lows that need not have fallen at
+    // the same moment, so it errs low, the side a warning should err on. Internal for the
+    // alarms' reason below: the whole heap's minimum counts the free PSRAM too.
+    uint32_t min_internal  = heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+
     // track_change=false: діагностичні ключі не тригерять WS delta
     state_set("system.heap_free", static_cast<int32_t>(free_heap), false);
     state_set("system.heap_min", static_cast<int32_t>(min_free_heap_), false);
     state_set("system.heap_largest", static_cast<int32_t>(largest_block), false);
     state_set("system.heap_internal", static_cast<int32_t>(free_internal), false);
+    state_set("system.heap_internal_min", static_cast<int32_t>(min_internal), false);
     state_set("system.heap_dma", static_cast<int32_t>(free_dma), false);
     state_set("system.heap_psram", static_cast<int32_t>(free_psram), false);
 
