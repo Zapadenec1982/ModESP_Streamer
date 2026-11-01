@@ -203,15 +203,14 @@ CONFIG_LWIP_TCPIP_TASK_AFFINITY_CPU0=y
 #
 # ALTERNATIVE, if the soak says the link suffers: leave hosted at 22 and take audio to 23
 # and audio_bt to 24 instead. Same ordering, opposite side of the argument about which
-# starves first. Revert this one line and the audio commit together — they are separate
-# commits so either half can go back on its own.
+# starves first. To go back, this line and the audio task's priority go back together.
 CONFIG_ESP_HOSTED_HOST_DEFLT_TASK_PRIORITY=21
 
 # ── Tick: 1 kHz, so a 5 ms audio block is not quantised by a 10 ms scheduler ──
 # At 100 Hz the tick was twice the length of an audio block: any tick-granular wait was
 # rounded to a multiple of two blocks, pdMS_TO_TICKS() truncated every sub-10 ms delay in
 # the tree to zero, and equal-priority time slices were 10 ms long. ESP-ADF runs its audio
-# builds at 1000; the satellite already does. Audited before flipping — see the commit.
+# builds at 1000; the satellite already does. Audited before flipping.
 # Requalified by the 24 h soak: revert this line alone if it regresses.
 CONFIG_FREERTOS_HZ=1000
 

@@ -182,7 +182,7 @@ TEST_CASE("fade gate: opens in 20 ms and closes in 100 ms at every rate, along s
 TEST_CASE("a pause through the chain is silent, and the reset lands in silence") {
     // Before the output gate the chain was reset once the limiters' look-ahead had played out,
     // while the filters still rang: -19.7 dBFS above 500 Hz on this tone with the single band,
-    // -36.8 with the customer's settings. Both are measured by the probe in the commit message.
+    // -36.8 with the customer's settings.
     for (const Setup su : {Setup{"review band 62 Hz +6 dB Q5", false}, Setup{"customer", true}}) {
         for (double fs : {48000.0, 192000.0}) {
             double worst = -300.0;
