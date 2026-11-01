@@ -492,9 +492,10 @@ void BtModule::on_update(uint32_t dt_ms) {
         }
         gate_on_source(dt_ms);
     } else {
-        // Keep saying hello, once a second, until the satellite's HELLO arrives (protocol
-        // section 3): it may be powered later than us, or reflashed, and a greeting of ours
-        // that landed inside its one-second reply window got no answer of its own.
+        // Keep saying hello, once a second, until the satellite's HELLO arrives
+        // (docs/LINK_PROTOCOL.md, "Negotiation: `HELLO`"): it may be powered later than us, or
+        // reflashed, and a greeting of ours that landed inside its one-second reply window got
+        // no answer of its own.
         if (since_hello_ms_ >= HELLO_EVERY_MS) say_hello();
         if (since_report_ms_ >= REPORT_EVERY_MS) report();
     }
@@ -982,8 +983,9 @@ void BtModule::handle(const sat::Frame& f) {
             name_given_ = false;   // maybe another satellite: it may be given the panel's name once
         }
         // The satellite acts on no command from a host that has not greeted it since it
-        // started or since we went quiet (protocol section 3), and a greeting of ours from
-        // under a second ago may have reached a satellite that was still booting. So a link
+        // started or since we went quiet (docs/LINK_PROTOCOL.md, "Negotiation: `HELLO`"), and a
+        // greeting of ours from under a second ago may have reached a satellite that was still
+        // booting. So a link
         // coming up gets our HELLO now, ahead of the first command, past the reply limit.
         // The satellite does not answer it inside its own one-second window: no loop.
         if (!was) since_hello_ms_ = HELLO_EVERY_MS;
