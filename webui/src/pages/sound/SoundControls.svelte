@@ -69,10 +69,17 @@
 
   // minutes of the day ↔ the time field's "HH:MM"; the manifest's step is 5 minutes
   const hhmm = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
-  function sendTime(sender, value) {
-    const [h, m] = String(value).split(':').map(Number);
-    if (!Number.isFinite(h) || !Number.isFinite(m)) return;
-    sender.send(Math.min(1435, Math.round((h * 60 + m) / 5) * 5));
+  // The field is set to the time the schedule keeps: the typed one on the step, or the stored one
+  // when it was emptied. Svelte rewrites it only when the stored time changes, so a time that
+  // rounds to the one already kept, or an empty field, would otherwise stay as typed.
+  function sendTime(sender, field, stored) {
+    const [h, m] = String(field.value).split(':').map(Number);
+    let kept = stored;
+    if (Number.isFinite(h) && Number.isFinite(m)) {
+      kept = Math.min(1435, Math.round((h * 60 + m) / 5) * 5);
+      sender.send(kept);
+    }
+    field.value = hhmm(kept);
   }
   $: eqValue = !eqOn ? $t['sys.eq_off'] : d ? soundName($t, d.preset) : '';
 
@@ -154,11 +161,11 @@
   {#if levSched}
     <label class="eq">
       <span class="eq-t">{$t['sound.lev_from']}</span>
-      <input class="time" type="time" step="300" value={hhmm(levFrom)} on:change={(e) => sendTime(levFromS, e.currentTarget.value)} />
+      <input class="time" type="time" step="300" value={hhmm(levFrom)} on:change={(e) => sendTime(levFromS, e.currentTarget, levFrom)} />
     </label>
     <label class="eq">
       <span class="eq-t">{$t['sound.lev_to']}</span>
-      <input class="time" type="time" step="300" value={hhmm(levTo)} on:change={(e) => sendTime(levToS, e.currentTarget.value)} />
+      <input class="time" type="time" step="300" value={hhmm(levTo)} on:change={(e) => sendTime(levToS, e.currentTarget, levTo)} />
     </label>
   {/if}
   <div class="rule"></div>
