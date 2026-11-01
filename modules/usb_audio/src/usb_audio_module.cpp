@@ -9,6 +9,7 @@
 #include "modesp/services/device_id.h"
 #include "state_enums.h"   // audio.source values, generated from the manifests
 #include "usb_uac.h"
+#include "usb_volume.h"
 
 #include "esp_log.h"
 

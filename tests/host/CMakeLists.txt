@@ -159,6 +159,7 @@ set(TEST_SOURCES
     "${CMAKE_SOURCE_DIR}/test_cover_tone.cpp"        # components/cover/src/cover_tone.cpp — the Player's background
     "${CMAKE_SOURCE_DIR}/test_uac_tone.cpp"          # components/usb_uac/include/uac_tone.h — the USB stream check (U0)
     "${CMAKE_SOURCE_DIR}/test_usb_volume.cpp"        # modules/usb_audio/include/usb_volume.h — the computer's slider (U1)
+    "${CMAKE_SOURCE_DIR}/test_volume_follow.cpp"     # components/audio_dsp/include/volume_follow.h — USB's and AirPlay's slider rule
     "${CMAKE_SOURCE_DIR}/test_i2s_clock.cpp"
     "${CMAKE_SOURCE_DIR}/test_stream_control.cpp"
     "${CMAKE_SOURCE_DIR}/test_audio_pipe.cpp"

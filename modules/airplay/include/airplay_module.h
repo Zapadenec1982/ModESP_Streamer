@@ -12,7 +12,7 @@
 #pragma once
 
 #include "modesp/base_module.h"
-#include "airplay_volume.h"
+#include "volume_follow.h"
 #include <cstdint>
 
 class AirplayModule : public modesp::BaseModule {
@@ -42,7 +42,7 @@ private:
     bool     was_enabled_ = true;
     bool     was_mine_    = false;   ///< audio.source was AirPlay, as of the last update
     bool     remote_      = false;   ///< what airplay.remote says now
-    airplay_volume::Follow vol_;     ///< how the phone's volume moves the room's
+    audio_core::VolumeFollow vol_;   ///< how the phone's volume moves the room's
     uint32_t session_seen_ = 0;      ///< sh.session as of the last update
     int32_t  room_seen_   = -1;      ///< audio.volume as of the last update, or as we set it
     uint32_t meta_seen_   = 0;

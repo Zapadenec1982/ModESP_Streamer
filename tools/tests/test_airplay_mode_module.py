@@ -29,7 +29,7 @@ PREFIX = r'''
 #include <variant>
 #include <vector>
 
-@AIRPLAY_VOLUME_H@
+@VOLUME_FOLLOW_H@
 @AIRPLAY_META_H@
 
 using esp_err_t = int;
@@ -135,7 +135,7 @@ public:
  int32_t active_mode_=0,attempted_mode_=-1;
  bool mode_in_flight_=false,advertise_dirty_=true,stopping_=false,stop_tried_=false,guard_set_=false;
  bool was_up_=false,was_enabled_=true,was_mine_=false,remote_=false;
- airplay_volume::Follow vol_; uint32_t session_seen_=0; int32_t room_seen_=-1;
+ audio_core::VolumeFollow vol_; uint32_t session_seen_=0; int32_t room_seen_=-1;
  uint32_t meta_seen_=0,tick_ms_=0;
  const char* state_="";
  std::vector<int32_t> commands;
@@ -383,11 +383,11 @@ class AirplayModeModuleTests(unittest.TestCase):
             'void AirplayModule::on_update(', 'void AirplayModule::apply_remote_cmds(',
         ]
         production = '\n\n'.join(function(source, signature) for signature in signatures)
-        # The volume rule is its own header (modules/airplay/include/airplay_volume.h): the
-        # production class, not a copy of it.
-        volume_h = (ROOT / 'modules/airplay/include/airplay_volume.h').read_text(encoding='utf-8')
+        # The volume rule is its own header (components/audio_dsp/include/volume_follow.h, the
+        # one USB follows too): the production class, not a copy of it.
+        volume_h = (ROOT / 'components/audio_dsp/include/volume_follow.h').read_text(encoding='utf-8')
         meta_h = (ROOT / 'modules/airplay/include/airplay_meta.h').read_text(encoding='utf-8')
-        prefix = PREFIX.replace('@AIRPLAY_VOLUME_H@', volume_h.replace('#pragma once', ''))
+        prefix = PREFIX.replace('@VOLUME_FOLLOW_H@', volume_h.replace('#pragma once', ''))
         prefix = prefix.replace('@AIRPLAY_META_H@', meta_h.replace('#pragma once', ''))
         # No restart stub is supplied: introducing any restart call must fail compilation.
         with tempfile.TemporaryDirectory(prefix='airplay-mode-module-') as directory:

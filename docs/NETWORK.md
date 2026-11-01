@@ -714,7 +714,7 @@ namespace), PTP and NTP clocks, DACP client. Sound goes into the PCM ring as `OW
 - Volume: the phone's slider −30…0 dB ↔ `audio.volume` 0–100 by position (−144, mute → 0).
   The room volume is announced to senders as `initialVolume` in `/info`. The phone's level moves the
   room only while AirPlay is the source and not in the first 3 s after connecting or the start of
-  playback (`modules/airplay/include/airplay_volume.h`).
+  playback (`components/audio_dsp/include/volume_follow.h`).
 - Remote: a sender that gave `DACP-ID` and `Active-Remote` (AirPlay 1: TuneBlade, Music Assistant,
   iTunes, an iPhone or a Mac in mode 1) — `airplay.remote` = true; `airplay.cmd` (1 play, 2 pause,
   3 stop, 4 next, 5 previous, 6 toggle) goes to it through DACP. An AirPlay 2 sender gives no

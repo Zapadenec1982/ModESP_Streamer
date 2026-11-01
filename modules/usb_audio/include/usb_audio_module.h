@@ -5,7 +5,7 @@
  * The player's side of the device, the way modules/airplay is AirPlay's: whether the producer
  * writes the ring (audio.source is 7), when the source switches to USB by itself — the computer
  * starts sending sound while the panel plays nothing, the customer's choice of 24.10.2026 — and
- * how the computer's volume slider moves the room (usb_volume.h). It publishes usb_audio.state,
+ * how the computer's volume slider moves the room (volume_follow.h). It publishes usb_audio.state,
  * .rate, .bits for the panel's faces and a diagnostic line for the bench.
  *
  * Not "usb": that name is ESP-IDF's own component, the one with the USB PHY driver.
@@ -14,7 +14,7 @@
 #pragma once
 
 #include "modesp/base_module.h"
-#include "usb_volume.h"
+#include "volume_follow.h"
 #include <cstdint>
 
 class UsbAudioModule : public modesp::BaseModule {
@@ -29,7 +29,7 @@ private:
     void follow_volume(uint32_t dt_ms, bool mine, bool streaming);
     void publish();
 
-    usb_volume::Follow vol_;
+    audio_core::VolumeFollow vol_;   ///< how the computer's slider moves the room's level
     uint32_t since_ms_    = 0;
     uint32_t losses_seen_ = 0;   ///< loss events already in usb_audio.losses
     bool     was_signal_  = false;

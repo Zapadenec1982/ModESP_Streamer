@@ -611,10 +611,10 @@ Class 2 device on the HS port. The port's hardware limits: `docs/CONCEPT.md`, "U
 - The computer started playing (peak above −60 dBFS within the last 300 ms) and the selected
   source is not playing → `audio.source` = 7. Host mute → zeros.
 - The host volume (−80…0 dB, spread evenly over 0…100) goes into `audio.volume` through a reference
-  point (`modules/usb_audio/include/usb_volume.h`): at the start of a stream the room keeps its
-  level; for 3 s after the start and while USB is not the source the level only sets the
-  reference; after that piecewise-linear (the top of the slider is the top of the panel, the bottom
-  is silence); a move of the knob or the web becomes the new reference.
+  point (`components/audio_dsp/include/volume_follow.h`, the rule AirPlay keeps too): at the start
+  of a stream the room keeps its level; for 3 s after the start and while USB is not the source the
+  level only sets the reference; after that piecewise-linear (the top of the slider is the top of
+  the panel, the bottom is silence); a move of the knob or the web becomes the new reference.
 - The controller's interrupt and both tasks are on core 1 (`usb_audio.core`, 0 or 1, after a
   restart): the interrupt comes every microframe, and a delay over 125 µs loses a packet. The
   TinyUSB task — priority 20, control requests only.

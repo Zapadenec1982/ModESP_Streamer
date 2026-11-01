@@ -696,7 +696,7 @@ curl http://<panel>/rootDesc.xml     # XML опису; HTML вебу — мар�
 - Гучність: повзунок телефону −30…0 дБ ↔ `audio.volume` 0–100 за положенням (−144, mute → 0).
   Гучність кімнати оголошується відправникам як `initialVolume` у `/info`. Рівень телефону рухає
   кімнату лише поки AirPlay — джерело і не в перші 3 с після підключення чи початку відтворення
-  (`modules/airplay/include/airplay_volume.h`).
+  (`components/audio_dsp/include/volume_follow.h`).
 - Пульт: відправник, що дав `DACP-ID` і `Active-Remote` (AirPlay 1: TuneBlade, Music Assistant,
   iTunes, iPhone чи Mac у режимі 1), — `airplay.remote` = true; `airplay.cmd` (1 грати, 2 пауза,
   3 стоп, 4 наступний, 5 попередній, 6 перемкнути) іде йому через DACP. Відправник AirPlay 2 пульта

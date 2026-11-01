@@ -170,7 +170,7 @@ void on_event(airplay2_event_t ev, const airplay2_event_data_t* d, void*) {
     switch (ev) {
     case AIRPLAY2_EV_CONNECTED:
         sh.connected.store(true);
-        sh.session.fetch_add(1);            // its first volume is its own (airplay_volume.h)
+        sh.session.fetch_add(1);            // its first volume is its own (volume_follow.h)
         break;
     case AIRPLAY2_EV_PLAYING:
         sh.connected.store(true);
@@ -475,12 +475,16 @@ void AirplayModule::mirror_events(uint32_t dt_ms, bool mine) {
     // The room's level is announced to senders (initialVolume), and the phone's volume moves the
     // room's only while AirPlay is what is heard: the room keeps its level when a phone starts,
     // a phone left connected must not move the radio's volume, and the phone reaches the whole
-    // range (airplay_volume.h).
+    // range (volume_follow.h). In AirPlay 2 mode the panel cannot move the phone's slider (that
+    // would take MRP, which upstream does not implement); a sender that honours initialVolume
+    // starts its slider at the room's level and sends nothing until somebody moves it, so the
+    // phone's level is the room's and the rule is the identity. What it maps is a sender that
+    // restates its own level, and the room moved by another hand mid-session.
     const int32_t room = read_int("audio.volume", -1);
     const uint32_t session = sh.session.load();
     if (session != session_seen_ && room >= 0) {
         session_seen_ = session;
-        vol_.session_start(room);
+        vol_.session_start(room, room);   // told the room's level: the sender's slider is there
     }
     vol_.tick(dt_ms);
     if (room >= 0 && room != room_seen_) {
@@ -595,7 +599,8 @@ void AirplayModule::on_update(uint32_t dt_ms) {
     if (mode_in_flight_ && sh.mode_done.exchange(false, std::memory_order_acquire)) {
         mode_in_flight_ = false;
         active_mode_ = airplay2_legacy_mode() ? 1 : 0;
-        vol_.session_start(read_int("audio.volume", 30));   // a new profile: a new announcement
+        const int32_t room = read_int("audio.volume", 30);
+        vol_.session_start(room, room);   // a new profile: a new announcement
         state_set("airplay.switching", false);
         publish_mode();
         const esp_err_t err = sh.mode_result.load();
