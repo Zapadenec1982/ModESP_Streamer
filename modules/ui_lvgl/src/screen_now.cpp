@@ -158,7 +158,7 @@ struct Now {
     lv_obj_t*   from     = nullptr;
     lv_obj_t*   from_src = nullptr;
     lv_obj_t*   from_dev = nullptr;
-    m3w::Button sound, lev_btn, list_btn, vol_btn;
+    m3w::Button sound, lev_btn, list_btn;
     int32_t     sound_w = 0;
     // the block
     lv_obj_t* title = nullptr;
@@ -216,7 +216,6 @@ struct Now {
     bool    network_push = false;
     int8_t  tran_live = -1;
     int8_t  playing = -1;
-    int8_t  muted   = -1;             ///< what the volume button shows
     int8_t  leveler = -1;             ///< what the moon shows
     int32_t repeat  = -1;
     int8_t  shuffle = -1;
@@ -265,7 +264,6 @@ void vis_cb(lv_event_t*) {
     bt_settings::config(cfg);
     if (cfg.known) bt_settings::request_config(true, true, cfg.auto_reconnect, cfg.codecs_enabled);
 }
-void vol_cb(lv_event_t*)    { ui_shell_show_volume(); }
 void sound_cb(lv_event_t*)  { ui_sound_open(); }
 void lev_cb(lv_event_t*)    { post(UiLvglModule::Req::LEVELER, -1); }
 void rep_cb(lv_event_t*)    { post(UiLvglModule::Req::REPEAT, -1); }
@@ -439,14 +437,10 @@ lv_obj_t* build(lv_obj_t* parent, UiCtx& c) {
     n.lev_btn = m3w::icon_button(col, 0, 0, ROW_BTN, UI_SYM_MOON, t.t.icon_m);
     lv_obj_set_ext_click_area(n.lev_btn.obj, ROW_EXT);
     lv_obj_add_event_cb(n.lev_btn.obj, lev_cb, LV_EVENT_CLICKED, nullptr);
-    // the two buttons at the row's end: the source's list, and the volume pop-up
-    n.vol_btn = m3w::icon_button(col, COL_W - ROW_BTN - ROW_EXT, 0, ROW_BTN, UI_SYM_VOLUME, t.t.icon_m);
-    lv_obj_add_event_cb(n.vol_btn.obj, vol_cb, LV_EVENT_CLICKED, nullptr);
-    n.list_btn = m3w::icon_button(col, COL_W - 2 * (ROW_BTN + 2 * ROW_EXT) + ROW_EXT, 0, ROW_BTN, UI_SYM_PLAYLIST, t.t.icon_m, true);
+    // the button at the row's end: the source's list, 48 px drawn, 64 wide for a finger and 56
+    // tall (above it is the header's)
+    n.list_btn = m3w::icon_button(col, COL_W - ROW_BTN - ROW_EXT, 0, ROW_BTN, UI_SYM_PLAYLIST, t.t.icon_m, true);
     lv_obj_add_event_cb(n.list_btn.obj, list_cb, LV_EVENT_CLICKED, nullptr);
-    // 48 px drawn, 64 wide for a finger and 56 tall (above them is the header's), the two side by
-    // side with nothing between their reaches
-    lv_obj_set_ext_click_area(n.vol_btn.obj, ROW_EXT);
     lv_obj_set_ext_click_area(n.list_btn.obj, ROW_EXT);
 
     // ── the block: title over two lines, the line under it ──
@@ -585,12 +579,12 @@ lv_obj_t* build(lv_obj_t* parent, UiCtx& c) {
 
 // ── refresh ──
 
-/// Lay the row out: the buttons at its end — the volume always, the list when the source has
-/// one, the moon — then «Звук», and the source line takes what is left.
+/// Lay the row out: the buttons at its end — the list when the source has one, the moon — then
+/// «Звук», and the source line takes what is left.
 void place_row() {
     const bool has_list = !lv_obj_has_flag(n.list_btn.obj, LV_OBJ_FLAG_HIDDEN);
     // each button's reach is ROW_EXT past what is drawn: «Звук»'s ends where the moon's begins
-    const int32_t buttons = has_list ? 3 : 2;
+    const int32_t buttons = has_list ? 2 : 1;
     lv_obj_set_x(n.lev_btn.obj, COL_W - buttons * (ROW_BTN + 2 * ROW_EXT) + ROW_EXT);
     const int32_t sound_x = COL_W - buttons * (ROW_BTN + 2 * ROW_EXT) - ROW_EXT - n.sound_w;
     lv_obj_set_x(n.sound.obj, sound_x);
@@ -863,13 +857,6 @@ void refresh(lv_obj_t*, UiCtx& c) {
         set_face(face, s);
     }
 
-    // Muted — the web's mute button does it; a turn of the knob ends it — shows on the Player for
-    // as long as it lasts, not only in the volume pop-up for its two seconds.
-    const int8_t muted = s.mute ? 1 : 0;
-    if (muted != n.muted) {
-        n.muted = muted;
-        if (n.vol_btn.icon) lv_label_set_text(n.vol_btn.icon, muted ? UI_SYM_MUTE : UI_SYM_VOLUME);
-    }
     const int8_t lev = s.leveler ? 1 : 0;
     if (lev != n.leveler && n.lev_btn.icon) {
         n.leveler = lev;

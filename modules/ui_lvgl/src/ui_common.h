@@ -337,8 +337,6 @@ void ui_now_press();
 /// Bring the player screen up. Choosing the card as a source is choosing to listen to
 /// what is on it, so the list of it is where that choice should land.
 void ui_shell_show_player();
-/// Call up the volume pop-up, the way a turn of the encoder does.
-void ui_shell_show_volume();
 /// The header's ≡ / ← pressed: the drawer on a section, back on a list (through the page's
 /// own `back` first).
 void ui_shell_nav();

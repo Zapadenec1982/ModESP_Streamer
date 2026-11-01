@@ -884,12 +884,6 @@ void ui_shell_nav() {
     select_page(g.from);
 }
 
-void ui_shell_show_volume() {
-    if (g.standby || !g.vol) return;
-    if (g.ctx && g.ctx->s.volume >= 0) m3w::slider_set(g.vol_sl, g.ctx->s.volume);
-    vol_show();
-}
-
 bool ui_shell_peek(const char* what) {
     static bool     peeked_standby = false;
     static bool     peeked_pair = false;
