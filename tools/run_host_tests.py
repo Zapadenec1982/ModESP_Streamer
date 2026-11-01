@@ -16,7 +16,8 @@ python (inside an ESP-IDF shell), e.g.::
     python tools/run_host_tests.py --cpp-timeout 1800   # C++ runner bound, seconds (default 900)
     python tools/run_host_tests.py -k mqtt -v      # extra args pass through to pytest
 
-The C++ runner is part of the per-commit gate (CLAUDE.md rule 3), so it runs by default.
+The C++ runner is part of the per-commit gate (every commit passes the esp32p4 build and
+this suite), so it runs by default.
 It needs a host C++ compiler and cmake, and a missing toolchain is a test FAILURE, not a
 skip: before 2026-09-21 the default run ignored test_cpp_host.py altogether and the gate
 executed zero C++ tests. ``--cpp-host`` (the old opt-in flag) is still accepted and does

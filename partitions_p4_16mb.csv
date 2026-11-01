@@ -14,7 +14,7 @@
 # app) took all of it with it. Measured 18.09.2026: an EQ with two active bands and a
 # six-station list, none of it in git; it happened again on 22.09.2026.
 # `userdata` has NO image in the build, so nothing writes it during a flash. It is formatted
-# on its first boot and migrated into once (UserStore, components/modesp_services).
+# on its first boot and migrated into once (UserStore, components/user_store).
 # 512 KB for ~16 KB of files is not waste: littlefs spreads erases over every free block,
 # so the spare blocks are the wear budget of a file rewritten on every EQ edit.
 #

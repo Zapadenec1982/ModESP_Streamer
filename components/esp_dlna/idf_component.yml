@@ -1,7 +1,7 @@
 dependencies:
   # SSDP, the UPnP device, SOAP dispatch and GENA events. A PREBUILT library, so the
   # version is pinned rather than ranged: the ISA of the shipped esp32p4 archive is the
-  # thing that has to be checked (CLAUDE.md "Checking against Espressif's own sources", 7),
+  # thing that has to be checked (docs/CONCEPT.md, "ESP32-P4 revision v1.3"),
   # and it was checked for exactly this build —
   #   libesp_media_protocols.a  →  …_xesploop1p0_xespv2p1
   #   libesp_audio_codec.a      →  …_xesploop1p0_xespv2p1   (already runs on this board)

@@ -5,9 +5,9 @@ Builds the C++ test runner (doctest-based, tests/host/) and runs it under pytest
 Toolchain discovery, in order: MinGW g++ (scoop / MSYS2 / standalone), MSVC through its
 vcvars64.bat, the esp-clang shipped with ESP-IDF, a standalone clang++, and finally whatever
 ``g++`` is on PATH (Linux CI). A missing compiler or cmake is a FAILURE, not a skip, and so is a runner
-binary that registers zero test cases: this file is part of the per-commit gate
-(CLAUDE.md rule 3) and the gate has to prove the C++ tests actually ran. The explicit
-opt-out is ``python tools/run_host_tests.py --no-cpp``.
+binary that registers zero test cases: this file is part of the per-commit gate (every
+commit passes the esp32p4 build and the host tests) and the gate has to prove the C++
+tests actually ran. The explicit opt-out is ``python tools/run_host_tests.py --no-cpp``.
 
 Usage:
     python tools/run_host_tests.py                       # the normal way

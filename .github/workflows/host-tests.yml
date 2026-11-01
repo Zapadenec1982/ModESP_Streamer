@@ -1,6 +1,7 @@
 # Host tests: the pytest suite in tools/tests/ plus the native C++ doctest runner in
-# tests/host/ (built by tools/tests/test_cpp_host.py). This is the per-commit gate of
-# CLAUDE.md rule 3, run on Linux; the C++ runner is included by default since 2026-09-21.
+# tests/host/ (built by tools/tests/test_cpp_host.py). With the esp32p4 build (build-p4.yml)
+# this is the per-commit gate, run on Linux; the C++ runner is included by default since
+# 2026-09-21.
 #
 # Not covered here: tools/check_protocol_mirror.py needs a checkout of the satellite
 # repository (P4_SATELLITE_ROOT) and that repository has no remote yet (plan 5.1); its

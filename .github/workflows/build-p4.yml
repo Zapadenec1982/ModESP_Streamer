@@ -1,7 +1,7 @@
 # Firmware build for the esp32p4 target in the official ESP-IDF container.
 #
-# Image tag: espressif/idf:v5.5.5 — the exact release CLAUDE.md pins (EIM install
-# v5.5.5) and the one dependencies.lock records as `idf: 5.5.5`. Checked on Docker Hub
+# Image tag: espressif/idf:v5.5.5 — the exact release the project builds with (README.md,
+# "Building") and the one dependencies.lock records as `idf: 5.5.5`. Checked on Docker Hub
 # 2026-09-21: the tag exists (pushed 2026-07-17), so no "closest tag" substitution.
 #
 # dependencies.lock is committed (plan 5.2). The build must resolve exactly the locked
