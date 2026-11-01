@@ -77,8 +77,9 @@ void WiFiService::handle_wifi_event(int32_t event_id, void* event_data) {
                 try_phase_ = TryPhase::CONNECTING;
             }
             // При AP→STA probe connect викликається явно з attempt_ap_sta_probe()
-            if (ap_sta_probing_) {
-                ESP_LOGD(TAG, "STA started (probe mode, connect deferred)");
+            // player-fork: and a scan's own AP→APSTA switch starts the STA to scan, not to join.
+            if (ap_sta_probing_ || scan_busy_) {
+                ESP_LOGD(TAG, "STA started (probe or scan, connect deferred)");
             } else {
                 ESP_LOGI(TAG, "STA started, connecting...");
                 esp_wifi_connect();
@@ -218,7 +219,8 @@ void WiFiService::on_update(uint32_t dt_ms) {
     // Deferred reconnect (after save_credentials HTTP response was sent)
     if (deferred_reconnect_) {
         deferred_reconnect_timer_ += dt_ms;
-        if (deferred_reconnect_timer_ >= DEFERRED_RECONNECT_DELAY_MS) {
+        // player-fork: not while a scan holds the radio (start_scan() says why); it runs after it.
+        if (deferred_reconnect_timer_ >= DEFERRED_RECONNECT_DELAY_MS && !scan_busy_) {
             deferred_reconnect_ = false;
             deferred_reconnect_timer_ = 0;
 
@@ -302,7 +304,8 @@ void WiFiService::on_update(uint32_t dt_ms) {
     }
 
     // ── AP→STA periodic probe ──
-    if (ap_mode_ && !ap_sta_probing_ && !deferred_reconnect_ && ssid_[0] != '\0') {
+    // player-fork: and not while a scan holds the radio; the countdown waits for it.
+    if (ap_mode_ && !ap_sta_probing_ && !deferred_reconnect_ && !scan_busy_ && ssid_[0] != '\0') {
         if (ap_sta_probe_timer_ > dt_ms) {
             ap_sta_probe_timer_ -= dt_ms;
         } else {
@@ -460,15 +463,28 @@ void WiFiService::forget_credentials() {
 // ── WiFi Scan ───────────────────────────────────────────────────
 
 bool WiFiService::start_scan() {
-    scan_done_ = false;
-
-    // Скасувати AP→STA probe перед scan (APSTA вже активний при probe)
-    if (ap_sta_probing_) {
-        cancel_ap_sta_probe();
+    // player-fork: one scan at a time, and none while a join or a probe has the radio. The glass
+    // scans from its own task and the web from the server's, and nothing kept them apart, from
+    // each other or from the main loop: a second scan stopped the first, the AP restore at the
+    // end of a scan put a join's STA back to AP (a right password failed after 25 s), and a scan
+    // cancelled a probe and doubled its backoff. scan_busy_ is claimed before the main loop's
+    // flags are read; the main loop sets its flag before it reads scan_busy_ (the deferred
+    // reconnect, attempt_ap_sta_probe()), so whichever comes second sees the other and waits.
+    bool idle = false;
+    if (!scan_busy_.compare_exchange_strong(idle, true)) {
+        ESP_LOGW(TAG, "Cannot scan: another scan is running");
+        return false;
     }
+    if (trying_ || deferred_reconnect_ || ap_sta_probing_) {
+        ESP_LOGW(TAG, "Cannot scan: a join or an AP->STA attempt has the radio");
+        scan_busy_ = false;
+        return false;
+    }
+    scan_done_ = false;
 
     if (!wifi_started_) {
         ESP_LOGW(TAG, "Cannot scan: WiFi not started");
+        scan_busy_ = false;
         return false;
     }
 
@@ -477,6 +493,7 @@ bool WiFiService::start_scan() {
     ESP_LOGI(TAG, "Scan requested (heap: %u)", (unsigned)free_heap);
     if (free_heap < 50000) {
         ESP_LOGW(TAG, "Cannot scan: low memory (%u bytes free, need 50000)", (unsigned)free_heap);
+        scan_busy_ = false;
         return false;
     }
 
@@ -492,6 +509,7 @@ bool WiFiService::start_scan() {
             esp_err_t mode_err = esp_wifi_set_mode(WIFI_MODE_APSTA);
             if (mode_err != ESP_OK) {
                 ESP_LOGW(TAG, "Cannot switch to APSTA: %s", esp_err_to_name(mode_err));
+                scan_busy_ = false;
                 return false;
             }
             wifi_config_t sta_cfg = {};
@@ -514,6 +532,7 @@ bool WiFiService::start_scan() {
                  (unsigned)esp_get_free_heap_size());
         esp_wifi_scan_stop();
         if (was_ap_only) esp_wifi_set_mode(WIFI_MODE_AP);
+        scan_busy_ = false;
         return false;
     }
 
@@ -558,12 +577,15 @@ int WiFiService::get_scan_results(ScanResult* out, size_t max_results) {
 
     // Повертаємо AP mode ПІСЛЯ зчитування результатів —
     // esp_wifi_scan_get_ap_records() звільняє внутрішні буфери ESP-IDF
-    if (restore_ap_after_scan_) {
+    // player-fork: unless a join was asked for meanwhile — its reconnect waited for this scan and
+    // takes the radio from here, so it is not put back to AP under it.
+    if (restore_ap_after_scan_ && !trying_) {
         ESP_LOGI(TAG, "Restoring AP mode after scan results read (heap: %u)",
                  (unsigned)esp_get_free_heap_size());
         esp_wifi_set_mode(WIFI_MODE_AP);
-        restore_ap_after_scan_ = false;
     }
+    restore_ap_after_scan_ = false;
+    scan_busy_ = false;
 
     return static_cast<int>(ap_count);
 }
@@ -736,13 +758,19 @@ size_t WiFiService::read_ap_password(char (&out)[64]) {
 // ── AP→STA Probe ─────────────────────────────────────────────────
 
 void WiFiService::attempt_ap_sta_probe() {
+    // Встановити ДО mode switch — STA_START handler перевіряє цей прапорець
+    // player-fork: and before scan_busy_ is read, as start_scan() claims scan_busy_ before it
+    // reads this one: a scan that started meanwhile keeps the radio, and the probe waits.
+    ap_sta_probing_ = true;
+    if (scan_busy_) {
+        ap_sta_probing_ = false;
+        return;
+    }
     ap_sta_probe_count_++;
     ESP_LOGI(TAG, "AP→STA probe #%u (interval %lus)",
              ap_sta_probe_count_,
              (unsigned long)(ap_sta_probe_interval_ / 1000));
 
-    // Встановити ДО mode switch — STA_START handler перевіряє цей прапорець
-    ap_sta_probing_ = true;
     ap_sta_probe_timeout_ = AP_STA_PROBE_TIMEOUT_MS;
 
     ensure_sta_netif();

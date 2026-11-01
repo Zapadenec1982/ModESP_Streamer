@@ -124,7 +124,9 @@ comes back, and when there was none — the access point.
 
 **Scanning.** Active, 120–500 ms per channel, no hidden networks, up to 20 results (records in
 PSRAM); needs ≥ 50 000 B of free heap; in AP mode — APSTA for the duration of the scan. Scanning
-blocks its caller: for `GET /api/wifi/scan`, the HTTP server task.
+blocks its caller: for `GET /api/wifi/scan`, the HTTP server task. One scan at a time, and none
+during a join or an AP → STA attempt: such a request gets no list (`{"ok":false}` on the web, a
+failed scan on the panel), while a join or an attempt that comes during a scan waits for it.
 
 **RSSI is not read.** `esp_wifi_sta_get_ap_info()` here is a synchronous RPC to the C6 with a 5 s
 timeout, while the main loop feeds a 5-second watchdog; besides, ESP-Hosted 3.0.7 returns rssi 0

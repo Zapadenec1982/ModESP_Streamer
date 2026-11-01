@@ -670,3 +670,105 @@ int main() {
 }
 """
     build_and_run(tmp_path, harness, [])
+
+
+def test_wifi_scan_holds_the_radio_alone(tmp_path):
+    source = (ROOT / "components/modesp_net/src/wifi_service.cpp").read_text(encoding="utf-8")
+    code = "\n".join(extract(source, signature) for signature in (
+        "bool WiFiService::start_scan(",
+        "int WiFiService::get_scan_results(",
+        "void WiFiService::attempt_ap_sta_probe(",
+    ))
+    harness = r"""
+#include <atomic>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <string>
+using esp_err_t = int;
+constexpr int ESP_OK = 0;
+#define ESP_LOGI(...) ((void)0)
+#define ESP_LOGW(...) ((void)0)
+#define ESP_LOGD(...) ((void)0)
+const char* esp_err_to_name(esp_err_t) { return "error"; }
+enum wifi_mode_t { WIFI_MODE_NULL, WIFI_MODE_STA, WIFI_MODE_AP, WIFI_MODE_APSTA };
+enum wifi_interface_t { WIFI_IF_STA, WIFI_IF_AP };
+enum wifi_scan_type_t { WIFI_SCAN_TYPE_ACTIVE };
+enum wifi_scan_method_t { WIFI_ALL_CHANNEL_SCAN };
+enum wifi_sort_method_t { WIFI_CONNECT_AP_BY_SIGNAL };
+struct wifi_scan_config_t {
+  bool show_hidden; wifi_scan_type_t scan_type; struct { struct { uint32_t min, max; } active; } scan_time;
+};
+struct wifi_sta_config_t {
+  uint8_t ssid[32]; uint8_t password[64]; wifi_scan_method_t scan_method; wifi_sort_method_t sort_method;
+};
+union wifi_config_t { wifi_sta_config_t sta; };
+struct wifi_ap_record_t { uint8_t ssid[33]; int8_t rssi; int authmode; };
+wifi_mode_t g_mode = WIFI_MODE_AP;
+std::string g_radio;                       // what was asked of the radio, in order
+esp_err_t esp_wifi_get_mode(wifi_mode_t* m) { *m = g_mode; return ESP_OK; }
+esp_err_t esp_wifi_set_mode(wifi_mode_t m) {
+  g_mode = m; g_radio += m == WIFI_MODE_AP ? "AP;" : m == WIFI_MODE_APSTA ? "APSTA;" : "STA;"; return ESP_OK;
+}
+esp_err_t esp_wifi_set_config(wifi_interface_t, wifi_config_t*) { return ESP_OK; }
+esp_err_t esp_wifi_scan_start(const wifi_scan_config_t*, bool) { g_radio += "scan;"; return ESP_OK; }
+esp_err_t esp_wifi_scan_stop() { return ESP_OK; }
+esp_err_t esp_wifi_scan_get_ap_num(uint16_t* n) { *n = 1; return ESP_OK; }
+esp_err_t esp_wifi_scan_get_ap_records(uint16_t* n, wifi_ap_record_t* r) {
+  memset(r, 0, sizeof(*r)); strcpy((char*)r->ssid, "home"); r->rssi = -50; *n = 1; return ESP_OK;
+}
+esp_err_t esp_wifi_clear_ap_list() { return ESP_OK; }
+esp_err_t esp_wifi_connect() { g_radio += "connect;"; return ESP_OK; }
+uint32_t esp_get_free_heap_size() { return 200000; }
+constexpr int MALLOC_CAP_SPIRAM = 1, MALLOC_CAP_8BIT = 2;
+void* heap_caps_calloc(size_t n, size_t size, int) { return calloc(n, size); }
+void heap_caps_free(void* p) { free(p); }
+#define pdMS_TO_TICKS(ms) (ms)
+void vTaskDelay(int) {}
+namespace modesp {
+template <size_t N> size_t copy_field(uint8_t (&dst)[N], const char* src) {
+  const size_t n = strnlen(src, N); memcpy(dst, src, n); return n;
+}
+struct WiFiService {
+  static constexpr size_t MAX_SCAN_RESULTS = 20;
+  struct ScanResult { char ssid[33]; int8_t rssi; uint8_t authmode; };
+  std::atomic<bool> trying_{false}, deferred_reconnect_{false}, ap_sta_probing_{false}, scan_busy_{false};
+  bool scan_done_ = false, restore_ap_after_scan_ = false, wifi_started_ = true, ap_mode_ = true;
+  char ssid_[33] = "home", password_[65] = "secret12";
+  uint8_t ap_sta_probe_count_ = 0;
+  uint32_t ap_sta_probe_interval_ = 30000, ap_sta_probe_timeout_ = 0;
+  static constexpr uint32_t AP_STA_PROBE_TIMEOUT_MS = 15000;
+  void ensure_sta_netif() {}
+  void cancel_ap_sta_probe() { ap_sta_probing_ = false; esp_wifi_set_mode(WIFI_MODE_AP); }
+  bool start_scan();
+  int get_scan_results(ScanResult* out, size_t max_results);
+  void attempt_ap_sta_probe();
+};
+""" + code + "\n}\n" + r"""
+int main() {
+  modesp::WiFiService w;
+  modesp::WiFiService::ScanResult r[20];
+  // one scan at a time: the second, from another task, is turned away while the first holds it
+  if (!w.start_scan() || g_mode != WIFI_MODE_APSTA) return 1;
+  if (w.start_scan()) return 2;
+  // and a probe that comes meanwhile waits rather than taking the radio from under it
+  w.attempt_ap_sta_probe();
+  if (w.ap_sta_probing_ || g_radio.find("connect") != std::string::npos) return 3;
+  // the results put the access point back and free the radio
+  if (w.get_scan_results(r, 20) != 1 || g_mode != WIFI_MODE_AP || w.scan_busy_) return 4;
+  // no scan while a join or a probe has the radio
+  w.trying_ = true;
+  if (w.start_scan() || w.scan_busy_) return 5;
+  w.trying_ = false;
+  w.ap_sta_probing_ = true;
+  if (w.start_scan() || w.scan_busy_ || !w.ap_sta_probing_) return 6;
+  w.ap_sta_probing_ = false;
+  // a join asked for during a scan is not put back to AP under it
+  if (!w.start_scan()) return 7;
+  w.trying_ = true;
+  g_radio.clear();
+  if (w.get_scan_results(r, 20) != 1 || g_radio.find("AP;") != std::string::npos || w.scan_busy_) return 8;
+  return 0;
+}
+"""
+    build_and_run(tmp_path, harness, [])
