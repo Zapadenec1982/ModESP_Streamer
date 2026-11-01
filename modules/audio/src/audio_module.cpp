@@ -874,20 +874,10 @@ void AudioModule::source_gone(int32_t src) {
     gone_source_.store((src << 8) | (pend_source_ >= 0 ? pend_source_ : source_), std::memory_order_release);
 }
 
-void AudioModule::on_update(uint32_t dt_ms) {
-    own_eq();
-    if (!main_ || !run_) return;
-
-    // Bluetooth whose port or reader task would not start after audio.sources offered it: the
-    // bit goes, and a request for it gives way to what the task plays.
-    const int32_t gone = gone_source_.exchange(-1, std::memory_order_acquire);
-    if (gone >= 0) {
-        state_set("audio.sources", read_int("audio.sources", 0) & ~(1 << (gone >> 8)));
-        if (read_int("audio.source", SRC_OFF) == gone >> 8) {
-            last_source_ = gone & 0xFF;
-            state_set("audio.source", last_source_);
-        }
-    }
+/// The settings, from the store to the audio task: each one that changed since the last call
+/// is sent. on_update() calls it only when the store has moved. True when anything about the
+/// test tone changed, which restarts the clock of a tone through the chain.
+bool AudioModule::follow_settings() {
     int32_t src = read_int("audio.source", SRC_OFF);
     // A source this board cannot play goes back to the one that plays rather than on to the
     // task, which would refuse it and play on while every producer read audio.source as no
@@ -914,7 +904,7 @@ void AudioModule::on_update(uint32_t dt_ms) {
         if (read_bool("audio.cal_port_off", false)) state_set("audio.cal_port_off", false);
         if (read_int("audio.cal_vol_cap", 0) != 0) state_set("audio.cal_vol_cap", (int32_t)0);
     }
-    // anything that changes the tone restarts the clock of a tone through the chain (below)
+    // anything that changes the tone restarts the clock of a tone through the chain (on_update)
     bool tone_touched = (src == SRC_TONE && last_source_ != SRC_TONE) || tone != last_tone_;
 
     if (src != last_source_)  { last_source_ = src;  send(CmdType::SOURCE, src); }
@@ -925,42 +915,11 @@ void AudioModule::on_update(uint32_t dt_ms) {
         level_.put(vol, vmax);          // the last value, read at the next block: never dropped
         vol_published_ = false;
     }
-    if (!vol_published_ && level_.applied()) {
-        vol_published_ = true;
-        state_set("audio.vol_eff", audio_core::LevelLatch::effective(vol, vmax));
-    }
     if (tone != last_tone_)   { last_tone_ = tone;   send(CmdType::TONE_HZ, tone); }
     if (mute != last_mute_)   { last_mute_ = mute;   send(CmdType::MUTE, mute); }
     if (eq != last_eq_)       { last_eq_ = eq;       send(CmdType::EQ_ENABLE, eq); }
     const bool btclk = read_bool("audio.bt_clock_follow", true);
     if (btclk != last_bt_clock_) { last_bt_clock_ = btclk; send(CmdType::BT_CLOCK, btclk); }
-    if (bt_path_ != last_bt_path_) {
-        // The audio task chose the Bluetooth path at its last prime; say why, once, from
-        // here: that task does not log.
-        static const char* const WHY[] = {
-            "undecided", "clock", "resampler: audio.bt_clock_follow off",
-            "resampler: stream rate differs from the output clock",
-            "resampler: an earlier trim was refused",
-            "resampler: the port cannot trim at this format",
-            "resampler: clock correction cannot sustain delivery",
-            "DIAGNOSTIC DIRECT PCM: ASRC bypassed, P4 trim fixed, 60 s maximum",
-            "DIAGNOSTIC FIXED RATIO: ASRC active at ratio 1, P4 trim fixed, 60 s maximum",
-            "DIAGNOSTIC STOP: announced/output rates differ or are unknown",
-            "DIAGNOSTIC STOP: BT input underrun; window ended before rebuffer",
-            "DIAGNOSTIC STOP: ring reached resync threshold; no samples skipped",
-            "DIAGNOSTIC STOP: BT ring dropped input frames",
-            "DIAGNOSTIC STOP: RX DMA queue overflow",
-            "DIAGNOSTIC STOP: TX DMA queue overflow or short write",
-            "DIAGNOSTIC COMPLETE: 60 s window ended; OFF/BT or new format to re-arm",
-            "DIAGNOSTIC STOP: ASRC produced a short block",
-            "DIAGNOSTIC STOP: unexpected P4 clock trim",
-            "CONTINUOUS DIRECT PCM: ASRC bypassed, P4 trim fixed, automatic rebuffer",
-            "CONTINUOUS DIRECT PCM: waiting for equal announced/output rates"};
-        last_bt_path_ = bt_path_;
-        const char* why = WHY[last_bt_path_ < sizeof(WHY) / sizeof(WHY[0]) ? last_bt_path_ : 0];
-        if (BT_DIAGNOSTIC || MODESP_AUDIO_BT_DIRECT_CONTINUOUS) ESP_LOGW(TAG, "BT path: %s", why);
-        else ESP_LOGI(TAG, "BT path: %s", why);
-    }
     const int32_t width = read_int("audio.width", 100);
     const int32_t mbass = read_int("audio.mono_bass_hz", 0);
     if (width != last_width_) { last_width_ = width; send(CmdType::WIDTH, width); }
@@ -991,17 +950,8 @@ void AudioModule::on_update(uint32_t dt_ms) {
     if (tim != last_timbre_) { last_timbre_ = tim; send(CmdType::TIMBRE, tim); }
     const int32_t bal = read_int("audio.balance_db10", 0);
     if (bal != last_balance_) { last_balance_ = bal; send(CmdType::BALANCE, bal); }
-    leveler_schedule(dt_ms);
     const int32_t lev = read_bool("audio.leveler", false) ? 1 : 0;
     if (lev != last_leveler_) { last_leveler_ = lev; send(CmdType::LEVELER, lev); }
-    if (read_bool("audio.port_meas", false) && !meter_busy_.load()) {
-        meter_busy_.store(true);
-        if (xTaskCreatePinnedToCore(meter_entry, "port_meter", 8192, this, 5, nullptr, 0) != pdPASS) {
-            meter_busy_.store(false);
-            state_set("audio.port_meas", false);
-            state_set("audio.port_meas_status", "@cal.m_no_memory");
-        }
-    }
     {
         const int32_t mode = read_int("audio.tone_mode", TONE_CHAIN);
         const int32_t db10 = read_int("audio.tone_db10", -260);
@@ -1016,29 +966,6 @@ void AudioModule::on_update(uint32_t dt_ms) {
         }
         if (db10 != last_tone_db10_) { last_tone_db10_ = db10; send(CmdType::TONE_DB10, db10); }
         if (ch != last_tone_ch_)     { last_tone_ch_ = ch;     send(CmdType::TONE_CH, ch); }
-        // Off by itself after TONE_RAW_MAX_MS of playing: the source goes off and the mode back.
-        if (mode != TONE_CHAIN && src == SRC_TONE) {
-            tone_raw_ms_ += dt_ms;
-            if (tone_raw_ms_ >= TONE_RAW_MAX_MS) {
-                tone_raw_ms_ = 0;
-                ESP_LOGW(TAG, "calibration tone off after %lu s", (unsigned long)(TONE_RAW_MAX_MS / 1000));
-                state_set("audio.tone_mode", (int32_t)TONE_CHAIN);
-                state_set("audio.source", (int32_t)SRC_OFF);
-            }
-        } else {
-            tone_raw_ms_ = 0;
-        }
-        // Through the chain: off after TONE_CHAIN_IDLE_MS with nothing about it changed.
-        if (mode == TONE_CHAIN && src == SRC_TONE && !tone_touched) {
-            tone_idle_ms_ += dt_ms;
-            if (tone_idle_ms_ >= TONE_CHAIN_IDLE_MS) {
-                tone_idle_ms_ = 0;
-                ESP_LOGW(TAG, "test tone off after %lu s unchanged", (unsigned long)(TONE_CHAIN_IDLE_MS / 1000));
-                state_set("audio.source", (int32_t)SRC_OFF);
-            }
-        } else {
-            tone_idle_ms_ = 0;
-        }
     }
     if (read_bool("audio.eq_reload", false)) {
         state_set("audio.eq_reload", false);
@@ -1055,6 +982,99 @@ void AudioModule::on_update(uint32_t dt_ms) {
         const int want = (strcmp(screen, "now") == 0 || strcmp(screen, "radio") == 0 ||
                           strcmp(screen, "standby") == 0) ? 1 : 0;
         if (want != last_spectrum_) { last_spectrum_ = want; send(CmdType::SPECTRUM, want); }
+    }
+
+    return tone_touched;
+}
+
+void AudioModule::on_update(uint32_t dt_ms) {
+    own_eq();
+    if (!main_ || !run_) return;
+
+    // Bluetooth whose port or reader task would not start after audio.sources offered it: the
+    // bit goes, and a request for it gives way to what the task plays.
+    const int32_t gone = gone_source_.exchange(-1, std::memory_order_acquire);
+    if (gone >= 0) {
+        state_set("audio.sources", read_int("audio.sources", 0) & ~(1 << (gone >> 8)));
+        if (read_int("audio.source", SRC_OFF) == gone >> 8) {
+            last_source_ = gone & 0xFF;
+            state_set("audio.source", last_source_);
+        }
+    }
+    leveler_schedule(dt_ms);
+    // The settings change only when somebody touches a control, and reading them is some thirty
+    // lookups in the store, each under its mutex, on every pass. They are read again only when
+    // the store's version has moved since the last time — every one of them is written tracked —
+    // or when the store did not answer (0). The schedule goes first, so a switch it makes is sent
+    // in the same pass.
+    bool tone_touched = false;
+    const uint32_t ver = state_version();
+    if (ver == 0 || ver != settings_ver_) {
+        settings_ver_ = ver;
+        tone_touched = follow_settings();
+    }
+    // The rest runs on every pass: what the audio task has done since, and the clocks.
+    if (!vol_published_ && level_.applied()) {
+        vol_published_ = true;
+        state_set("audio.vol_eff", audio_core::LevelLatch::effective(last_volume_, last_vol_max_));
+    }
+    if (bt_path_ != last_bt_path_) {
+        // The audio task chose the Bluetooth path at its last prime; say why, once, from
+        // here: that task does not log.
+        static const char* const WHY[] = {
+            "undecided", "clock", "resampler: audio.bt_clock_follow off",
+            "resampler: stream rate differs from the output clock",
+            "resampler: an earlier trim was refused",
+            "resampler: the port cannot trim at this format",
+            "resampler: clock correction cannot sustain delivery",
+            "DIAGNOSTIC DIRECT PCM: ASRC bypassed, P4 trim fixed, 60 s maximum",
+            "DIAGNOSTIC FIXED RATIO: ASRC active at ratio 1, P4 trim fixed, 60 s maximum",
+            "DIAGNOSTIC STOP: announced/output rates differ or are unknown",
+            "DIAGNOSTIC STOP: BT input underrun; window ended before rebuffer",
+            "DIAGNOSTIC STOP: ring reached resync threshold; no samples skipped",
+            "DIAGNOSTIC STOP: BT ring dropped input frames",
+            "DIAGNOSTIC STOP: RX DMA queue overflow",
+            "DIAGNOSTIC STOP: TX DMA queue overflow or short write",
+            "DIAGNOSTIC COMPLETE: 60 s window ended; OFF/BT or new format to re-arm",
+            "DIAGNOSTIC STOP: ASRC produced a short block",
+            "DIAGNOSTIC STOP: unexpected P4 clock trim",
+            "CONTINUOUS DIRECT PCM: ASRC bypassed, P4 trim fixed, automatic rebuffer",
+            "CONTINUOUS DIRECT PCM: waiting for equal announced/output rates"};
+        last_bt_path_ = bt_path_;
+        const char* why = WHY[last_bt_path_ < sizeof(WHY) / sizeof(WHY[0]) ? last_bt_path_ : 0];
+        if (BT_DIAGNOSTIC || MODESP_AUDIO_BT_DIRECT_CONTINUOUS) ESP_LOGW(TAG, "BT path: %s", why);
+        else ESP_LOGI(TAG, "BT path: %s", why);
+    }
+    if (read_bool("audio.port_meas", false) && !meter_busy_.load()) {
+        meter_busy_.store(true);
+        if (xTaskCreatePinnedToCore(meter_entry, "port_meter", 8192, this, 5, nullptr, 0) != pdPASS) {
+            meter_busy_.store(false);
+            state_set("audio.port_meas", false);
+            state_set("audio.port_meas_status", "@cal.m_no_memory");
+        }
+    }
+    // Off by itself after TONE_RAW_MAX_MS of playing: the source goes off and the mode back.
+    if (last_tone_mode_ != TONE_CHAIN && last_source_ == SRC_TONE) {
+        tone_raw_ms_ += dt_ms;
+        if (tone_raw_ms_ >= TONE_RAW_MAX_MS) {
+            tone_raw_ms_ = 0;
+            ESP_LOGW(TAG, "calibration tone off after %lu s", (unsigned long)(TONE_RAW_MAX_MS / 1000));
+            state_set("audio.tone_mode", (int32_t)TONE_CHAIN);
+            state_set("audio.source", (int32_t)SRC_OFF);
+        }
+    } else {
+        tone_raw_ms_ = 0;
+    }
+    // Through the chain: off after TONE_CHAIN_IDLE_MS with nothing about it changed.
+    if (last_tone_mode_ == TONE_CHAIN && last_source_ == SRC_TONE && !tone_touched) {
+        tone_idle_ms_ += dt_ms;
+        if (tone_idle_ms_ >= TONE_CHAIN_IDLE_MS) {
+            tone_idle_ms_ = 0;
+            ESP_LOGW(TAG, "test tone off after %lu s unchanged", (unsigned long)(TONE_CHAIN_IDLE_MS / 1000));
+            state_set("audio.source", (int32_t)SRC_OFF);
+        }
+    } else {
+        tone_idle_ms_ = 0;
     }
 
     report_ms_ += dt_ms;
@@ -1185,7 +1205,7 @@ void AudioModule::on_update(uint32_t dt_ms) {
                      (unsigned long)rx_diag.rx_queue_overflows, (unsigned long)rx_diag.rx_short_reads,
                      (unsigned long)tx_diag.tx_queue_overflows, (unsigned long)tx_diag.tx_short_writes,
                      (unsigned long)tx_diag.trim_applied, (unsigned long)tx_diag.trim_attempts,
-                     (long)vol, (int)mute);
+                     (long)last_volume_, (int)last_mute_);
             ESP_LOGI(TAG, "BT I2S %s window: RXq +%lu, TXq +%lu, RX short +%lu, trim +%lu",
                      steady ? "steady" : "transition/idle",
                      (unsigned long)(rx_diag.rx_queue_overflows - last_bt_rx_diag_.rx_queue_overflows),

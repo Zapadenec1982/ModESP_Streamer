@@ -248,3 +248,201 @@ int main() {
 }
 '''
     compile_run(tmp_path, code)
+
+
+def test_settings_are_read_again_only_when_the_store_moved(tmp_path):
+    # AudioModule::on_update runs every 10 ms and used to read some thirty settings each time,
+    # every lookup under the store's mutex. It reads them only when the store's version moved
+    # (BaseModule::state_version). The production on_update, up to its 500 ms report, and
+    # follow_settings run here against a store that counts its reads: a quiet pass reads no
+    # setting, a change is sent in its pass, a store that does not answer (version 0) is read
+    # anyway, and what runs on every pass — the schedule, the volume taken, a tone's clock —
+    # still runs while nothing is read.
+    source = (ROOT / "modules/audio/src/audio_module.cpp").read_text(encoding="utf-8")
+
+    def function(signature):
+        start = source.index(signature)
+        end = source.index("{", start) + 1
+        level = 1
+        while level:
+            level += (source[end] == "{") - (source[end] == "}")
+            end += 1
+        return source[start:end]
+
+    start = source.index("void AudioModule::on_update(uint32_t dt_ms) {")
+    on_update = source[start:source.index("    report_ms_ += dt_ms;\n", start)] + "}\n"
+    production = "\n".join(function(s) for s in (
+        "bool AudioModule::follow_settings(", "int32_t AudioModule::read_port(",
+        "int32_t AudioModule::vol_max(", "int32_t AudioModule::loud_ref(",
+        "int32_t AudioModule::timbre(")) + "\n" + on_update
+    code = r'''
+#include "level_latch.h"
+#include <atomic>
+#include <cassert>
+#include <climits>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <map>
+#include <string>
+#include <utility>
+#include <variant>
+#include <vector>
+template <class... A> void esp_log(A&&...) {}
+#define ESP_LOGW(...) esp_log(__VA_ARGS__)
+#define ESP_LOGI(...) esp_log(__VA_ARGS__)
+#define MODESP_AUDIO_BT_DIRECT_CONTINUOUS 0
+const char* const TAG = "Audio";
+constexpr bool BT_DIAGNOSTIC = false;
+constexpr int pdPASS = 1;
+constexpr int32_t AMP_CLIP_DEFAULT_DB10 = -98;
+constexpr uint32_t TONE_RAW_MAX_MS = 60000, TONE_CHAIN_IDLE_MS = 120000;
+namespace modesp::gen { constexpr int32_t AUDIO_SPK_TYPE_UNSET = 0, AUDIO_SPK_TYPE_CLOSED = 2; }
+enum { SRC_OFF, SRC_TONE, SRC_AUX, SRC_BT, SRC_FILE, SRC_RADIO, SRC_AIRPLAY, SRC_USB };
+enum { TONE_CHAIN, TONE_RAW, TONE_BURSTS };
+enum class CmdType { SOURCE, MUTE, EQ_ENABLE, EQ_RELOAD, TONE_HZ, WIDTH, MONO_BASS, SPECTRUM,
+                     BT_CLOCK, AMP_CLIP, DRIVE, SUBSONIC, TONE_MODE, TONE_DB10, TONE_CH, BASS_XO,
+                     RMS_CAP, LOUDNESS, PORT, TIMBRE, BALANCE, LOUD_REF, LEVELER, STOP };
+float ceiling_dbfs(float c) { return c; }
+const char* source_name(int32_t) { return ""; }
+int xTaskCreatePinnedToCore(void (*)(void*), const char*, int, void*, int, void*, int) { return pdPASS; }
+
+// The store as SharedState keeps it: a change moves the version, the same value does not.
+using Value = std::variant<int32_t, bool, float, std::string>;
+std::map<std::string, Value> store;
+uint32_t version = 1;
+bool store_down = false;            // its mutex timed out: version() answers 0
+int reads = 0;                      // settings looked up, audio.port_meas apart (read every pass)
+void put(const char* k, Value v) {
+    auto it = store.find(k);
+    if (it != store.end() && it->second == v) return;
+    store[k] = v;
+    ++version;
+}
+template <class T> T get(const char* k, T def) {
+    if (std::string(k) != "audio.port_meas") ++reads;
+    auto it = store.find(k);
+    if (it == store.end()) return def;
+    const T* v = std::get_if<T>(&it->second);
+    return v ? *v : def;
+}
+std::vector<std::pair<CmdType, int32_t>> sent;
+
+struct AudioModule {
+    void* main_ = this;
+    bool run_ = true;
+    std::atomic<int32_t> gone_source_{-1};
+    int32_t last_source_ = -1, last_volume_ = -1, last_tone_ = -1, last_vol_max_ = -1;
+    uint32_t settings_ver_ = 0;
+    audio_core::LevelLatch level_;
+    bool vol_published_ = false;
+    int32_t pending_source_ = -1;
+    bool last_mute_ = false, last_eq_ = true, last_bt_clock_ = true;
+    volatile uint8_t bt_path_ = 0;
+    uint8_t last_bt_path_ = 0;
+    int32_t last_width_ = -1, last_mono_bass_ = -1;
+    int last_spectrum_ = -1;
+    int32_t last_amp_clip_ = INT32_MIN, last_drive_ = INT32_MIN, last_hp_hz_ = INT32_MIN;
+    int32_t last_bass_xo_ = INT32_MIN, last_rms_cap_ = INT32_MIN;
+    int32_t last_loud_ = INT32_MIN, last_port_ = INT32_MIN, last_loud_ref_ = INT32_MIN;
+    int32_t last_timbre_ = INT32_MIN, last_balance_ = INT32_MIN, last_leveler_ = INT32_MIN;
+    int32_t last_tone_mode_ = INT32_MIN, last_tone_db10_ = INT32_MIN, last_tone_ch_ = INT32_MIN;
+    uint32_t tone_raw_ms_ = 0, tone_idle_ms_ = 0, report_ms_ = 0;
+    std::atomic<bool> meter_busy_{false};
+    int passes = 0, schedule_on_at = -1;   // the leveler's schedule switches it on at that pass
+
+    static void meter_entry(void*) {}
+    void own_eq() {}
+    void send(CmdType t, int32_t v) { sent.push_back({t, v}); }
+    void log_bass(const char*) {}
+    bool source_on_offer(int32_t src) { return src != SRC_AUX; }
+    void leveler_schedule(uint32_t) { if (++passes == schedule_on_at) state_set("audio.leveler", true); }
+    uint32_t state_version() const { return store_down ? 0 : version; }
+    int32_t read_int(const char* k, int32_t def) const { return get<int32_t>(k, def); }
+    bool read_bool(const char* k, bool def) const { return get<bool>(k, def); }
+    bool read_string(const char* k, char* out, size_t n) const {
+        std::snprintf(out, n, "%s", get<std::string>(k, "").c_str());
+        return true;
+    }
+    void state_set(const char* k, int32_t v) { put(k, v); }
+    void state_set(const char* k, bool v) { put(k, v); }
+    void state_set(const char* k, float v) { put(k, v); }
+    void state_set(const char* k, const char* v) { put(k, std::string(v)); }
+    bool follow_settings();
+    int32_t read_port();
+    int32_t vol_max();
+    int32_t loud_ref();
+    int32_t timbre();
+    void on_update(uint32_t dt_ms);
+};
+'''
+    code += production
+    code += r'''
+int pass(AudioModule& m, uint32_t dt_ms) {    // one pass of the main loop: the settings it read
+    sent.clear();
+    reads = 0;
+    m.on_update(dt_ms);
+    return reads;
+}
+bool sends(CmdType t, int32_t v) {
+    for (const auto& c : sent) if (c.first == t && c.second == v) return true;
+    return false;
+}
+
+int main() {
+    put("audio.source", (int32_t)SRC_FILE);
+    put("audio.volume", (int32_t)30);
+    put("audio.loudness", (int32_t)70);
+    put("ui.screen", std::string("now"));
+    AudioModule m;
+
+    // The first pass reads every setting and sends each to the audio task.
+    const int all = pass(m, 10);
+    assert(all >= 25);
+    assert(sends(CmdType::SOURCE, SRC_FILE) && sends(CmdType::LOUDNESS, 70) && sends(CmdType::SPECTRUM, 1));
+    // Its own write (audio.ceiling_dbfs) moved the store: one more pass reads them and sends
+    // nothing; from then on a pass with nothing changed reads none of them.
+    assert(pass(m, 10) == all && sent.empty());
+    assert(pass(m, 10) == 0 && sent.empty());
+    assert(pass(m, 10) == 0 && !store.count("audio.vol_eff"));
+
+    // The audio task takes the volume while nothing changes: the pass says so all the same.
+    int32_t pct = 0, limit = 0;
+    assert(m.level_.take(pct, limit) && pct == 30 && limit == 100);
+    assert(pass(m, 10) == 0 && std::get<float>(store.at("audio.vol_eff")) == 30.0f);
+    pass(m, 10);
+    assert(pass(m, 10) == 0);
+
+    // A change is sent in the pass that finds it, and alone.
+    put("audio.loudness", (int32_t)40);
+    pass(m, 10);
+    assert(sent.size() == 1 && sends(CmdType::LOUDNESS, 40));
+    assert(pass(m, 10) == 0);
+
+    // A store that does not answer is read every pass, until it does again.
+    store_down = true;
+    assert(pass(m, 10) == all && sent.empty());
+    assert(pass(m, 10) == all && sent.empty());
+    store_down = false;
+    assert(pass(m, 10) == all);
+    assert(pass(m, 10) == 0);
+
+    // The leveler's schedule runs before the gate: what it switches is sent in the same pass.
+    m.schedule_on_at = m.passes + 1;
+    pass(m, 10);
+    assert(sent.size() == 1 && sends(CmdType::LEVELER, 1));
+
+    // A tone through the chain left unchanged goes off by itself, read or not.
+    put("audio.source", (int32_t)SRC_TONE);
+    pass(m, 10);
+    assert(sends(CmdType::SOURCE, SRC_TONE));
+    for (int i = 0; i < 11; ++i) assert(pass(m, 10000) == 0);
+    assert(std::get<int32_t>(store.at("audio.source")) == SRC_TONE);
+    pass(m, 10000);
+    assert(std::get<int32_t>(store.at("audio.source")) == SRC_OFF);
+    pass(m, 10);
+    assert(sends(CmdType::SOURCE, SRC_OFF));
+    std::puts("gate ok");
+}
+'''
+    compile_run(tmp_path, code)

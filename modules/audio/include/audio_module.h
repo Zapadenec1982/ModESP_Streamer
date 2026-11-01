@@ -156,6 +156,8 @@ private:
     /// audio.vol_max, «Максимум»: 40…100 % of the scale (S4).
     int32_t vol_max();
     void send(CmdType t, int32_t v);
+    /// Main loop: the settings to the audio task, each that changed (the .cpp says when).
+    bool follow_settings();
     /// Switch to `src` now. Audio task only, and only once both gates are shut: the task loop
     /// holds a requested source in pend_source_ until they are.
     void apply_source(int32_t src);
@@ -455,6 +457,8 @@ private:
     // main-loop side change detection
     int32_t  last_source_ = -1, last_volume_ = -1, last_tone_ = -1;
     int32_t  last_vol_max_ = -1;
+    /// The store's version when follow_settings() last read it; 0: not yet, read them.
+    uint32_t settings_ver_ = 0;
     /// The volume and «Максимум» to the audio task: the last value, never the command queue,
     /// which drops what does not fit (S4). audio.vol_eff says when it has been taken.
     audio_core::LevelLatch level_;
