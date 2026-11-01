@@ -1,6 +1,6 @@
 /**
  * @file app.cpp
- * @brief Application lifecycle — init та graceful shutdown (головний цикл живе в main.cpp)
+ * @brief Application lifecycle — init та graceful shutdown (the main loop lives in main.cpp)
  */
 
 #include "modesp/app.h"

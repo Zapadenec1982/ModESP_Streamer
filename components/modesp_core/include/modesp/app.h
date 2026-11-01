@@ -3,9 +3,9 @@
  * @brief Application lifecycle — ініціалізація та graceful shutdown
  *
  * App — тонка обгортка, що зв'язує ModuleManager + SharedState.
- * Використовується тільки з main.cpp, який володіє послідовністю boot-фаз і
- * головним циклом: App не має власного run() — та копія циклу була мертвим кодом,
- * і саме в ній жила перевірка результату init_all(), якої main.cpp не робив.
+ * Використовується тільки з main.cpp.
+ * main.cpp owns the boot phases, the check of init_all()'s result after each of them, and
+ * the main loop; App has no run() of its own.
  * Модулі НЕ повинні залежати від App — вони працюють через BaseModule API.
  *
  * TODO: в майбутньому прибрати singleton, передавати залежності явно.
@@ -41,7 +41,7 @@ public:
 
     // ── Lifecycle ──
     bool init();
-    void stop();  // Graceful shutdown: зупиняє всі модулі у зворотному порядку
+    void stop();  // Graceful shutdown: stops every module in reverse order
 
     // ── Доступ до підсистем (тільки для main.cpp!) ──
     ModuleManager& modules() { return modules_; }
