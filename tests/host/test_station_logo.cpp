@@ -1,13 +1,15 @@
 /**
  * @file test_station_logo.cpp
  * @brief The presets' logos kept on the panel: names, files, which stations want a fetch, the
- *        shelf, and the lookup that finds several stations' favicons at once.
+ *        shelf, when a file is written, and the lookup that finds several stations' favicons at
+ *        once.
  *
  * components/radio_catalog/include/station_logo.h and the byuuid half of radio_catalog.h. The
  * uuid is checked because it becomes a file name; a file is one this firmware wrote or nothing;
  * a preset set read again keeps what it knew about each station, so a dead favicon waits out its
- * backoff instead of being asked for every time the list moves. The favicon cases run on the
- * recorded top_ua_24.json, whose values were read out by a separate script.
+ * backoff instead of being asked for every time the list moves. A logo waiting for its file is
+ * not fetched again, and the file waits for silence. The favicon cases run on the recorded
+ * top_ua_24.json, whose values were read out by a separate script.
  */
 
 #include "doctest.h"
@@ -175,6 +177,74 @@ TEST_CASE("station logo: what is due a fetch, and when a failed one is due again
     CHECK(p.due(1000 + RETRY_LATE_US, idx, 1) == 1);       // never more than asked for
     CHECK(RETRY_SOON_US == 600LL * 1000000);
     CHECK(RETRY_LATE_US == 6LL * 3600 * 1000000);
+}
+
+TEST_CASE("station logo: a kept logo waits for its file, and is not fetched again meanwhile") {
+    Plan p;
+    const char* slots[3] = {A, B, C};
+    p.want(slots, 3);
+    p.set(0, State::HAVE);                                 // read out of its file: nothing to write
+    p.set(1, State::NEED);
+    p.set(2, State::NEED);
+    CHECK(p.to_save() == -1);
+    CHECK_FALSE(p.at(0).unsaved);
+
+    p.kept(1);                                             // B's logo arrived
+    CHECK(p.at(1).state == State::HAVE);
+    CHECK(p.at(1).unsaved);
+    CHECK(p.to_save() == 1);
+    int idx[WANT];
+    REQUIRE(p.due(0, idx, WANT) == 1);                     // only C: B's is on the shelf, unwritten
+    CHECK(idx[0] == 2);
+
+    // The same set in another order: B's file is still to be written.
+    const char* again[3] = {C, B, A};
+    CHECK_FALSE(p.want(again, 3));
+    REQUIRE(p.to_save() == p.find(B));
+    p.saved(p.find(B));
+    CHECK(p.to_save() == -1);
+    CHECK(p.at(p.find(B)).state == State::HAVE);
+
+    // Several wait, each once; written in turn.
+    p.kept(p.find(A));
+    p.kept(p.find(C));
+    const int first = p.to_save();
+    REQUIRE(first >= 0);
+    p.saved(first);
+    const int second = p.to_save();
+    REQUIRE(second >= 0);
+    CHECK(second != first);
+    p.saved(second);
+    CHECK(p.to_save() == -1);
+
+    // A station that leaves the presets before its file is written is not written; back again,
+    // it is new — its file looked for, and fetched when there is none, as after a restart.
+    p.kept(p.find(A));
+    const char* fewer[2] = {B, C};
+    CHECK(p.want(fewer, 2));
+    CHECK(p.to_save() == -1);
+    p.want(slots, 3);
+    CHECK(p.at(p.find(A)).state == State::NEW);
+    CHECK_FALSE(p.at(p.find(A)).unsaved);
+
+    p.kept(-1);                                            // out of range: nothing
+    p.saved(WANT);
+    CHECK(p.to_save() == -1);
+}
+
+TEST_CASE("station logo: files wait until nothing has been heard for four seconds") {
+    CHECK(QUIET_MS == 4000);
+    Quiet q;
+    for (int i = 0; i < 7; i++) CHECK_FALSE(q.tick(500, true));   // 3.5 s
+    CHECK(q.tick(500, true));                                       // 4 s
+    CHECK(q.tick(500, true));                                       // and on
+    CHECK_FALSE(q.tick(500, false));                                // a sound: from the start
+    CHECK_FALSE(q.tick(3999, true));
+    CHECK(q.tick(1, true));
+    CHECK(q.tick(UINT32_MAX, true));                                // held, not wrapped
+    CHECK(q.tick(500, true));
+    CHECK_FALSE(q.tick(0, false));
+    CHECK(q.tick(UINT32_MAX, true));                                // one long pass is enough
 }
 
 TEST_CASE("station logo: the shelf holds one logo per wanted station") {

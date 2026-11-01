@@ -467,9 +467,14 @@ while an HTTPS station holds the TLS session and after a restart ([UI.md](UI.md)
 
 - **Storage**: `logos/<uuid>.565` in the `UserStore` folder (`/userdata`; on a panel without that
   partition, `/data`) — 40×40, the size of the preset's disc, drawn unscaled: an 8-byte header
-  (`SLG1`, the side twice) and RGB565, 3208 B a file. Read at start and when the presets change;
-  written through `safe_file` when a logo arrives or changes; the file of a station that is no
-  longer on a preset is deleted. Only a well-formed uuid names a file.
+  (`SLG1`, the side twice) and RGB565, 3208 B a file. Read at start and when the presets change.
+  A logo that arrives or changes is on its preset at once, but files are written (through
+  `safe_file`) and deleted only while nothing plays: after 4 s of silence at the output
+  (`PcmRing::output_quiet` — the output gate shut and the TX queue played out, whatever the
+  source), one file a 500 ms pass, since a LittleFS write stops the cache of both cores and with
+  music playing the speakers click. Then the file of a station no longer on a preset goes, and so
+  does a candidate an interrupted save left. A logo not yet written when the power goes is
+  fetched again after the restart. Only a well-formed uuid names a file.
 - **Fetching**: task `radio_logo` (12 KB, PSRAM, idle priority), one at a time, made for one batch
   and gone after it; on the main task's 500 ms pass, when the network has been up for 20 s, at
   least 30 s after the last batch, and only while the TLS session is free — the radio is not the

@@ -110,7 +110,10 @@ interleaved stereo float between the producers and the audio task; lock-free on 
 - `set_consumer(prime, downstream)`: the cushion after a reset (100 ms) and the frames between the
   ring and the pins (TX DMA + block + limiter look-ahead). From these AirPlay computes when what it
   wrote will be heard, and USB its fill target for feedback. `set_consumer_live` — whether the
-  ring is heard right now.
+  ring is heard right now. `set_output_quiet` — whether nothing at all is heard, whatever the
+  source: the output gate shut and the TX queue played out, the moment the amplifier may go off
+  (section "Edges of sound"); the radio writes its preset logos' files only then
+  (`docs/NETWORK.md`, "Covers and logos").
 - After a reset the consumer waits for the 100 ms cushion (`PRIME_S`); `eos` lifts the wait. While
   the amplifier settles, the ring is not read — except for AirPlay and USB, which pace by the fill
   (`paces_by_fill`).

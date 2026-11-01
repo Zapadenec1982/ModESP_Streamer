@@ -2116,10 +2116,12 @@ void RadioModule::on_update(uint32_t dt_ms) {
     const bool mine = (read_int("audio.source", 0) == AUDIO_SRC_RADIO);
 
     // The presets' logos, whatever the source (src/logos.cpp): fetched only while the panel's
-    // one TLS session is free and no stream is starting.
+    // one TLS session is free and no stream is starting, their files written only while
+    // nothing is heard — the audio task's word, for every source (pcm_ring.h, output_quiet).
     logos_ms_ += dt_ms;
     if (logos_ms_ >= 500) {
-        radio_logos::update(logos_ms_, read_bool("wifi.connected", false), logos_may_fetch(mine));
+        radio_logos::update(logos_ms_, read_bool("wifi.connected", false), logos_may_fetch(mine),
+                            audio_core::pcm_ring().output_quiet());
         logos_ms_ = 0;
     }
 

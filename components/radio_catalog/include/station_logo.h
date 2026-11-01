@@ -9,6 +9,7 @@
  * favicons are HTTPS, which the panel may fetch only while the stream holds no TLS session. So
  * the logos are kept: fetched when they can be, decoded once into the disc's own 40 x 40 pixels,
  * and written to the user partition, one small file per station, where the next boot finds them.
+ * A logo is on the shelf the moment it is kept; its file waits until nothing is heard (Quiet).
  *
  * Pure, like the rest of radio_catalog: the module fetches, decodes and does the files
  * (modules/radio/src/logos.cpp); what is decided here is pinned on the host
@@ -71,6 +72,7 @@ struct Entry {
     char    uuid[UUID_LEN] = "";
     State   state = State::NEW;
     int64_t retry_us = 0;
+    bool    unsaved = false;   ///< on the shelf, not in its file yet (Plan::kept)
 };
 
 /// The stations whose logos are wanted, and how each one stands. The radio module's, main task.
@@ -90,10 +92,35 @@ public:
     /// The entries due a fetch at `now_us` — NEED, and WAIT whose time has come — up to `max`
     /// indices into `out`. Their count.
     int  due(int64_t now_us, int* out, int max) const;
+    /// The entry's logo, new or changed, is on the shelf: HAVE, and its file is still to be
+    /// written, once the panel is quiet. Not fetched again meanwhile; a restart before the write
+    /// finds no file, and the station is fetched again.
+    void kept(int i);
+    /// An entry whose logo is still to be written, or −1.
+    int  to_save() const;
+    /// Its file is written, or could not be: nothing more to write for this logo.
+    void saved(int i);
 
 private:
     Entry e_[WANT];
     int   n_ = 0;
+};
+
+/// How long nothing must have been heard before a logo's file is written or removed: a LittleFS
+/// write stops both cores' caches, and with music playing the speakers click (docs/AUDIO.md, the
+/// EQ file). A skip or a station rebuffering is a gap, not the end of the music, so the standby
+/// face's four seconds (docs/UI.md, "Standby").
+constexpr uint32_t QUIET_MS = 4000;
+
+/// Whether the panel has been quiet long enough for the files. The shelf does not wait for it.
+class Quiet {
+public:
+    /// `dt_ms` since the last call; `silent`: nothing is heard now. True once that has held for
+    /// QUIET_MS; a sound starts the count again.
+    bool tick(uint32_t dt_ms, bool silent);
+
+private:
+    uint32_t ms_ = 0;
 };
 
 /// A logo as the Player draws it.

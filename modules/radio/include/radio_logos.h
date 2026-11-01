@@ -18,13 +18,15 @@ namespace radio_logos {
 
 /// The radio module's call on the main task, every half second whatever the source;
 /// `elapsed_ms` since the last. `may_fetch`: the panel's one TLS session is free and no stream
-/// is starting (radio_module.cpp, logos_may_fetch). Reads and writes the files, publishes the
-/// shelf, and starts the fetching task when a preset's logo is missing and may be had.
-void update(uint32_t elapsed_ms, bool net_up, bool may_fetch);
+/// is starting (radio_module.cpp, logos_may_fetch). `silent`: nothing is heard
+/// (audio_core::PcmRing::output_quiet). Reads the files, publishes the shelf, writes and removes
+/// files once it has been silent for station_logo::QUIET_MS, and starts the fetching task when
+/// a preset's logo is missing and may be had.
+void update(uint32_t elapsed_ms, bool net_up, bool may_fetch, bool silent);
 
 /// The playing station's logo as a preset shows it, from the art task once it has fetched the
-/// logo for the tile: kept, and written down if the station is a preset or becomes one — no
-/// second download.
+/// logo for the tile: kept if the station is a preset or becomes one, and written down once
+/// nothing is heard — no second download.
 void offer(const station_logo::Thumb& logo);
 
 }  // namespace radio_logos

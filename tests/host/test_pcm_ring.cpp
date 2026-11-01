@@ -226,6 +226,19 @@ TEST_CASE("ring: eos separates 'track finished' from 'decoder is behind'") {
     r.deinit();
 }
 
+TEST_CASE("ring: the output is quiet until the consumer says something is heard") {
+    PcmRing r;
+    CHECK(r.output_quiet());               // no consumer yet: nothing can be heard
+    REQUIRE(r.init(8));
+    r.set_output_quiet(false);
+    CHECK_FALSE(r.output_quiet());
+    r.reset();
+    CHECK_FALSE(r.output_quiet());         // the consumer's word about the pins, not the queue's
+    r.set_output_quiet(true);
+    CHECK(r.output_quiet());
+    r.deinit();
+}
+
 TEST_CASE("ring: reset drops everything") {
     PcmRing r;
     REQUIRE(r.init(16));

@@ -4,9 +4,11 @@
  *        components/radio_catalog/include/station_logo.h.
  *
  * The main task's side: which stations are on presets, their files — read at start and when the
- * presets change, written when a logo arrives, removed when the station leaves the presets — and
- * the shelf the Player draws from. Files are the main task's because a LittleFS read or write
- * stops the flash cache, and only a task whose stack is in internal RAM may run then.
+ * presets change, written for a logo that arrived, removed for a station that left the presets —
+ * and the shelf the Player draws from. Files are the main task's because a LittleFS read or write
+ * stops the flash cache, and only a task whose stack is in internal RAM may run then. The shelf
+ * takes a logo at once; writing and removing wait until nothing has been heard for
+ * station_logo::QUIET_MS (persist), since with music playing that cache stop is a click.
  *
  * The fetching is a task of its own, `radio_logo`, made for one batch and gone when it is done:
  * one Radio Browser request for the favicons of every station that has no logo yet, then each
@@ -89,7 +91,7 @@ struct Buffers {
 /// The main task's state. In PSRAM: a shelf, a logo and a file are 26 KB.
 struct Logos {
     sl::Plan  plan;
-    sl::Shelf shelf;                     ///< as last published
+    sl::Shelf shelf;                     ///< as last published; also what is still to be written
     sl::Thumb offered;                   ///< the art task's last logo
     uint16_t  px[sl::PIXELS] = {};       ///< a file's pixels, read
     uint8_t   file[sl::FILE_BYTES] = {}; ///< a file's bytes, read or written
@@ -99,8 +101,10 @@ struct Logos {
     uint32_t  list_gen = UINT32_MAX;
     uint32_t  net_ms = 0;                ///< how long the network has been up, up to SETTLE_MS
     uint32_t  gap_ms = GAP_MS;           ///< since the last batch began, up to GAP_MS
+    sl::Quiet quiet;                     ///< whether the files may be touched
     bool      have_offer = false;
-    bool      swept = false;
+    bool      looked = false;            ///< the presets have been read once
+    bool      sweep_due = false;         ///< files of stations off the presets may be left
     char      dir[48] = "";
 };
 
@@ -218,44 +222,61 @@ void write_logo(Logos& l, const char* uuid, const uint16_t* px) {
         ESP_LOGW(TAG, "logos: cannot write %s; shown until the next boot, fetched again then", path);
 }
 
-/// Each file of a station no longer on a preset goes, and so does a candidate an interrupted
-/// save left. One a pass, so nothing is removed while the folder is being read.
-void sweep(const Logos& l) {
+/// A file of a station no longer on a preset goes, or a candidate an interrupted save left: one,
+/// once the folder is closed, so nothing is removed while it is being read. False when there is
+/// none left — or no folder, or one that will not go.
+bool sweep_one(const Logos& l) {
     const size_t sfx = strlen(safe_file::SUFFIX);
-    for (int pass = 0; pass < 32; pass++) {
-        DIR* d = opendir(l.dir);
-        if (!d) return;                     // no folder: nothing was ever kept
-        char path[96] = "";
-        while (const dirent* e = readdir(d)) {
-            const size_t n = strlen(e->d_name);
-            char uuid[sl::UUID_LEN];
-            const bool left = n > sfx && !strcmp(e->d_name + n - sfx, safe_file::SUFFIX);
-            const bool stale = sl::uuid_of(e->d_name, uuid, sizeof(uuid)) && l.plan.find(uuid) < 0;
-            if ((left || stale) && snprintf(path, sizeof(path), "%s/%s", l.dir, e->d_name) < (int)sizeof(path))
-                break;
-            path[0] = '\0';
-        }
-        closedir(d);
-        if (!path[0] || remove(path) != 0) return;
-        ESP_LOGI(TAG, "logos: %s removed", path);
+    DIR* d = opendir(l.dir);
+    if (!d) return false;                   // no folder: nothing was ever kept
+    char path[96] = "";
+    while (const dirent* e = readdir(d)) {
+        const size_t n = strlen(e->d_name);
+        char uuid[sl::UUID_LEN];
+        const bool left = n > sfx && !strcmp(e->d_name + n - sfx, safe_file::SUFFIX);
+        const bool stale = sl::uuid_of(e->d_name, uuid, sizeof(uuid)) && l.plan.find(uuid) < 0;
+        if ((left || stale) && snprintf(path, sizeof(path), "%s/%s", l.dir, e->d_name) < (int)sizeof(path))
+            break;
+        path[0] = '\0';
     }
+    closedir(d);
+    if (!path[0] || remove(path) != 0) return false;
+    ESP_LOGI(TAG, "logos: %s removed", path);
+    return true;
 }
 
-/// `px` is the logo of the plan's entry `i`: written down unless the panel has these very
-/// pixels already, and on the shelf.
+/// `px` is the logo of the plan's entry `i`: on the shelf at once, and written down once the
+/// panel is quiet (persist) — unless the panel has these very pixels already.
 void keep_logo(Logos& l, int i, const uint16_t* px) {
     const char* uuid = l.plan.at(i).uuid;
-    l.plan.set(i, sl::State::HAVE);
     const sl::Thumb* have = l.shelf.find(uuid);
-    if (have && !memcmp(have->px, px, sizeof(have->px))) return;   // the logo it had: no write
-    write_logo(l, uuid, px);
+    if (have && !memcmp(have->px, px, sizeof(have->px))) {   // the logo it had: nothing to write
+        l.plan.set(i, sl::State::HAVE);
+        return;
+    }
+    l.plan.kept(i);
     l.shelf.put(uuid, px);
     publish(l);
     ESP_LOGI(TAG, "logos: %s kept", uuid);
 }
 
-/// The presets' uuids, read again whenever the list has moved; a change of set sweeps the files
-/// and the shelf, and so does the first look.
+/// One change to the files, while the panel is quiet: the next file the sweep finds, else the
+/// next logo the shelf has and its file does not. One a pass, so a sound that starts meanwhile
+/// holds back the rest. Power lost before a logo is written costs a fetch at the next boot.
+void persist(Logos& l) {
+    if (l.sweep_due) {
+        l.sweep_due = sweep_one(l);
+        return;
+    }
+    const int i = l.plan.to_save();
+    if (i < 0) return;
+    const char* uuid = l.plan.at(i).uuid;
+    if (const sl::Thumb* t = l.shelf.find(uuid)) write_logo(l, uuid, t->px);
+    l.plan.saved(i);
+}
+
+/// The presets' uuids, read again whenever the list has moved; a change of set prunes the shelf
+/// at once and the files once the panel is quiet, and so does the first look.
 void read_presets(Logos& l) {
     auto& list = radio_core::stations();
     const uint32_t gen = list.generation();
@@ -269,9 +290,9 @@ void read_presets(Logos& l) {
         if (idx >= 0 && list.at(idx, st)) snprintf(uuid[i], sizeof(uuid[i]), "%s", st.uuid);
         at[i] = uuid[i];
     }
-    if (l.plan.want(at, sl::WANT) || !l.swept) {
-        l.swept = true;
-        sweep(l);
+    if (l.plan.want(at, sl::WANT) || !l.looked) {
+        l.looked = true;
+        l.sweep_due = true;
         l.shelf.keep(l.plan);
         publish(l);
     }
@@ -365,7 +386,7 @@ void start(Logos& l, bool may, int64_t now) {
 
 namespace radio_logos {
 
-void update(uint32_t elapsed_ms, bool net_up, bool may_fetch) {
+void update(uint32_t elapsed_ms, bool net_up, bool may_fetch, bool silent) {
     Logos& l = single<Logos>();
     if (!l.dir[0]) snprintf(l.dir, sizeof(l.dir), "%s/%s", modesp::UserStore::dir(), sl::DIR);
     if (!net_up) l.net_ms = 0;
@@ -373,12 +394,14 @@ void update(uint32_t elapsed_ms, bool net_up, bool may_fetch) {
     if (l.gap_ms < GAP_MS) l.gap_ms += elapsed_ms;
     const bool may = net_up && may_fetch;
     if (l.job) l.job->tls_free.store(may, std::memory_order_release);
+    const bool quiet = l.quiet.tick(elapsed_ms, silent);
     const int64_t now = esp_timer_get_time();
     read_presets(l);
     take_offer(l);
     place_new(l);
     collect(l, now);
     start(l, may, now);
+    if (quiet) persist(l);
 }
 
 void offer(const station_logo::Thumb& logo) { offers().set(logo); }

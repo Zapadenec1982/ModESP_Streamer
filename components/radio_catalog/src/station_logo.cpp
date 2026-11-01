@@ -1,6 +1,7 @@
 /**
  * @file station_logo.cpp
- * @brief The presets' logos: names, files, the plan and the shelf. See station_logo.h.
+ * @brief The presets' logos: names, files, the plan, the shelf and when the files may be
+ *        written. See station_logo.h.
  */
 
 #include "station_logo.h"
@@ -113,6 +114,27 @@ int Plan::due(int64_t now_us, int* out, int max) const {
         if (e.state == State::NEED || (e.state == State::WAIT && now_us >= e.retry_us)) out[k++] = i;
     }
     return k;
+}
+
+void Plan::kept(int i) {
+    if (i < 0 || i >= n_) return;
+    e_[i].state = State::HAVE;
+    e_[i].unsaved = true;
+}
+
+int Plan::to_save() const {
+    for (int i = 0; i < n_; i++) if (e_[i].unsaved) return i;
+    return -1;
+}
+
+void Plan::saved(int i) {
+    if (i >= 0 && i < n_) e_[i].unsaved = false;
+}
+
+bool Quiet::tick(uint32_t dt_ms, bool silent) {
+    if (!silent) ms_ = 0;
+    else ms_ = dt_ms >= QUIET_MS - ms_ ? QUIET_MS : ms_ + dt_ms;   // held at QUIET_MS: no wrap
+    return ms_ >= QUIET_MS;
 }
 
 // ── the shelf ──

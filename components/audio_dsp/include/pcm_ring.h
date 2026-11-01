@@ -227,6 +227,14 @@ public:
     void set_consumer_live(bool on) { live_.store(on, std::memory_order_release); }
     bool consumer_live() const      { return live_.load(std::memory_order_acquire); }
 
+    /// Whether nothing at all is heard, whatever the source: the consumer's output gate is shut
+    /// and the silence behind it has filled the port's TX queue, so the last of what played has
+    /// left the pins — what the amplifier waits for before it goes off. True until the consumer
+    /// first says otherwise. Written by the consumer every block; read by a module about to do
+    /// what a listener would hear, such as a flash write, which stops both cores' caches.
+    void set_output_quiet(bool on) { quiet_.store(on, std::memory_order_release); }
+    bool output_quiet() const      { return quiet_.load(std::memory_order_acquire); }
+
     /// The producer has no more data. The consumer uses it to tell "track finished" from
     /// "decoder is behind", which look identical from an empty ring.
     void set_eos(bool on) {
@@ -294,6 +302,7 @@ private:
     std::atomic<uint32_t> prime_{0};
     std::atomic<uint32_t> downstream_{0};
     std::atomic<bool>     live_{false};
+    std::atomic<bool>     quiet_{true};
 };
 
 /// The rest of the rate handshake, for a producer that is already playing.

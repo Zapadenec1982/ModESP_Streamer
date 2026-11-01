@@ -2820,6 +2820,9 @@ void AudioModule::task_loop() {
         } else {
             quiet_frames_ = 0;
         }
+        // The same measure the amplifier goes off by (pend_source_, at the top of the loop), for
+        // whatever must wait until nothing is heard: the radio's logo files (pcm_ring.h).
+        audio_core::pcm_ring().set_output_quiet(quiet_frames_ >= tx_frames_ + (uint32_t)BLOCK);
 
         // ── status window: half a second, at every rate (100 blocks was 0.125 s at 192 kHz, and
         // the main loop, which reads it every 0.5 s, missed three windows in four) ──
