@@ -16,6 +16,7 @@
 #include "ui_theme.h"
 #include "ui_lvgl_module.h"
 #include "fonts/ui_fonts.h"
+#include "state_enums.h"   // audio.source and the other manifest values, generated from the manifests
 #include "esp_heap_caps.h"
 #include "lvgl.h"
 #include <cassert>

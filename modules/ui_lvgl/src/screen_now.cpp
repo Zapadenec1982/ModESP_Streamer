@@ -50,6 +50,13 @@ namespace {
 using i18n::S;
 using i18n::SU;
 using i18n::tr;
+using modesp::gen::AUDIO_SOURCE_AIRPLAY;
+using modesp::gen::AUDIO_SOURCE_AUX;
+using modesp::gen::AUDIO_SOURCE_BT;
+using modesp::gen::AUDIO_SOURCE_FILE;
+using modesp::gen::AUDIO_SOURCE_RADIO;
+using modesp::gen::AUDIO_SOURCE_TONE;
+using modesp::gen::AUDIO_SOURCE_USB;
 
 // ── geometry, all relative to the 752x384 content column ──
 constexpr int32_t COVER   = player_core::COVER_PX;           // 280: the tile the player decodes
@@ -182,14 +189,14 @@ void post(UiLvglModule::Req kind, int32_t v) {
 struct SourceFace { const char* caps; const char* sym; };
 SourceFace source_face(int32_t src, bool push) {
     switch (src) {
-    case 1:  return { nullptr,              UI_SYM_GRAPHIC_EQ };
-    case 2:  return { nullptr,              UI_SYM_AUX };
-    case 3:  return { tr(SU::src_bt),       UI_SYM_BLUETOOTH };
-    case 4:  return { tr(SU::src_card),     UI_SYM_SD };
-    case 5:  return push ? SourceFace{ tr(SU::src_dlna), UI_SYM_CAST } : SourceFace{ tr(SU::src_radio), UI_SYM_RADIO };
-    case 6:  return { tr(SU::src_airplay),  UI_SYM_AIRPLAY };
-    case 7:  return { tr(SU::src_usb),      UI_SYM_USB };
-    default: return { nullptr,              UI_SYM_POWER };
+    case AUDIO_SOURCE_TONE:    return { nullptr,              UI_SYM_GRAPHIC_EQ };
+    case AUDIO_SOURCE_AUX:     return { nullptr,              UI_SYM_AUX };
+    case AUDIO_SOURCE_BT:      return { tr(SU::src_bt),       UI_SYM_BLUETOOTH };
+    case AUDIO_SOURCE_FILE:    return { tr(SU::src_card),     UI_SYM_SD };
+    case AUDIO_SOURCE_RADIO:   return push ? SourceFace{ tr(SU::src_dlna), UI_SYM_CAST } : SourceFace{ tr(SU::src_radio), UI_SYM_RADIO };
+    case AUDIO_SOURCE_AIRPLAY: return { tr(SU::src_airplay),  UI_SYM_AIRPLAY };
+    case AUDIO_SOURCE_USB:     return { tr(SU::src_usb),      UI_SYM_USB };
+    default:                   return { nullptr,              UI_SYM_POWER };
     }
 }
 
@@ -199,9 +206,9 @@ SourceFace source_face(int32_t src, bool push) {
 void list_cb(lv_event_t*) {
     if (!n.ctx) return;
     const auto& s = n.ctx->s;
-    if (s.source == 4)             ui_shell_go("library");
-    else if (s.network_push)       ui_shell_go("dlna");
-    else if (s.source == 5)        ui_shell_go("radio");
+    if (s.source == AUDIO_SOURCE_FILE)       ui_shell_go("library");
+    else if (s.network_push)                 ui_shell_go("dlna");
+    else if (s.source == AUDIO_SOURCE_RADIO) ui_shell_go("radio");
 }
 void src_cb(lv_event_t*)    { ui_shell_go("src"); }
 /// «Увімкнути видимість»: the radio on as well — with it off the satellite is seen by no one
@@ -222,15 +229,17 @@ void shuf_cb(lv_event_t*)   { post(UiLvglModule::Req::SHUFFLE, -1); }
 /// 1 play/pause, 2 next. Read from the snapshot, not this page's buttons: the knob's press comes
 /// here from every page, and only the page on the glass is refreshed.
 void transport(const UiLvglModule::Snapshot& s, int which) {
-    const bool is_radio = s.source == 5 && !s.network_push;
-    const bool has_track = s.source == 4 || s.network_push || s.source == 3 || s.source == 6;
+    const bool is_radio = s.source == AUDIO_SOURCE_RADIO && !s.network_push;
+    const bool has_track = s.source == AUDIO_SOURCE_FILE || s.network_push || s.source == AUDIO_SOURCE_BT ||
+                           s.source == AUDIO_SOURCE_AIRPLAY;
     if (!is_radio && !has_track) return;                 // the tone, AUX, off: nothing to command
     // nobody to command: no phone; an AirPlay sender that gave no remote (refresh's "live")
-    if ((s.source == 3 && !s.bt_connected) || (s.source == 6 && !s.ap_remote)) return;
+    if ((s.source == AUDIO_SOURCE_BT && !s.bt_connected) || (s.source == AUDIO_SOURCE_AIRPLAY && !s.ap_remote))
+        return;
     if (is_radio) {
         const bool playing = strcmp(s.radio_state, "playing") == 0;
         post(UiLvglModule::Req::RADIO_CMD, which == 0 ? 4 : which == 2 ? 3 : playing ? 2 : 1);
-    } else if (which == 1 && s.source == 4 && strcmp(s.play_state, "playing") != 0 &&
+    } else if (which == 1 && s.source == AUDIO_SOURCE_FILE && strcmp(s.play_state, "playing") != 0 &&
                strcmp(s.play_state, "paused") != 0) {
         // Play on a card with nothing open: the toggle only pauses and resumes a track that is
         // open, so from idle it did nothing. Start the track the title shows — the cursor's.
@@ -569,7 +578,7 @@ void set_face(Face f, const UiLvglModule::Snapshot& s) {
     n.face = f;
     const bool empty = (f == Face::EMPTY);
     const bool radio = (f == Face::RADIO);
-    const bool is_file = (s.source == 4);
+    const bool is_file = (s.source == AUDIO_SOURCE_FILE);
     uih::show(n.transport, !empty);
     n.vis_shown = -1;                             // the next refresh decides on «Увімкнути видимість»
     n.seek_drag = false;                          // a scrub of another source's track seeks nothing
@@ -600,10 +609,10 @@ void set_face(Face f, const UiLvglModule::Snapshot& s) {
 void refresh(lv_obj_t*, UiCtx& c) {
     const auto& t = m3::theme();
     const auto& s = c.s;
-    const bool is_file = (s.source == 4);
-    const bool is_bt   = (s.source == 3);
-    const bool is_ap   = (s.source == 6);
-    const bool is_radio = (s.source == 5 && !s.network_push);
+    const bool is_file = (s.source == AUDIO_SOURCE_FILE);
+    const bool is_bt   = (s.source == AUDIO_SOURCE_BT);
+    const bool is_ap   = (s.source == AUDIO_SOURCE_AIRPLAY);
+    const bool is_radio = (s.source == AUDIO_SOURCE_RADIO && !s.network_push);
     // Bluetooth and AirPlay have a track, a position and a transport like the card and DLNA,
     // so they are drawn by the same face; repeat and shuffle stay the card's.
     const bool has_track = is_file || s.network_push || is_bt || is_ap;
@@ -799,17 +808,17 @@ void refresh(lv_obj_t*, UiCtx& c) {
     } else {
         // What is left has no track and no transport: the tone generator, the analogue input,
         // USB — the computer is its own remote — and the output switched off.
-        const bool is_usb = s.source == 7;
-        set_title(s.source == 1 ? tr(S::now_tone)
-                    : s.source == 2 ? tr(S::now_aux)
+        const bool is_usb = s.source == AUDIO_SOURCE_USB;
+        set_title(s.source == AUDIO_SOURCE_TONE ? tr(S::now_tone)
+                    : s.source == AUDIO_SOURCE_AUX ? tr(S::now_aux)
                     : is_usb ? tr(s.usb_connected ? S::now_usb : S::now_usb_waiting)
                     : tr(S::now_off));
         char sub[96];
-        if (s.source == 1)      snprintf(sub, sizeof(sub), "%ld %s", (long)s.tone_hz, tr(S::unit_hz));
-        else if (is_usb && s.play_fmt[0]) i18n::badge(sub, sizeof(sub), s.play_fmt);
-        else if (is_usb)        snprintf(sub, sizeof(sub), "%s", tr(S::now_usb_pick));
-        else if (s.in_rate > 0) snprintf(sub, sizeof(sub), "%ld %s", (long)s.in_rate, tr(S::unit_hz));
-        else                    snprintf(sub, sizeof(sub), "%s", tr(S::now_pick));
+        if (s.source == AUDIO_SOURCE_TONE) snprintf(sub, sizeof(sub), "%ld %s", (long)s.tone_hz, tr(S::unit_hz));
+        else if (is_usb && s.play_fmt[0])  i18n::badge(sub, sizeof(sub), s.play_fmt);
+        else if (is_usb)                   snprintf(sub, sizeof(sub), "%s", tr(S::now_usb_pick));
+        else if (s.in_rate > 0)            snprintf(sub, sizeof(sub), "%ld %s", (long)s.in_rate, tr(S::unit_hz));
+        else                               snprintf(sub, sizeof(sub), "%s", tr(S::now_pick));
         set_sub(sub);
         set_fmt("");
     }

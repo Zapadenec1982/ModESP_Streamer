@@ -44,6 +44,7 @@ namespace {
 
 using i18n::S;
 using i18n::tr;
+using modesp::gen::AUDIO_SOURCE_AIRPLAY;
 
 // ── geometry, all relative to the 752x384 content column ──
 constexpr int32_t COL_GAP = 16;
@@ -100,7 +101,7 @@ void ap_mode_chosen(int mode) {
 /// row — its switch announces it. A row of its own until 20.10.2026; before that a tap on it
 /// switched the protocol at once, with «змінити дотиком» under it to say so.
 void ap_mode_pick() {
-    if (!g.ctx || !(g.ctx->s.sources & (1 << 6))) return;
+    if (!g.ctx || !(g.ctx->s.sources & (1 << AUDIO_SOURCE_AIRPLAY))) return;
     const char* items[] = {"AirPlay 2", tr(S::sys_airplay_1)};
     ui_pick_show(tr(S::sys_airplay_mode), items, 2, g.ctx->s.ap_mode == 1 ? 1 : 0, ap_mode_chosen);
 }
@@ -286,7 +287,7 @@ void refresh(lv_obj_t*, UiCtx& c) {
     // AirPlay, only when this build has the receiver: the mode, what is happening to it while
     // something is (the receiver applies a new one live — its progress or failure, not the bare
     // selection), else the name it is announced by, or that it is not.
-    const bool ap_built = (s.sources & (1 << 6)) != 0;
+    const bool ap_built = (s.sources & (1 << AUDIO_SOURCE_AIRPLAY)) != 0;
     if (!ap_built) {
         snprintf(buf, sizeof(buf), "%s", tr(S::sys_not_built));
     } else {

@@ -50,7 +50,7 @@ public:
         int32_t  volume      = -1;      ///< audio.volume mirror, −1 = no audio core
         bool     mute        = false;
         bool     leveler     = false;   ///< audio.leveler: «Вирівнювання гучності» (the Player's moon)
-        int32_t  source      = -1;      ///< audio.source (0 off, 1 tone, 2 aux, 3 bt), −1 = none
+        int32_t  source      = -1;      ///< audio.source (modesp::gen::AUDIO_SOURCE_*), −1 = no audio core
         int32_t  sources     = 0;       ///< audio.sources bitmask — unavailable keys are greyed out
         char     audio_state[16] = "";  ///< audio.state
         float    level_l = -120.0f;     ///< dBFS

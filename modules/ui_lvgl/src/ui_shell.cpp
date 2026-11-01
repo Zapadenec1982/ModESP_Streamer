@@ -44,6 +44,12 @@ namespace {
 
 using i18n::S;
 using i18n::tr;
+using modesp::gen::AUDIO_SOURCE_AIRPLAY;
+using modesp::gen::AUDIO_SOURCE_AUX;
+using modesp::gen::AUDIO_SOURCE_BT;
+using modesp::gen::AUDIO_SOURCE_FILE;
+using modesp::gen::AUDIO_SOURCE_RADIO;
+using modesp::gen::AUDIO_SOURCE_USB;
 
 // ── the pages ──────────────────────────────────────────────────────────────────────────────
 
@@ -446,13 +452,13 @@ void build_undo(lv_obj_t* scr) {
 
 const char* source_name(int32_t src) {
     switch (src) {
-    case 2: return tr(S::src_aux);
-    case 3: return tr(S::src_bt);
-    case 4: return tr(S::src_card);
-    case 5: return tr(S::src_radio);
-    case 6: return tr(S::src_airplay);
-    case 7: return tr(S::src_usb);
-    default: return nullptr;
+    case AUDIO_SOURCE_AUX:     return tr(S::src_aux);
+    case AUDIO_SOURCE_BT:      return tr(S::src_bt);
+    case AUDIO_SOURCE_FILE:    return tr(S::src_card);
+    case AUDIO_SOURCE_RADIO:   return tr(S::src_radio);
+    case AUDIO_SOURCE_AIRPLAY: return tr(S::src_airplay);
+    case AUDIO_SOURCE_USB:     return tr(S::src_usb);
+    default:                   return nullptr;
     }
 }
 
@@ -588,9 +594,9 @@ void refresh_standby(UiCtx& c) {
 
     // The play_* fields belong to whichever source has a track; with AUX selected they still
     // hold the card's last one, so AUX says only what it is.
-    const bool radio = (s.source == 5 && !s.network_push);
-    const bool track = s.source == 3 || s.source == 4 || s.source == 6 ||
-                       (s.source == 5 && s.network_push);
+    const bool radio = (s.source == AUDIO_SOURCE_RADIO && !s.network_push);
+    const bool track = s.source == AUDIO_SOURCE_BT || s.source == AUDIO_SOURCE_FILE ||
+                       s.source == AUDIO_SOURCE_AIRPLAY || (s.source == AUDIO_SOURCE_RADIO && s.network_push);
     const char* src = source_name(s.source);
     if (radio)      sb_set_line(s.radio_name, s.radio_now, tr(S::src_radio));
     else if (track) sb_set_line(s.play_artist, s.play_title, src ? src : "");

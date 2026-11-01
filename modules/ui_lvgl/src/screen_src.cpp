@@ -34,6 +34,11 @@ namespace {
 using i18n::P;
 using i18n::S;
 using i18n::tr;
+using modesp::gen::AUDIO_SOURCE_AIRPLAY;
+using modesp::gen::AUDIO_SOURCE_BT;
+using modesp::gen::AUDIO_SOURCE_FILE;
+using modesp::gen::AUDIO_SOURCE_RADIO;
+using modesp::gen::AUDIO_SOURCE_USB;
 
 enum Card : int { BT, AIRPLAY, RADIO, FILE_, SERVERS, USB, N_CARD };
 
@@ -46,12 +51,12 @@ struct CardDef { S name; const char* sym; int32_t bit; };
 /// USB took AUX's place (the customer, 24.10.2026): the line input left the hardware on
 /// 15.10.2026 and its card was never shown since, and the grid is two rows of three.
 constexpr CardDef CARDS[N_CARD] = {
-    { S::src_bt,       UI_SYM_BLUETOOTH, 3 },
-    { S::src_airplay,  UI_SYM_AIRPLAY,   6 },
-    { S::src_radio,    UI_SYM_RADIO,     5 },
-    { S::src_card,     UI_SYM_SD,        4 },
-    { S::src_servers,  UI_SYM_HUB,       5 },
-    { S::src_usb,      UI_SYM_USB,       7 },
+    { S::src_bt,       UI_SYM_BLUETOOTH, AUDIO_SOURCE_BT },
+    { S::src_airplay,  UI_SYM_AIRPLAY,   AUDIO_SOURCE_AIRPLAY },
+    { S::src_radio,    UI_SYM_RADIO,     AUDIO_SOURCE_RADIO },
+    { S::src_card,     UI_SYM_SD,        AUDIO_SOURCE_FILE },
+    { S::src_servers,  UI_SYM_HUB,       AUDIO_SOURCE_RADIO },
+    { S::src_usb,      UI_SYM_USB,       AUDIO_SOURCE_USB },
 };
 
 // ── geometry: a 3x2 grid over the whole content column ──
@@ -88,12 +93,12 @@ void post(UiLvglModule::Req kind, int32_t v) {
 
 int active_card(const UiLvglModule::Snapshot& s) {
     switch (s.source) {
-    case 3: return BT;
-    case 4: return FILE_;
-    case 5: return s.network_push ? SERVERS : RADIO;
-    case 6: return AIRPLAY;
-    case 7: return USB;
-    default: return -1;
+    case AUDIO_SOURCE_BT:      return BT;
+    case AUDIO_SOURCE_FILE:    return FILE_;
+    case AUDIO_SOURCE_RADIO:   return s.network_push ? SERVERS : RADIO;
+    case AUDIO_SOURCE_AIRPLAY: return AIRPLAY;
+    case AUDIO_SOURCE_USB:     return USB;
+    default:                   return -1;
     }
 }
 
@@ -103,14 +108,14 @@ void choose(int c) {
     const auto& s = g.ctx->s;
     const bool active = active_card(s) == c;
     switch (c) {
-    case BT:      if (!active) post(UiLvglModule::Req::SOURCE, 3); break;
-    case FILE_:   if (!active) post(UiLvglModule::Req::SOURCE, 4); break;
-    case AIRPLAY: if (!active) post(UiLvglModule::Req::SOURCE, 6); break;
-    case USB:     if (!active) post(UiLvglModule::Req::SOURCE, 7); break;
+    case BT:      if (!active) post(UiLvglModule::Req::SOURCE, AUDIO_SOURCE_BT); break;
+    case FILE_:   if (!active) post(UiLvglModule::Req::SOURCE, AUDIO_SOURCE_FILE); break;
+    case AIRPLAY: if (!active) post(UiLvglModule::Req::SOURCE, AUDIO_SOURCE_AIRPLAY); break;
+    case USB:     if (!active) post(UiLvglModule::Req::SOURCE, AUDIO_SOURCE_USB); break;
     case RADIO:
         // The source first — the radio drops what it is sent while it does not own the
         // output — then play the station it is tuned to.
-        if (s.source != 5) post(UiLvglModule::Req::SOURCE, 5);
+        if (s.source != AUDIO_SOURCE_RADIO) post(UiLvglModule::Req::SOURCE, AUDIO_SOURCE_RADIO);
         if (!active || strcmp(s.radio_state, "idle") == 0) post(UiLvglModule::Req::RADIO_CMD, 1);
         break;
     case SERVERS:

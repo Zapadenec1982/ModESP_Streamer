@@ -32,6 +32,7 @@ namespace {
 
 using i18n::S;
 using i18n::tr;
+using modesp::gen::AUDIO_SOURCE_RADIO;
 
 // ── geometry, all relative to the 752x384 content column ──
 constexpr int32_t TABS_H    = 68;                            // the tab row (screen_catalog.cpp), and a gap
@@ -68,7 +69,7 @@ void post(UiLvglModule::Req kind, int32_t v) {
 }
 
 /// The radio owns the output and plays a station from the list (not a DLNA push).
-bool radio_on(const UiLvglModule::Snapshot& s) { return s.source == 5 && !s.network_push; }
+bool radio_on(const UiLvglModule::Snapshot& s) { return s.source == AUDIO_SOURCE_RADIO && !s.network_push; }
 
 /// …and is playing it, or on its way to.
 bool radio_live(const UiLvglModule::Snapshot& s) {
@@ -108,9 +109,9 @@ void store(int slot) {
 void listen(int idx) {
     if (!g.ctx || idx < 0) return;
     const auto& s = g.ctx->s;
-    if (s.source != 5)          post(UiLvglModule::Req::SOURCE, 5);
-    if (idx != s.radio_station) post(UiLvglModule::Req::RADIO_TUNE, idx);
-    else if (!radio_live(s))    post(UiLvglModule::Req::RADIO_CMD, 1);
+    if (s.source != AUDIO_SOURCE_RADIO) post(UiLvglModule::Req::SOURCE, AUDIO_SOURCE_RADIO);
+    if (idx != s.radio_station)         post(UiLvglModule::Req::RADIO_TUNE, idx);
+    else if (!radio_live(s))            post(UiLvglModule::Req::RADIO_CMD, 1);
     ui_shell_show_player();
 }
 

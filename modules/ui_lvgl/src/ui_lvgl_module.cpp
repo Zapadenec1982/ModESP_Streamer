@@ -61,6 +61,13 @@ struct UiScreen {
 
 namespace {
 
+using modesp::gen::AUDIO_SOURCE_AIRPLAY;
+using modesp::gen::AUDIO_SOURCE_AUX;
+using modesp::gen::AUDIO_SOURCE_BT;
+using modesp::gen::AUDIO_SOURCE_FILE;
+using modesp::gen::AUDIO_SOURCE_RADIO;
+using modesp::gen::AUDIO_SOURCE_USB;
+
 UiScreen s_ui;
 
 // Draw-buffer size in pixels of the panel's native width. Partial buffers in PSRAM, copied to
@@ -657,7 +664,7 @@ void UiLvglModule::mirror_state() {
     read_string("player.state", play_state, sizeof(play_state));
     char radio_mode[12] = "";
     read_string("radio.mode", radio_mode, sizeof(radio_mode));
-    const bool network_push = source == 5 && strcmp(radio_mode, "push") == 0;
+    const bool network_push = source == AUDIO_SOURCE_RADIO && strcmp(radio_mode, "push") == 0;
 
     // The Player's picture, for the web: the tile screen_now.cpp draws, by the same rule. ui.cover
     // goes out over the WebSocket when it changes, and GET /api/cover sends that tile. The
@@ -684,7 +691,7 @@ void UiLvglModule::mirror_state() {
     read_string("bt.state", bt_state, sizeof(bt_state));
     const bool bt_connected =
         strcmp(bt_state, "connected") == 0 || strcmp(bt_state, "streaming") == 0;
-    if (source == 3) {
+    if (source == AUDIO_SOURCE_BT) {
         read_string("bt.title", play_title, sizeof(play_title));
         read_string("bt.artist", play_artist, sizeof(play_artist));
         read_string("bt.album", play_album, sizeof(play_album));
@@ -708,7 +715,7 @@ void UiLvglModule::mirror_state() {
     const bool ap_connected =
         ap_playing || strcmp(ap_state, "paused") == 0 || strcmp(ap_state, "connected") == 0;
     const bool ap_remote = read_bool("airplay.remote", false);
-    if (source == 6) {
+    if (source == AUDIO_SOURCE_AIRPLAY) {
         read_string("airplay.title", play_title, sizeof(play_title));
         read_string("airplay.artist", play_artist, sizeof(play_artist));
         read_string("airplay.album", play_album, sizeof(play_album));
@@ -721,7 +728,7 @@ void UiLvglModule::mirror_state() {
     read_string("usb_audio.state", usb_state, sizeof(usb_state));
     const bool usb_streaming = strcmp(usb_state, "playing") == 0;
     const bool usb_connected = usb_streaming || strcmp(usb_state, "ready") == 0;
-    if (source == 7) {
+    if (source == AUDIO_SOURCE_USB) {
         play_title[0] = play_artist[0] = play_album[0] = '\0';
         snprintf(play_state, sizeof(play_state), "%s", usb_streaming ? "playing" : "idle");
         const int32_t usb_rate = read_int("usb_audio.rate", 0);
@@ -753,9 +760,11 @@ void UiLvglModule::mirror_state() {
         snprintf(play_state, sizeof(play_state), "%.*s", (int)sizeof(play_state)-1,
                  !strcmp(transport,"PAUSED_PLAYBACK")?"paused":radio_state);
     }
-    const char* pos_key = source == 3 ? "bt.pos_s" : source == 6 ? "airplay.pos_s"
+    const char* pos_key = source == AUDIO_SOURCE_BT      ? "bt.pos_s"
+                        : source == AUDIO_SOURCE_AIRPLAY ? "airplay.pos_s"
                         : network_push ? "radio.pos_s" : "player.pos_s";
-    const char* dur_key = source == 3 ? "bt.dur_s" : source == 6 ? "airplay.dur_s"
+    const char* dur_key = source == AUDIO_SOURCE_BT      ? "bt.dur_s"
+                        : source == AUDIO_SOURCE_AIRPLAY ? "airplay.dur_s"
                         : network_push ? "radio.dur_s" : "player.dur_s";
     const int32_t play_pos   = read_int(pos_key, 0);
     const int32_t play_dur   = read_int(dur_key, 0);
@@ -795,10 +804,10 @@ void UiLvglModule::mirror_state() {
     // play_state above. AUX has no state at all — it is an input, and while it is selected the
     // spectrum is the only thing there is to show of it. On at once, off after four seconds
     // of quiet: a track change or a station rebuffering is a gap, not the end of the music.
-    const bool radio_src = source == 5 && !network_push;
-    const bool playing = source == 2
+    const bool radio_src = source == AUDIO_SOURCE_RADIO && !network_push;
+    const bool playing = source == AUDIO_SOURCE_AUX
         || (radio_src ? strcmp(radio_state, "playing") == 0
-                      : source >= 3 && strcmp(play_state, "playing") == 0);
+                      : source >= AUDIO_SOURCE_BT && strcmp(play_state, "playing") == 0);
     if (playing) { sb_music_ = true; sb_quiet_ms_ = 0; }
     else if (sb_music_ && (sb_quiet_ms_ += 50) >= 4000) sb_music_ = false;
 
@@ -1150,17 +1159,17 @@ void UiLvglModule::apply_requests() {
             else          shell_sb_dirty_ = true;
             break;
         case Req::TRANSPORT:
-            if (read_int("audio.source",0)==5) {
+            if (read_int("audio.source",0)==AUDIO_SOURCE_RADIO) {
                 int cmd=it.value==2?3:it.value==3?2:it.value==4?4:it.value==5?5:0;
                 if(it.value==6) { char state[24]{}; read_string("dlna.state",state,sizeof(state)); cmd=!strcmp(state,"PLAYING")?3:1; }
                 if(cmd) post_command_to("dlna", "dlna.cmd", (int32_t)cmd);
-            } else if (read_int("audio.source",0)==3) {
+            } else if (read_int("audio.source",0)==AUDIO_SOURCE_BT) {
                 // Bluetooth takes the codes unchanged: bt.cmd is spelled in player.cmd's
                 // vocabulary for exactly this reason, and the toggle is resolved by the bt
                 // module, which is the side that knows what the phone is doing.
                 if (it.value >= 1 && it.value <= 6)
                     post_command_to("bt", "bt.cmd", (int32_t)it.value);
-            } else if (read_int("audio.source",0)==6) {
+            } else if (read_int("audio.source",0)==AUDIO_SOURCE_AIRPLAY) {
                 // AirPlay takes the codes unchanged as well, and sends what it can over DACP
                 // to a sender that gave it a remote. One that gave none — a phone in
                 // AirPlay 2 mode, whose remote commands ride MRP (UPSTREAM.md) — gets nothing,
@@ -1213,8 +1222,8 @@ void UiLvglModule::apply_requests() {
             // file decoder jump to a position it was told about by a phone.
             const int32_t src = read_int("audio.source", 0);
             if (it.value < 0) break;
-            if (src == 5)      state_set("radio.seek_s", it.value);
-            else if (src == 4) state_set("player.seek_s", it.value);
+            if (src == AUDIO_SOURCE_RADIO)     state_set("radio.seek_s", it.value);
+            else if (src == AUDIO_SOURCE_FILE) state_set("player.seek_s", it.value);
             break;
         }
         case Req::PLAY_QUEUE: {
