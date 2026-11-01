@@ -1,6 +1,6 @@
 /**
  * @file ui_common.h
- * @brief What every screen file shares: the context, the layout grid, widget helpers.
+ * @brief What every screen file shares: the context, the layout grid, the sources, widget helpers.
  *
  * Screens are built once at startup and then shown/hidden, so navigation costs nothing at
  * run time and no screen has to cope with being half-constructed. Each one exposes a
@@ -16,6 +16,7 @@
 #include "ui_theme.h"
 #include "ui_lvgl_module.h"
 #include "fonts/ui_fonts.h"
+#include "i18n.h"
 #include "state_enums.h"   // audio.source and the other manifest values, generated from the manifests
 #include "esp_heap_caps.h"
 #include "lvgl.h"
@@ -62,6 +63,69 @@ struct UiScreenDef {
     /// Return true when it went up a level; false lets the shell leave the page.
     bool      (*back)(UiCtx& c);
 };
+
+// ── the sources ──────────────────────────────────────────────────────────────────────────
+// What the glass makes of audio.source — the icon, the name — said once, as the web says it once
+// (webui/src/stores/now.js): an entry for each of the manifest's values (modesp::gen::AUDIO_SOURCE_*;
+// docs/CONCEPT.md, "`audio.source` values"), and DLNA, a track pushed to the radio.
+
+/// A source as the glass tells them apart.
+enum class UiSrc : uint8_t {
+    OFF     = modesp::gen::AUDIO_SOURCE_OFF,
+    TONE    = modesp::gen::AUDIO_SOURCE_TONE,
+    AUX     = modesp::gen::AUDIO_SOURCE_AUX,
+    BT      = modesp::gen::AUDIO_SOURCE_BT,
+    CARD    = modesp::gen::AUDIO_SOURCE_FILE,
+    RADIO   = modesp::gen::AUDIO_SOURCE_RADIO,
+    AIRPLAY = modesp::gen::AUDIO_SOURCE_AIRPLAY,
+    USB     = modesp::gen::AUDIO_SOURCE_USB,
+    DLNA,                                       ///< the radio, playing a push (radio.mode "push")
+};
+static_assert((int)UiSrc::DLNA == modesp::gen::AUDIO_SOURCE_MAX + 1, "an entry for every audio.source value");
+
+/// No name to give: tr() of either is "" (i18n.h).
+constexpr i18n::S  UI_NO_NAME = i18n::S::COUNT;
+constexpr i18n::SU UI_NO_CAPS = i18n::SU::COUNT;
+
+struct UiSrcDef {
+    const char* sym;    ///< the icon: the Player's tile while nothing plays, the Sources page's card
+    i18n::S     name;   ///< the standby face's line and the Sources page's card; none for the output
+                        ///< off and the tone
+    i18n::SU    caps;   ///< the line over the Player's block; none where the sound is played from
+                        ///< nowhere — the tone, AUX, off — as on the web (stores/now.js fromKey)
+};
+
+/// What the glass makes of `src`.
+constexpr UiSrcDef ui_src_def(UiSrc src) {
+    using i18n::S;
+    using i18n::SU;
+    switch (src) {
+    case UiSrc::OFF:     return { UI_SYM_POWER,      UI_NO_NAME,     UI_NO_CAPS };
+    case UiSrc::TONE:    return { UI_SYM_GRAPHIC_EQ, UI_NO_NAME,     UI_NO_CAPS };
+    case UiSrc::AUX:     return { UI_SYM_AUX,        S::src_aux,     UI_NO_CAPS };
+    case UiSrc::BT:      return { UI_SYM_BLUETOOTH,  S::src_bt,      SU::src_bt };
+    case UiSrc::CARD:    return { UI_SYM_SD,         S::src_card,    SU::src_card };
+    case UiSrc::RADIO:   return { UI_SYM_RADIO,      S::src_radio,   SU::src_radio };
+    case UiSrc::AIRPLAY: return { UI_SYM_AIRPLAY,    S::src_airplay, SU::src_airplay };
+    case UiSrc::USB:     return { UI_SYM_USB,        S::src_usb,     SU::src_usb };
+    case UiSrc::DLNA:    return { UI_SYM_CAST,       S::src_dlna,    SU::src_dlna };
+    }
+    return ui_src_def(UiSrc::OFF);
+}
+
+/// The audio.source value `src` plays from: its own, and the radio's for DLNA.
+constexpr int32_t ui_src_value(UiSrc src) {
+    return src == UiSrc::DLNA ? modesp::gen::AUDIO_SOURCE_RADIO : (int32_t)src;
+}
+
+/// What plays, as the glass tells it: audio.source `value`, and DLNA where the radio plays a push;
+/// OFF for a value that is none of them (−1: a build without the audio module).
+constexpr UiSrc ui_src(int32_t value, bool push) {
+    if (value == modesp::gen::AUDIO_SOURCE_RADIO && push) return UiSrc::DLNA;
+    if (value < modesp::gen::AUDIO_SOURCE_MIN || value > modesp::gen::AUDIO_SOURCE_MAX) return UiSrc::OFF;
+    return (UiSrc)value;
+}
+inline UiSrc ui_src(const UiLvglModule::Snapshot& s) { return ui_src(s.source, s.network_push); }
 
 // ── widget helpers ───────────────────────────────────────────────────────────────────────
 // These exist so a screen file reads as layout, not as twenty lv_obj_set_style_* calls.

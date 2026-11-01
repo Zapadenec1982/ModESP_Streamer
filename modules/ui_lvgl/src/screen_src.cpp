@@ -34,29 +34,29 @@ namespace {
 using i18n::P;
 using i18n::S;
 using i18n::tr;
-using modesp::gen::AUDIO_SOURCE_AIRPLAY;
-using modesp::gen::AUDIO_SOURCE_BT;
-using modesp::gen::AUDIO_SOURCE_FILE;
 using modesp::gen::AUDIO_SOURCE_RADIO;
-using modesp::gen::AUDIO_SOURCE_USB;
 
 enum Card : int { BT, AIRPLAY, RADIO, FILE_, SERVERS, USB, N_CARD };
 
-struct CardDef { S name; const char* sym; int32_t bit; };
-/// Order is the order on screen. `bit` is the audio.source value whose bit in audio.sources
-/// says the card exists; the media servers ride the radio's ring, so they exist when the radio
-/// does.
+struct CardDef { UiSrc src; S name; const char* sym; };
+/// A card for `src`, named and drawn as the glass names and draws that source (ui_src_def).
+constexpr CardDef card_of(UiSrc src) { return { src, ui_src_def(src).name, ui_src_def(src).sym }; }
+/// Order is the order on screen. A card exists when audio.sources has the bit of the audio.source
+/// value its source plays from (ui_src_value).
 /// The names are the cards' own (src.*), short enough for a card's headline in every language:
-/// «Serwery multimediów», the DLNA page's Polish, ran out of the card.
+/// «Serwery multimediów», the DLNA page's Polish, ran out of the card. The media servers' card
+/// plays DLNA, which rides the radio's ring — it exists when the radio does — but it is the way
+/// into the servers rather than a push, so it keeps their name and their icon where the Player
+/// says «DLNA».
 /// USB took AUX's place (the customer, 24.10.2026): the line input left the hardware on
 /// 15.10.2026 and its card was never shown since, and the grid is two rows of three.
 constexpr CardDef CARDS[N_CARD] = {
-    { S::src_bt,       UI_SYM_BLUETOOTH, AUDIO_SOURCE_BT },
-    { S::src_airplay,  UI_SYM_AIRPLAY,   AUDIO_SOURCE_AIRPLAY },
-    { S::src_radio,    UI_SYM_RADIO,     AUDIO_SOURCE_RADIO },
-    { S::src_card,     UI_SYM_SD,        AUDIO_SOURCE_FILE },
-    { S::src_servers,  UI_SYM_HUB,       AUDIO_SOURCE_RADIO },
-    { S::src_usb,      UI_SYM_USB,       AUDIO_SOURCE_USB },
+    card_of(UiSrc::BT),
+    card_of(UiSrc::AIRPLAY),
+    card_of(UiSrc::RADIO),
+    card_of(UiSrc::CARD),
+    { UiSrc::DLNA, S::src_servers, UI_SYM_HUB },
+    card_of(UiSrc::USB),
 };
 
 // ── geometry: a 3x2 grid over the whole content column ──
@@ -92,14 +92,10 @@ void post(UiLvglModule::Req kind, int32_t v) {
 }
 
 int active_card(const UiLvglModule::Snapshot& s) {
-    switch (s.source) {
-    case AUDIO_SOURCE_BT:      return BT;
-    case AUDIO_SOURCE_FILE:    return FILE_;
-    case AUDIO_SOURCE_RADIO:   return s.network_push ? SERVERS : RADIO;
-    case AUDIO_SOURCE_AIRPLAY: return AIRPLAY;
-    case AUDIO_SOURCE_USB:     return USB;
-    default:                   return -1;
-    }
+    const UiSrc playing = ui_src(s);
+    for (int c = 0; c < N_CARD; c++)
+        if (CARDS[c].src == playing) return c;
+    return -1;                                   // off, the tone, AUX: no card
 }
 
 /// Choose card `c`: take the output for it and go where it is heard.
@@ -108,10 +104,12 @@ void choose(int c) {
     const auto& s = g.ctx->s;
     const bool active = active_card(s) == c;
     switch (c) {
-    case BT:      if (!active) post(UiLvglModule::Req::SOURCE, AUDIO_SOURCE_BT); break;
-    case FILE_:   if (!active) post(UiLvglModule::Req::SOURCE, AUDIO_SOURCE_FILE); break;
-    case AIRPLAY: if (!active) post(UiLvglModule::Req::SOURCE, AUDIO_SOURCE_AIRPLAY); break;
-    case USB:     if (!active) post(UiLvglModule::Req::SOURCE, AUDIO_SOURCE_USB); break;
+    case BT:
+    case FILE_:
+    case AIRPLAY:
+    case USB:
+        if (!active) post(UiLvglModule::Req::SOURCE, ui_src_value(CARDS[c].src));
+        break;
     case RADIO:
         // The source first — the radio drops what it is sent while it does not own the
         // output — then play the station it is tuned to.
@@ -190,7 +188,7 @@ void place(int32_t sources) {
     g.n_shown = 0;
     int slot = 0;
     for (int c = 0; c < N_CARD; c++) {
-        const bool has = (sources & (1 << CARDS[c].bit)) != 0;
+        const bool has = (sources & (1 << ui_src_value(CARDS[c].src))) != 0;
         uih::show(g.card[c], has);
         if (!has) continue;
         g.order[g.n_shown++] = c;

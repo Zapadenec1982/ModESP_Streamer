@@ -48,7 +48,6 @@
 namespace {
 
 using i18n::S;
-using i18n::SU;
 using i18n::tr;
 using modesp::gen::AUDIO_SOURCE_AIRPLAY;
 using modesp::gen::AUDIO_SOURCE_AUX;
@@ -181,23 +180,6 @@ uint32_t halfway(uint32_t a, uint32_t b) { return ((a >> 1) & 0x7F7F7Fu) + ((b >
 
 void post(UiLvglModule::Req kind, int32_t v) {
     if (n.ctx && n.ctx->mod) n.ctx->mod->lvgl_post(kind, v);
-}
-
-// ── the sources, as the page names them ──
-/// `caps`: the line over the block, the source's name in capitals; null where the sound is not
-/// played from anywhere (the tone, AUX, off), as on the web (stores/now.js fromKey).
-struct SourceFace { const char* caps; const char* sym; };
-SourceFace source_face(int32_t src, bool push) {
-    switch (src) {
-    case AUDIO_SOURCE_TONE:    return { nullptr,              UI_SYM_GRAPHIC_EQ };
-    case AUDIO_SOURCE_AUX:     return { nullptr,              UI_SYM_AUX };
-    case AUDIO_SOURCE_BT:      return { tr(SU::src_bt),       UI_SYM_BLUETOOTH };
-    case AUDIO_SOURCE_FILE:    return { tr(SU::src_card),     UI_SYM_SD };
-    case AUDIO_SOURCE_RADIO:   return push ? SourceFace{ tr(SU::src_dlna), UI_SYM_CAST } : SourceFace{ tr(SU::src_radio), UI_SYM_RADIO };
-    case AUDIO_SOURCE_AIRPLAY: return { tr(SU::src_airplay),  UI_SYM_AIRPLAY };
-    case AUDIO_SOURCE_USB:     return { tr(SU::src_usb),      UI_SYM_USB };
-    default:                   return { nullptr,              UI_SYM_POWER };
-    }
 }
 
 // ── interaction ──
@@ -596,11 +578,11 @@ void set_face(Face f, const UiLvglModule::Snapshot& s) {
     // ffwd/rew hold — so on Bluetooth it is a read-out; AirPlay's DACP remote has no seek).
     set_seekable(is_file || (s.network_push && s.network_seekable));
     // the tile's stand-in glyph and the source line
-    const SourceFace sf = source_face(s.source, s.network_push);
-    lv_label_set_text(n.tile_ic, empty ? sf.sym : UI_SYM_MUSIC);
+    const UiSrcDef src = ui_src_def(ui_src(s));
+    lv_label_set_text(n.tile_ic, empty ? src.sym : UI_SYM_MUSIC);
     lv_obj_set_style_text_color(n.tile_ic, m3::col(empty ? t.c.outline : t.c.outline_var), 0);
-    uih::set_text(n.from_src, n.src_txt, sizeof(n.src_txt), sf.caps ? sf.caps : "");
-    uih::show(n.from, sf.caps != nullptr);
+    uih::set_text(n.from_src, n.src_txt, sizeof(n.src_txt), tr(src.caps));
+    uih::show(n.from, src.caps != UI_NO_CAPS);
     n.tran_live = -1;
     n.playing = -1;
     place_row();

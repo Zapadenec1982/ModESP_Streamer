@@ -45,11 +45,9 @@ namespace {
 using i18n::S;
 using i18n::tr;
 using modesp::gen::AUDIO_SOURCE_AIRPLAY;
-using modesp::gen::AUDIO_SOURCE_AUX;
 using modesp::gen::AUDIO_SOURCE_BT;
 using modesp::gen::AUDIO_SOURCE_FILE;
 using modesp::gen::AUDIO_SOURCE_RADIO;
-using modesp::gen::AUDIO_SOURCE_USB;
 
 // ── the pages ──────────────────────────────────────────────────────────────────────────────
 
@@ -450,18 +448,6 @@ void build_undo(lv_obj_t* scr) {
 
 // ── standby ────────────────────────────────────────────────────────────────────────────────
 
-const char* source_name(int32_t src) {
-    switch (src) {
-    case AUDIO_SOURCE_AUX:     return tr(S::src_aux);
-    case AUDIO_SOURCE_BT:      return tr(S::src_bt);
-    case AUDIO_SOURCE_FILE:    return tr(S::src_card);
-    case AUDIO_SOURCE_RADIO:   return tr(S::src_radio);
-    case AUDIO_SOURCE_AIRPLAY: return tr(S::src_airplay);
-    case AUDIO_SOURCE_USB:     return tr(S::src_usb);
-    default:                   return nullptr;
-    }
-}
-
 /// A click on the face wakes it. A finger on the glass already has through the touch driver
 /// (UiLvglModule::publish_touch), and a second WAKE only re-syncs the shell's standby face with
 /// the module (UI-1); this is for the presses that do
@@ -597,10 +583,10 @@ void refresh_standby(UiCtx& c) {
     const bool radio = (s.source == AUDIO_SOURCE_RADIO && !s.network_push);
     const bool track = s.source == AUDIO_SOURCE_BT || s.source == AUDIO_SOURCE_FILE ||
                        s.source == AUDIO_SOURCE_AIRPLAY || (s.source == AUDIO_SOURCE_RADIO && s.network_push);
-    const char* src = source_name(s.source);
+    const char* name = tr(ui_src_def(ui_src(s)).name);     // "" for the output off and the tone
     if (radio)      sb_set_line(s.radio_name, s.radio_now, tr(S::src_radio));
-    else if (track) sb_set_line(s.play_artist, s.play_title, src ? src : "");
-    else            sb_set_line("", "", src ? src : "");
+    else if (track) sb_set_line(s.play_artist, s.play_title, name);
+    else            sb_set_line("", "", name);
 
     float db[audio_core::SPECTRUM_BANDS];
     uih::spectrum_set(g.sb_spec, audio_core::spectrum_bus().read(db) ? db : nullptr);
