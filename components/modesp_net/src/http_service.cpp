@@ -219,6 +219,17 @@ static bool value_fits(const gen::StateMeta* meta, const jsmntok_t& tok, const c
     return val[0] == '-' || (val[0] >= '0' && val[0] <= '9');          // "int", "float"
 }
 
+// player-fork: how many tokens one value occupies, everything nested inside it included. jsmn
+// lays them out depth-first: each token takes the place of one child still owed and owes its own
+// in turn, and the value ends when nothing is owed. A loop, as span() in
+// components/radio_catalog/src/json_util.h, not recursion: the depth is the body's to choose.
+static int json_span(const jsmntok_t* tok, int count, int i) {
+    if (i >= count) return 1;
+    int j = i + 1;
+    for (int pending = tok[i].size; pending > 0 && j < count; ++j) pending += tok[j].size - 1;
+    return j - i;
+}
+
 // Context for SharedState serialization
 struct SerCtx {
     char* buf;
@@ -715,8 +726,19 @@ esp_err_t HttpService::handle_post_settings(httpd_req_t* req) {
     int accepted = 0;
     int rejected = 0;
 
-    for (int i = 1; i + 1 < r; i += 2) {
+    // player-fork: each value stepped over whole (json_span), as /api/restore does. Two tokens per
+    // key fitted only plain values: past an object or an array the walk took the keys inside it
+    // for settings of their own ({"x":["audio.volume",7]} set the volume to 7). Such a value is
+    // refused with its key (value_fits() takes no object or array); a key jsmn let close with no
+    // value, as in {"a":}, is refused alone.
+    for (int i = 1, next = 1; i < r; i = next) {
+        const bool has_value = tokens[i].size == 1 && i + 1 < r;
+        next = has_value ? i + 1 + json_span(tokens, r, i + 1) : i + 1;
         if (tokens[i].type != JSMN_STRING) continue;
+        if (!has_value) {
+            rejected++;
+            continue;
+        }
 
         const char* key_str = buf + tokens[i].start;
         const jsmntok_t& val_tok = tokens[i + 1];
@@ -1228,17 +1250,6 @@ esp_err_t HttpService::handle_get_backup(httpd_req_t* req) {
                        "attachment; filename=\"modesp_backup.json\"");
     httpd_resp_send(req, buf, (ssize_t)pos);
     return ESP_OK;
-}
-
-// player-fork: how many tokens one value occupies, everything nested inside it included. jsmn
-// lays them out depth-first: each token takes the place of one child still owed and owes its own
-// in turn, and the value ends when nothing is owed. A loop, as span() in
-// components/radio_catalog/src/json_util.h, not recursion: the depth is the body's to choose.
-static int json_span(const jsmntok_t* tok, int count, int i) {
-    if (i >= count) return 1;
-    int j = i + 1;
-    for (int pending = tok[i].size; pending > 0 && j < count; ++j) pending += tok[j].size - 1;
-    return j - i;
 }
 
 esp_err_t HttpService::handle_post_restore(httpd_req_t* req) {

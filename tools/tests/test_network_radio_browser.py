@@ -364,6 +364,7 @@ def test_settings_take_a_value_of_the_keys_type_unescaped(tmp_path):
     source = (ROOT / "components/modesp_net/src/http_service.cpp").read_text(encoding="utf-8")
     handlers = "\n".join(extract(source, signature) for signature in (
         "static bool value_fits(",
+        "static int json_span(",
         "esp_err_t HttpService::handle_post_settings(",
         "esp_err_t HttpService::handle_get_backup(",
     ))
@@ -402,6 +403,13 @@ int main() {
   r = post(svc, R"({"audio.volume":40,"radio.cmd":2,"audio.mute":true,"radio.web_name":[1]})");
   if (r.status != 200 || std::get<int32_t>(*st.get("audio.volume")) != 40 ||
       mm.posted != "radio.cmd=2;" || !std::get<bool>(*st.get("audio.mute"))) return 5;
+  // a value that is an object or an array is refused whole: the keys inside it are not settings
+  r = post(svc, R"({"x":["audio.volume",7],"y":{"audio.volume":8},"audio.mute":false})");
+  if (r.status != 200 || std::get<int32_t>(*st.get("audio.volume")) != 40 ||
+      std::get<bool>(*st.get("audio.mute"))) return 7;
+  // a key jsmn let close with no value is refused, and owns no token after it
+  if (post(svc, R"({"audio.volume":})").status != 400 ||
+      std::get<int32_t>(*st.get("audio.volume")) != 40) return 8;
 
   // a backup leaves out a value of another type, and its comma with it
   SharedState bs;
