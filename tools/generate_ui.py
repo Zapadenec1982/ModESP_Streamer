@@ -228,6 +228,8 @@ class ManifestValidator:
             if "access" not in info:
                 self.errors.append(f"[{name}] State key '{key}' missing 'access'")
 
+            # player-fork: checks for the fork's manifest flags `command` and `long` (emitted
+            # as STATE_COMMANDS / STATE_LONG_KEYS by StateMetaGenerator).
             # A command is an event delivered to the owning module's queue, so it must be
             # writable, it must be a number (the queue carries int32_t), and it cannot be
             # persisted — restoring "next track" on boot would press the button again.
@@ -402,7 +404,7 @@ class ManifestValidator:
                         f"[{name}] Constraint '{c_key}' value '{val_str}' "
                         f"requires_feature '{rf}' not found in features")
 
-        # An option `id` becomes a C identifier in generated/state_enums.h.
+        # player-fork: an option `id` becomes a C identifier in generated/state_enums.h.
         for key, info in state.items():
             for opt in info.get("options", []):
                 oid = opt.get("id")
@@ -1206,6 +1208,7 @@ def validate_bindings(board, bindings, all_driver_manifests, errors, warnings,
         addr = b.get("address", "") or ""
         tag = role or hw_id or f"#{idx}"
 
+        # player-fork: 'driver' is optional, a binding without one is a hardware assignment.
         # (i) required fields present. NOT 'driver': a binding with no driver is a plain
         # hardware ASSIGNMENT — it says which board resource plays a role for a module, and
         # the module uses the HAL resource directly. That is how the satellite UART and the
@@ -1234,6 +1237,7 @@ def validate_bindings(board, bindings, all_driver_manifests, errors, warnings,
             continue
 
         # (d) driver manifest exists — only when there is a driver to check.
+        # player-fork: a driverless binding records its hardware use and role, then stops.
         if not drv_name:
             hw_usage.setdefault(hw_id, []).append((role, "", addr))
             seen = roles_by_module.setdefault(module, set())
@@ -2028,6 +2032,7 @@ class StateMetaGenerator:
         ])
 
         # —— Command keys ——
+        # player-fork: STATE_COMMANDS, for the fork's `command` flag.
         # `"command": true` in a manifest means the key is an EVENT for that module, not a
         # value in the store. The writers (HTTP, MQTT, BLE, the screen) look the key up here
         # and post it to the owning module's queue; nothing is written to SharedState, so a
@@ -2070,6 +2075,7 @@ class StateMetaGenerator:
         ])
 
         # —— Long string keys ——
+        # player-fork: STATE_LONG_KEYS, for the fork's `long` flag.
         # A path or a URI does not fit the inline string in StateValue, and that inline
         # string is what every one of the map slots pays for. Keys flagged `"long": true`
         # keep their value in a side table instead. The list is generated so the manifests
@@ -2112,6 +2118,8 @@ class StateMetaGenerator:
         return "\n".join(lines)
 
 
+# player-fork: generated/state_enums.h, the option values as named constants that modules
+# include instead of keeping their own copies of the numbers.
 class StateEnumsGenerator:
     """Generates generated/state_enums.h — the values behind a state key with `options`.
 
@@ -3005,7 +3013,7 @@ def main():
     print(f"  + {meta_path}")
     files_written += 1
 
-    # 2b. state_enums.h
+    # 2b. state_enums.h (player-fork: StateEnumsGenerator)
     enums_gen = StateEnumsGenerator()
     enums_h = enums_gen.generate(manifests)
     enums_path = gen_dir / "state_enums.h"
@@ -3635,8 +3643,9 @@ def main():
     other_langs = sorted(l for l in available_langs if l != source_lang)
     i18n_manifest = {"languages": [source_lang] + other_langs, "default": source_lang}
     manifest_path = i18n_out / "manifest.json"
-    # newline="\n": the file is tracked and .gitattributes says LF; on Windows the default
-    # text mode wrote CRLF, and every build then showed a modified file with an empty diff.
+    # player-fork: newline="\n" — the file is tracked and .gitattributes says LF; on Windows
+    # the default text mode wrote CRLF, and every build then showed a modified file with an
+    # empty diff.
     with open(manifest_path, "w", encoding="utf-8", newline="\n") as f:
         json.dump(i18n_manifest, f, ensure_ascii=False, indent=2)
     print(f"  + {manifest_path} (languages: {i18n_manifest['languages']})")
