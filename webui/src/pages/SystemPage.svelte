@@ -4,6 +4,8 @@
   // clock, the login, firmware, a backup of the user's files. Each page under it is its own file,
   // fetched the first time it is opened. No Home Assistant row: MQTT stays off. Екран is a page
   // of its own, as on the glass: inline, its sliders would make this the longest page of the web.
+  // Кросовер is hidden, as on the glass (screen_set.cpp XOVER_ROW), until the outputs it chooses
+  // between exist; its page stays at #/system/xover.
   import { onDestroy } from 'svelte';
   import { t, fmt, msg, language, LANG_NAMES } from '../stores/i18n.js';
   import { state, wsOpened } from '../stores/state.js';
@@ -18,6 +20,8 @@
   import Switch from '../m3/Switch.svelte';
   import Dialog from '../m3/Dialog.svelte';
   import Button from '../m3/Button.svelte';
+
+  const XOVER_ROW = false;
 
   $: s = $state;
 
@@ -62,7 +66,9 @@
     <Group caption={$t['sys.sound']}>
       <Row icon="tune" title={$t['sys.timbre_volume']} href={href('system/sound')} />
       <Row icon="speaker" title={$t['spk.title']} subtitle={spkSub} href={href('system/speakers')} />
-      <Row icon="call_split" title={$t['xover.title']} subtitle={$t['xover.stereo']} href={href('system/xover')} />
+      {#if XOVER_ROW}
+        <Row icon="call_split" title={$t['xover.title']} subtitle={$t['xover.stereo']} href={href('system/xover')} />
+      {/if}
       <Row icon="graphic_eq" title={$t['page.tuning']} href={href('system/tuning')} />
     </Group>
 

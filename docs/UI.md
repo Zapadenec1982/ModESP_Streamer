@@ -203,7 +203,7 @@ the Bluetooth pairing dialog; above everything, the touch ring (30 px, follows t
 | `sound` | Tone | LIST | Settings › Sound |
 | `eq` | Equalizer | LIST | "Sound" (sheet or page) |
 | `speakers` | Speakers | LIST | Settings › Sound |
-| `xover` | Crossover | LIST | Settings › Sound |
+| `xover` | Crossover | LIST | nothing yet: its row in Settings › Sound is hidden |
 | `display` | Screen | LIST | Settings › Device |
 | `svc` | Service | LIST | Settings › Device |
 | `wifi` | Wi-Fi | LIST | Settings › Connections |
@@ -274,7 +274,7 @@ it gives now (phone, station, number of tracks). A tap sets `audio.source` and o
 
 | group | rows |
 |---|---|
-| Sound | Tone (preset on the second line), Speakers, Crossover |
+| Sound | Tone (preset on the second line), Speakers |
 | Device | Screen, Language (a dialog of four languages), Service (firmware version) |
 | Connections | Wi-Fi (network · address), Bluetooth (phone · codec) |
 | Services | AirPlay (announcement switch; a tap picks the mode), DLNA (switch) |
@@ -316,7 +316,8 @@ named LPF/HPF slope (LR 12, BW 12), otherwise "Width (Q)". The minus in the dB g
 (`wifi.ip`) under it; the web's QR code is in the menu. The second is balance −6…+6 dB in 0.5 dB
 steps (`audio.balance_db10`).
 The speaker setup itself is a wizard on the web. **Crossover** — output schemes; only those in
-`audio.out_caps` are available; the board has one stereo pair. **Screen** — brightness, standby
+`audio.out_caps` are available; the board has one stereo pair, so its row is hidden on the glass and
+the web (`XOVER_ROW` in `screen_set.cpp` and `SystemPage.svelte`) and the page is reached by no row. **Screen** — brightness, standby
 brightness, auto sleep (0, 5, 10, 15, 20, 30, 45, 60 min), scheme.
 
 **Service** (`screen_svc.cpp`) — three big numbers (audio CPU, the longest main-loop pass, free

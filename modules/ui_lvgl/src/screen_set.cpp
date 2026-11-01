@@ -9,7 +9,8 @@
  *             sound_sheet.cpp), what plays on its second line;
  *             Колонки → its page (screen_speakers.cpp: the state and the balance), what has been
  *             done about them on its second line; Кросовер → its page (screen_xover.cpp), the
- *             scheme that plays on its second line — the web's order
+ *             scheme that plays on its second line — the web's order. Кросовер is hidden
+ *             (XOVER_ROW) until the outputs it chooses between exist.
  *   Зв'язок   Wi-Fi (network · address) and Bluetooth (phone · codec), each → its page
  *   Пристрій  Екран → its page (brightness, standby, scheme: screen_display.cpp); Мова → a dialog
  *             of the four languages; Сервіс → the diagnostics page, the firmware on its second line
@@ -116,6 +117,8 @@ void svc_cb(lv_event_t*)     { ui_shell_go("svc"); }
 void sound_cb(lv_event_t*)   { ui_shell_go("sound"); }
 void spk_cb(lv_event_t*)     { ui_shell_go("speakers"); }
 void xover_cb(lv_event_t*)   { ui_shell_go("xover"); }
+/// «Кросовер» in Звук: off until the outputs the page chooses between exist; its page stays.
+constexpr bool XOVER_ROW = false;
 void display_cb(lv_event_t*) { ui_shell_go("display"); }
 
 // ── the language: ui_pick's list, as the presets' and the filter types' ──
@@ -208,15 +211,17 @@ lv_obj_t* build(lv_obj_t* parent, UiCtx& c) {
     g.root = root;
 
     // ── Звук ──
-    lv_obj_t* sound = group(root, 0, 0, tr(S::sys_sound), 3);
+    lv_obj_t* sound = group(root, 0, 0, tr(S::sys_sound), XOVER_ROW ? 3 : 2);
     lv_obj_t* r = row(sound, 0, R_SOUND, UI_SYM_EQ, tr(S::sys_timbre));
     opens(r, R_SOUND, sound_cb);
     r = row(sound, 1, R_SPK, UI_SYM_SPEAKER, tr(S::spk_title));
     opens(r, R_SPK, spk_cb);
-    r = row(sound, 2, R_XOVER, UI_SYM_SPLIT, tr(S::xover_title));
-    opens(r, R_XOVER, xover_cb);
-    // the scheme that plays: stereo until the outputs' profile says another (screen_xover.cpp)
-    lv_label_set_text(g.sub[R_XOVER], tr(S::xover_stereo));
+    if (XOVER_ROW) {
+        r = row(sound, 2, R_XOVER, UI_SYM_SPLIT, tr(S::xover_title));
+        opens(r, R_XOVER, xover_cb);
+        // the scheme that plays: stereo until the outputs' profile says another (screen_xover.cpp)
+        lv_label_set_text(g.sub[R_XOVER], tr(S::xover_stereo));
+    }
 
     // ── Пристрій ──
     lv_obj_t* dev = group(root, COL2_X, 0, tr(S::sys_device), 3);
