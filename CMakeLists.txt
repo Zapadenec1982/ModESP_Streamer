@@ -88,7 +88,7 @@ message(STATUS "ModESP board: ${_BOARD_DIR}")
 # but config is a CRITICAL module, so the board still goes to safe mode with no HAL, no audio
 # and no screen. Before that refusal existed the failure was worse — fread stopped at the
 # limit and jsmn reported "parse error: -3", with nothing about size — and it cost a flashed
-# panel on 18.09.2026, from adding comments to a label. The limit is read out of the header
+# panel, from adding comments to a label. The limit is read out of the header
 # so there is one copy of the number, the same one the firmware and POST /api/bindings use.
 file(READ "${CMAKE_SOURCE_DIR}/components/modesp_services/include/modesp/services/config_service.h" _CFG_SRC)
 string(REGEX MATCH "MAX_JSON_SIZE[ 	]*=[ 	]*([0-9]+)" _M "${_CFG_SRC}")
@@ -318,8 +318,8 @@ if(NOT _PART_CSV MATCHES "(^|\n)[ \t]*userdata[ \t]*,")
     message(FATAL_ERROR
         "partitions_p4_16mb.csv has no 'userdata' partition. Runtime user files (eq.json, "
         "stations.json, last_track, devices.json) would go back to living in 'data', which "
-        "`idf.py flash` rewrites whole — the data loss of 18.09.2026 and 22.09.2026. Restore "
-        "the row, or delete this guard knowingly.")
+        "`idf.py flash` rewrites whole, user files and all. Restore the row, or delete this "
+        "guard knowingly.")
 endif()
 if(_PART_CSV MATCHES "(^|\n)[ \t]*userdata[ \t]*,[^\n]*")
     message(STATUS "  userdata partition present; no image is built for it (that is the point)")
@@ -330,7 +330,7 @@ endif()
 # blending, the layout of every label's text — the same kind of code
 # components/audio_dsp/CMakeLists.txt raised to -O2 after measuring what -Os cost there.
 # Scrolling a list redraws the whole content area every frame, which is where it shows.
-# The 4 MB app slots (05.10.2026) leave the room.
+# The 4 MB app slots leave the room.
 idf_build_get_property(_build_components BUILD_COMPONENTS)
 if("lvgl__lvgl" IN_LIST _build_components)
     idf_component_get_property(_lvgl_lib lvgl__lvgl COMPONENT_LIB)

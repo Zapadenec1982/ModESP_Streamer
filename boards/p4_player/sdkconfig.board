@@ -3,7 +3,7 @@
 
 # ── Chip revision: the Guition panel ships ESP32-P4 v1.3 (engineering-sample silicon; the factory
 #    firmware was built with min rev v1.0). IDF 5.5 defaults to v3.1 and its bootloader/app refuse
-#    to run on v1.x — select the pre-v3 range explicitly. Verified on the bench 2026-09-15. ──
+#    to run on v1.x — select the pre-v3 range explicitly. Verified on the bench. ──
 CONFIG_ESP32P4_SELECTS_REV_LESS_V3=y
 CONFIG_ESP32P4_REV_MIN_100=y
 
@@ -32,7 +32,7 @@ CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=1024
 CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP=y
 # Code and read-only data run from PSRAM, copied there from flash at boot (XiP). The flash is QIO
 # at 80 MHz behind the same L2 cache as this 200 MHz HEX PSRAM, so every cache miss on code or on
-# a font glyph was a flash read. Measured 05.10.2026 (/api/ui/scrollbench, a 752x384 list): LVGL
+# a font glyph was a flash read. Measured (/api/ui/scrollbench, a 752x384 list): LVGL
 # draws a frame 17 % faster (67 -> 56 ms for the whole list), and with the radio playing a
 # scrolling list went from 29 to 41 fps, the radio's decoder and resampler being faster too. Per
 # the option's help, code no longer has to sit in IRAM to keep running while flash is written —
@@ -85,7 +85,7 @@ CONFIG_ESP_HOSTED_HOST_SDIO_PIN_D2=16
 CONFIG_ESP_HOSTED_HOST_SDIO_PIN_D3=17
 # C6 reset: GPIO54 drives CHIP_PU directly — LOW asserts reset, HIGH runs = ESP-Hosted 3.x "active low"
 # (the field notes' "active-high" is the 2.x naming of the same idle-high/pulse-low sequence; 3.x
-# ACTIVE_HIGH holds the C6 in reset → SDIO card init timeouts, seen on the bench 2026-09-15).
+# ACTIVE_HIGH holds the C6 in reset → SDIO card init timeouts, seen on the bench).
 CONFIG_ESP_HOSTED_HOST_RESET_GPIO=54
 CONFIG_ESP_HOSTED_SDIO_RESET_ACTIVE_LOW=y
 CONFIG_ESP_HOSTED_HOST_SDIO_RX_STREAMING_MODE=y
@@ -144,11 +144,10 @@ CONFIG_DSP_OPTIMIZED=y
 # everything, which is a lot of flash for codecs nobody will meet. Encoders are off entirely:
 # this device decodes, it does not encode. WAV comes free with the container parser.
 #
-# AAC and M4A were off until 05.10.2026 (the first target list was MP3 and FLAC), and every
-# AAC station failed with "Decoder AAC not registered": a quarter of Radio Browser, 78 of
-# 320 live Ukrainian stations. Turning them on cost 1.1 KB and 7.3 KB of image: the AAC
-# decoder itself was already linked for AirPlay (components/airplay2/upstream/audio/
-# audio_decoder.c calls esp_aac_dec_open), the switch only registers it. M4A is for .m4a on
+# AAC and M4A are on: without them every AAC station fails with "Decoder AAC not registered"
+# — a quarter of Radio Browser, 78 of 320 live Ukrainian stations. They cost 1.1 KB and 7.3 KB
+# of image: the AAC decoder itself is linked for AirPlay anyway (components/airplay2/upstream/
+# audio/audio_decoder.c calls esp_aac_dec_open), the switch only registers it. M4A is for .m4a on
 # the card and tracks pushed over DLNA. Ogg (Vorbis, Opus) stays off: 1 % of stations, and
 # those decoders are not in the image for anything else.
 CONFIG_AUDIO_DECODER_MP3_SUPPORT=y
@@ -192,7 +191,7 @@ CONFIG_FATFS_CODEPAGE_866=y
 #
 # Pinning the TCP/IP task to core 0 puts it with Wi-Fi, the main loop and the producers, and
 # leaves core 1 to the audio task and LVGL. It does not make lwIP slower — it stops it being
-# scheduled against the one task on this board with a hard deadline. 21.09.2026.
+# scheduled against the one task on this board with a hard deadline.
 CONFIG_LWIP_TCPIP_TASK_AFFINITY_CPU0=y
 
 # esp_hosted creates its four SDIO workers with plain xTaskCreate at this priority and no
@@ -216,7 +215,7 @@ CONFIG_ESP_HOSTED_HOST_DEFLT_TASK_PRIORITY=21
 # Requalified by the 24 h soak: revert this line alone if it regresses.
 CONFIG_FREERTOS_HZ=1000
 
-# ── Network throughput: the profiles refused (17.09), the window doubled by measurement (05.10) ──
+# ── Network throughput: the profiles refused, the window doubled by measurement ──
 # The esp_hosted performance notes give two profiles for this transport
 # (managed_components/espressif__esp_hosted/docs/design/performance.md). Both were tried on
 # this panel while a radio stream ran, and both made the link WORSE, not better:
@@ -233,22 +232,22 @@ CONFIG_FREERTOS_HZ=1000
 # faster it is told to go the more it drops. On a board that also runs a 480x800 display
 # and an audio core, that trade does not exist.
 #
-# So, on 17.09: stock buffers, and the throughput problem left open — for the SDIO soak test
-# (docs/SOAK_TEST.md, tools/sdio_soak) and a measurement, not a Kconfig guess. The window
+# So: stock buffers, and the throughput problem left to the SDIO soak test (docs/SOAK_TEST.md,
+# tools/sdio_soak) and a measurement, not a Kconfig guess. The window
 # below is that measurement's answer, and only the window: the profiles stay refused.
 #
-# What the profiles exhausted is known since 23.09.2026:
+# What the profiles exhausted:
 # esp_hosted copies every frame into internal DMA RAM and drops it silently when that runs
 # out, and the TCP window decides how many copies exist at once. Two other things that made
-# the 17.09 numbers worse are gone: modem sleep is off while a stream plays, and
+# the numbers above worse are gone: modem sleep is off while a stream plays, and
 # SPIRAM_MALLOC_ALWAYSINTERNAL (16384 then, 1024 now) no longer keeps lwIP's copy of every
 # frame in internal RAM too.
 #
-# Measured on 05.10.2026, and the window doubled on the strength of it. A connection carries at
-# most one window per round trip, and the stock 5760 starved a 320 kbit/s station from a server
-# ~200 ms away: stream.nightride.fm's US host gave 28.7 KB/s of the 40 the stream needs, the
-# buffer at 0 % (docs/NETWORK.md, "lwIP"). tools/net_probe.py on the
-# NETTEST image, hosted_mem in place, 90 s each, bursts the size a window lets through:
+# Measured, and the window doubled on the strength of it. A connection carries at most one
+# window per round trip, and the stock 5760 starved a 320 kbit/s station from a server ~200 ms
+# away: stream.nightride.fm's US host gave 28.7 KB/s of the 40 the stream needs, the buffer at
+# 0 % (docs/NETWORK.md, "lwIP"). tools/net_probe.py on the NETTEST image, hosted_mem in place,
+# 90 s each, bursts the size a window lets through:
 #
 #   burst 4  (5760, stock)     0 % lost, no drops, DMA min 20.2 KB, longest gap  68 ms
 #   burst 8  (11520)           0 % lost, no drops, DMA min 20.2 KB, longest gap 100 ms
@@ -265,9 +264,9 @@ CONFIG_LWIP_TCP_RECVMBOX_SIZE=10
 # Every address a name has, not only the first: a station's host often has several, not
 # equally near, and the radio leaves one that cannot keep up for another (modules/radio,
 # stream_watch.h). stream.nightride.fm has three; one ~200 ms away starved a 320k stream
-# through the stock window on 05.10.2026 while the other two, ~65 ms, carried it.
+# through the stock window while the other two, ~65 ms, carried it.
 # lwIP's SNTP client has room for one of them and IDF copies all four into it on a cache hit;
-# components/lwip_dns_compat keeps it to one (reboots every 40-80 s without NTP, 11.10.2026).
+# components/lwip_dns_compat keeps it to one (reboots every 40-80 s without NTP).
 CONFIG_LWIP_DNS_MAX_HOST_IP=4
 
 # ── AirPlay 2 receiver (modules/airplay, components/airplay2): sockets, UDP mailbox ──
@@ -284,7 +283,7 @@ CONFIG_LWIP_DNS_MAX_HOST_IP=4
 CONFIG_LWIP_SO_RCVBUF=y
 CONFIG_LWIP_UDP_RECVMBOX_SIZE=64
 
-# ── Sockets: HTTP server sessions, and everything else that holds a socket (12.10.2026) ──
+# ── Sockets: HTTP server sessions, and everything else that holds a socket ──
 # The server's sessions are shared by up to three WebSocket clients and every HTTP connection:
 # browsers (Chrome and Firefox open up to 6 per host, all tabs together), the web UI's requests,
 # DLNA control points on the renderer's routes. With 4 of them and three WebSockets held, a
@@ -316,18 +315,18 @@ CONFIG_LWIP_MAX_ACTIVE_TCP=32
 # it back over HTTP. Setting the maximum to WARN as well would drop the strings from the
 # binary and make the runtime switch a lie.
 #
-# This is NOT a blanket silence. Two of the three lines that settled the 22.09.2026 DMA
-# starvation are ESP_LOGI ("stream heap: internal 42095, DMA 2535" and "stream: buffer 0%,
-# net 147968 B/s"), and so is the I2S port pair that showed the repeated park/widen.
-# modesp::log_policy::apply() puts those tags back at INFO on every boot; the list, and the
-# fault each entry earned its place with, is in log_policy.cpp.
+# This is NOT a blanket silence. Two of the three lines that settled the DMA starvation
+# behind half-speed DLNA playback are ESP_LOGI ("stream heap: internal 42095, DMA 2535" and
+# "stream: buffer 0%, net 147968 B/s"), and so is the I2S port pair that showed the repeated
+# park/widen. modesp::log_policy::apply() puts those tags back at INFO on every boot; the
+# list, and the fault each entry earned its place with, is in log_policy.cpp.
 CONFIG_LOG_DEFAULT_LEVEL_WARN=y
 CONFIG_LOG_MAXIMUM_LEVEL_INFO=y
 
-# ── Console: USB Serial/JTAG only, not UART0 (12.10.2026) ──────────────────────────────────
+# ── Console: USB Serial/JTAG only, not UART0 ──────────────────────────────────────────────
 # IDF's default puts the console on UART0 at 115200 with no driver and only copies it to USB
-# Serial/JTAG as a secondary. UART0 on this panel is wired to nothing (customer, 12.10.2026), and
-# that copy was not free: with no driver every character waits for room in the 128-byte FIFO
+# Serial/JTAG as a secondary. UART0 on this panel is wired to nothing, and that copy was not
+# free: with no driver every character waits for room in the 128-byte FIFO
 # (esp_driver_uart/src/uart_vfs.c, uart_tx_char), 87 us a character, in whichever task logs.
 # The audio module's five-line BT summary, printed from `main` every 5 s, held the main loop
 # ~46 ms of it — the ~50 ms system.main_loop_max_ms an idle panel showed.
@@ -355,8 +354,8 @@ CONFIG_GDMA_ISR_IRAM_SAFE=y
 # The DPI panel's DMA does not loop on its own: the DW_GDMA "full transfer done" interrupt
 # re-arms it for every frame (esp_lcd/dsi/esp_lcd_panel_dpi.c, mipi_dsi_dma_trans_done_cb).
 # With that interrupt not IRAM-safe, a flash erase/write (BY25Q, no auto-suspend) holds it off
-# and the panel goes without a video stream until the cache is back — the blink the customer
-# saw a few seconds after every EQ edit, when eq.json was written (04.10.2026). This option
+# and the panel goes without a video stream until the cache is back — a blink a few seconds
+# after every EQ edit, when eq.json is written. This option
 # selects DW_GDMA_ISR_IRAM_SAFE. It also makes IDF demand IRAM callbacks, which
 # esp_lvgl_port's DSI callback is not: ui_lvgl_module.cpp re-registers an IRAM one.
 CONFIG_LCD_DSI_ISR_CACHE_SAFE=y
@@ -369,7 +368,7 @@ CONFIG_LCD_DSI_ISR_CACHE_SAFE=y
 # output is not muted that held core 1's interrupts off for 250-440 us at a time. USB audio has
 # 125 us before its next packet: the late interrupts' mepc was vPortExitCriticalMultiCore, its
 # caller esp_cache_msync, the task "audio" — 40 lost packets a minute on a quiet tone, about two
-# a second with music, none muted (24.10.2026). In 1 KB pieces: none in five minutes of music.
+# a second with music, none muted. In 1 KB pieces: none in five minutes of music.
 # The LCD's and PPA's frame-buffer syncs on core 0 are cut into the same pieces.
 CONFIG_ESP_MM_CACHE_MSYNC_C2M_CHUNKED_OPS=y
 CONFIG_ESP_MM_CACHE_MSYNC_C2M_CHUNKED_OPS_MAX_LEN=0x400

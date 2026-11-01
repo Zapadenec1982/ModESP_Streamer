@@ -3,8 +3,8 @@ test_partitions.py — the flash layout, and the copies of it that must not drif
 
 Three projects carry the same table: the player (partitions_p4_16mb.csv), tools/c6_updater
 and tools/sdio_soak. Each of them, when flashed, WRITES that table to the panel. A stale
-copy therefore does not merely disagree — it replaces the live layout with its own. Since
-22.09.2026 that has teeth: a copy still holding the single-`data` layout would take the
+copy therefore does not merely disagree — it replaces the live layout with its own. With two
+LittleFS partitions that has teeth: a copy still holding the single-`data` layout would take the
 `userdata` partition away, and with it the EQ, the station list, the resume point and the
 subscribed devices that were moved there precisely so a flash could not reach them.
 
@@ -74,7 +74,7 @@ def test_the_user_partition_exists_and_is_separate_from_the_build_output(table):
     assert "data" in by_name, "the build output partition is gone"
     assert "userdata" in by_name, (
         "'userdata' is missing. Runtime user files would go back into 'data', which "
-        "`idf.py flash` rewrites whole — the loss of 18.09.2026 and 22.09.2026.")
+        "`idf.py flash` rewrites whole, user files and all.")
 
     data = by_name["data"]
     user = by_name["userdata"]
@@ -97,5 +97,5 @@ def test_both_ota_slots_are_the_same_size_so_an_image_can_go_in_either(table):
 def test_the_co_processor_image_still_has_room_for_the_c6_firmware(table):
     slave = [r for r in table if r[0] == "slave_fw"]
     assert slave, "slave_fw is gone; tools/c6_updater reads the C6 image out of it"
-    # The 3.0.7 CP image measured 1 118 624 bytes on 15.09.2026 (docs/C6_UPDATE.md).
+    # The 3.0.7 CP image measures 1 118 624 bytes (docs/C6_UPDATE.md).
     assert slave[0][4] >= 2 * 1024 * 1024
