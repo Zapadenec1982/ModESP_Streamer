@@ -57,8 +57,8 @@ constexpr bool i2s_slave_clock_fits(uint32_t sclk_hz, uint32_t rate_hz, uint8_t 
 /// bclk × bclk_div, so every step up is one more look per bit at the incoming clock.
 ///
 /// Eight looks per bit was not enough at 96 kHz in 32-bit slots: the P4 received ~0.15 % fewer
-/// frames than the satellite sent (95 850 of 96 000 a second, on 27.09 and twice on 30.09,
-/// unchanged by grounding the wires), while 48 kHz in the same slots lost nothing measurable.
+/// frames than the satellite sent (95 850 of 96 000 a second, in three runs, unchanged by
+/// grounding the wires), while 48 kHz in the same slots lost nothing measurable.
 ///
 /// Zero for exactly the formats i2s_slave_clock_fits() refuses, so the two never disagree.
 constexpr uint32_t i2s_slave_bclk_div(uint32_t sclk_hz, uint32_t rate_hz, uint8_t slot_bits) {

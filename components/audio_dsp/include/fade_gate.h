@@ -35,10 +35,9 @@ inline float smootherstep(float p) {
 /// A gain that travels between shut (0) and open (1) along smootherstep, at any rate.
 ///
 /// Closing is the slower half. Splatter is gone at 20 ms, but on loud bass a 20 ms stop still
-/// sounds like the music being cut off, and the customer heard it as exactly that at every source
-/// change (06.10.2026). 100 ms is a fade; it is also the time a producer now waits for its flush to
-/// be acknowledged (FLUSH_WAIT_NAPS in pcm_ring.h). Opening stays at 20 ms, so a track still starts
-/// on its first note.
+/// sounds like the music being cut off, at every source change. 100 ms is a fade; it is also the
+/// time a producer waits for its flush to be acknowledged (FLUSH_WAIT_NAPS in pcm_ring.h).
+/// Opening stays at 20 ms, so a track still starts on its first note.
 class FadeGate {
 public:
     static constexpr float OPEN_S  = 0.020f;

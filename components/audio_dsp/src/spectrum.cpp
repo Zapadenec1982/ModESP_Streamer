@@ -131,16 +131,15 @@ void SpectrumAnalyzer::analyse() {
     }
 
 #if defined(ESP_PLATFORM)
-    // The plain-C FFT, not the P4 assembly one (dsps_fft2r_fc32 → _arp4 on this chip). On
-    // 25.09.2026 one build died in the assembly one ~5 s in, the moment a source started:
-    // "Illegal instruction", the inner loop left after 29 of its 64 passes and the PC 0x44 bytes
-    // BEFORE the function. That
-    // loop runs on the core's hardware-loop unit (esp.lp.setup) against two of the unit's rules,
-    // ESP32-P4 v1.3 TRM §1.7.1.5: its start and end are not word-aligned, and its last
-    // instruction is a 16-bit one. The offsets are fixed inside the function, so every build
-    // carries them; when an interrupt lands decides which build falls over. Espressif
-    // reproduced the fault that way (esp-idf#19025) and announced an esp-dsp fix; 1.8.2, the
-    // current release, does not have it.
+    // The plain-C FFT, not the P4 assembly one (dsps_fft2r_fc32 → _arp4 on this chip). One
+    // build died in the assembly one ~5 s in, the moment a source started: "Illegal
+    // instruction", the inner loop left after 29 of its 64 passes and the PC 0x44 bytes BEFORE
+    // the function. That loop runs on the core's hardware-loop unit (esp.lp.setup) against two
+    // of the unit's rules, ESP32-P4 v1.3 TRM §1.7.1.5: its start and end are not word-aligned,
+    // and its last instruction is a 16-bit one. The offsets are fixed inside the function, so
+    // every build carries them; when an interrupt lands decides which build falls over.
+    // Espressif reproduced the fault that way (esp-idf#19025) and announced an esp-dsp fix;
+    // 1.8.2, the current release, does not have it.
     dsps_fft2r_fc32_ansi(cplx_, SPECTRUM_FFT_N);
     dsps_bit_rev_fc32(cplx_, SPECTRUM_FFT_N);
 #else

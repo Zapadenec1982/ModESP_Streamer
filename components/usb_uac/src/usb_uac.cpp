@@ -128,7 +128,7 @@ void producer_task(void*) {
         // ── The stream: alternate setting and clock ───────────────────────────────────────────
         // A suspended bus ends the stream as alt 0 would. On this board it is also what pulling
         // the cable looks like (uac_usb.c): the alternate setting stayed 2, and the ring was left
-        // in run, starving — 63 000 underruns in eight minutes with nothing plugged in (24.10.2026).
+        // in run, starving — 63 000 underruns in eight minutes with nothing plugged in.
         // A resume with the setting kept starts the stream again. A bus reset ends it as well:
         // TinyUSB drops its configuration there and calls back nothing, so it is TinyUSB that is
         // asked whether a host has the panel configured.

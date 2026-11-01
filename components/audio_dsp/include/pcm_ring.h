@@ -163,11 +163,11 @@ public:
     /// Whether the output clock is settled for this listening session and will not move.
     ///
     /// The clock is chosen once, by the first track a source plays, and left alone until the
-    /// source changes — because moving it is what the customer's bench hears as a click at
-    /// every track boundary of a mixed-rate playlist. The mechanism is the DAC's: a PCM5102A
-    /// takes its internal PLL from the bit clock, retuning stops that clock, and the PLL
-    /// unlocking and relocking is an event in the analogue part of the converter. Muting the
-    /// data path around it does not help and was measured not to.
+    /// source changes — because moving it is heard as a click at every track boundary of a
+    /// mixed-rate playlist. The mechanism is the DAC's: a PCM5102A takes its internal PLL from
+    /// the bit clock, retuning stops that clock, and the PLL unlocking and relocking is an
+    /// event in the analogue part of the converter. Muting the data path around it does not
+    /// help and was measured not to.
     ///
     /// A producer that knows the clock is settled can skip the one thing a moving clock
     /// forced on it: draining the previous track's tail before asking for a rate, so that the
@@ -185,7 +185,7 @@ public:
     /// for a playlist. A computer playing over USB is different: it chooses the rate itself,
     /// the panel's clock is what paces it (asynchronous feedback), and it can switch from
     /// 44.1 to 96 kHz between two tracks. Following it costs the clock's relock at the switch
-    /// and keeps every sample as sent — the customer's choice, 24.10.2026.
+    /// and keeps every sample as sent.
     ///
     /// Only the owner can ask, and a new owner's claim drops a request it did not make.
     /// The consumer takes it once (take_new_session) and treats it as a source change does.
@@ -303,10 +303,10 @@ private:
 /// only later. It retunes once the old frames have played out and its envelope has closed,
 /// and behind a source change that can outlast any wait a producer can afford. A producer
 /// that never looks again converts for a clock the output is not at, for as long as it plays.
-/// On 05.10.2026 an AirPlay session that started while the panel was booting fed 44.1 kHz
-/// frames converted to 48 into an output that had settled at 44.1: 8 % slow, and the
-/// receiver's timing engine threw away 48 ms every 0.6 s to keep up — a click each time,
-/// until the source was switched away and back.
+/// An AirPlay session that started while the panel was booting fed 44.1 kHz frames converted to
+/// 48 into an output that had settled at 44.1: 8 % slow, and the receiver's timing engine threw
+/// away 48 ms every 0.6 s to keep up — a click each time, until the source was switched away
+/// and back.
 ///
 /// So the wait is only where a producer starts. While it plays it keeps reading out_rate(),
 /// and this says when what it reads means the clock it converts for is wrong: an answer other

@@ -7,8 +7,7 @@
  * preset is on" and "what a hand edit does to it" would be two answers. So both live here,
  * pure, and both editors call them.
  *
- * The rules (customer, 24.09.2026; the user's set was «Свій», «Мій звук» from 14.10.2026, and is
- * «Власний» since 15.10.2026):
+ * The rules:
  *   - «Власний» is the user's own set, kept while a preset is heard, and choosing it brings
  *     the set back; a preset is an attempt, never a loss.
  *   - an edit by hand makes the edited result «Власний», on a preset or not. So «Власний»

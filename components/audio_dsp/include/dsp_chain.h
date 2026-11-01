@@ -293,8 +293,8 @@ public:
     /// The volume law, dB under the top of the scale at `pct` (> 0): −60·(1 − pct/100) from
     /// VOL_KNEE_PCT up, 0.6 dB a step as it always was; under the knee a term that, with its
     /// slope, starts from zero there grows to VOL_FLOOR_DB at 1 %, about 1.4 dB a step at the
-    /// bottom. The old floor, −59.4 dB at 1 %, was still too loud up close in a quiet room
-    /// (owner, 14.10.2026); −59.4 is now about 17 %.
+    /// bottom. The old floor, −59.4 dB at 1 %, was still too loud up close in a quiet room;
+    /// −59.4 is now about 17 %.
     static float volume_db(float pct);
     void set_mute(bool on)        { if (on != mute_) mute_ramp_ = true; mute_ = on; }
     /// A trim ahead of the EQ, in dB (eq.json's section gain), −24…+12. Part of the entry gain
@@ -314,9 +314,9 @@ public:
     void process(float* stereo, size_t frames);
     /// Blocks thrown away by that guard since start-up.
     uint32_t faults() const { return faults_; }
-    /// The filter sections two to a pass (the default), or one, as the chain ran them until
-    /// 15.10.2026. The output is the same bit for bit either way; the switch exists so the host
-    /// tests can show exactly that. The firmware never turns it off.
+    /// The filter sections two to a pass (the default), or one at a time. The output is the
+    /// same bit for bit either way; the switch exists so the host tests can show exactly that.
+    /// The firmware never turns it off.
     void set_paired_passes(bool on) { paired_ = on; }
     /// How many loops over the block the filter sections took in the last process(): a pair
     /// or a lone section is one, a band crossfading three (outgoing, incoming, the blend), the

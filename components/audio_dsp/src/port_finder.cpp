@@ -114,8 +114,8 @@ PortFit find_port(const float* hz, const float* level, const float* noise, int n
     r.below_db = best_below;
     r.snr_db = snr[k];
     // OK is what the panel writes into the port setting on its own, so it takes a dip that is
-    // clear on both sides. A room mode at fb fills a dip and moves it: on 04.10.2026 an SC-G101
-    // measured 67.7 Hz with 17 dB above and only 4 dB below, and its cone stood still at 63.
+    // clear on both sides. A room mode at fb fills a dip and moves it: an SC-G101 measured
+    // 67.7 Hz with 17 dB above and only 4 dB below, and its cone stood still at 63.
     r.status = (best_above >= 12.0f && best_below >= 6.0f && snr[k] >= 15.0f) ? PortFit::OK : PortFit::WEAK;
     return r;
 }

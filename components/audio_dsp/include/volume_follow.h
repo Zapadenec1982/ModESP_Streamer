@@ -4,13 +4,13 @@
  *        (modules/airplay) and USB's computer (modules/usb_audio). Pure, so the host tests
  *        reach it.
  *
- * The customer asked that the room keep its level when a phone starts, and then that the phone
- * still reach the whole range with its slider agreeing with the panel; a laptop is answered the
- * same way. The sender's level maps onto the room's through a reference point: piecewise linear
- * from (0, 0) through (sender_ref, room_ref) to (100, 100). So nothing jumps when the reference
- * is set, and both ends of the sender's travel are the room's ends: the top of the slider is the
- * top of the panel and the bottom is silence. A slider already at its top when the reference is
- * set cannot go higher, and neither can the room through it.
+ * The room keeps its level when a phone starts, and the phone still reaches the whole range with
+ * its slider agreeing with the panel; a laptop is answered the same way. The sender's level maps
+ * onto the room's through a reference point: piecewise linear from (0, 0) through (sender_ref,
+ * room_ref) to (100, 100). So nothing jumps when the reference is set, and both ends of the
+ * sender's travel are the room's ends: the top of the slider is the top of the panel and the
+ * bottom is silence. A slider already at its top when the reference is set cannot go higher, and
+ * neither can the room through it.
  *  - a session starts with the reference at the room's level and the sender's slider where it
  *    stands (an AirPlay sender was told the room's level, so the two are one);
  *  - every level in the HOLD_MS after a session or playback starts only sets the reference — a

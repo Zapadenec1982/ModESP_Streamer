@@ -243,7 +243,7 @@ size_t eq_serialize(const EqConfig& cfg, char* buf, size_t buf_sz) {
             // Frequency and Q as %.6g, not rounded to a fixed width: the presets put a band at
             // 62.5 Hz and the shelves at Q 0.707, and "%.0f"/"%.2f" brought them back as 62 and
             // 0.71 - still the preset to the ear, but no longer equal to it, so the EQ screen
-            // showed the user's own set after every reboot (customer, 04.10.2026).
+            // would show the user's own set after every reboot.
             add("        {\"type\": \"%s\", \"f\": %.6g, \"gain\": %.1f, \"q\": %.6g, \"on\": %s}%s\n",
                 type_name(x.type), (double)x.freq_hz, (double)x.gain_db, (double)x.q,
                 x.enabled ? "true" : "false", b + 1 < sec.count ? "," : "");

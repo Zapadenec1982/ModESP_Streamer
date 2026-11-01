@@ -6,10 +6,10 @@
  * most widespread player presets whose values are published (Apple's and Spotify's names are
  * better known, but their numbers are not; Джаз and Хіп-хоп follow how those apps describe
  * them, tools/eq/fit_presets.py). Those values are slider positions of a GRAPHIC equaliser;
- * put straight onto parametric peaks, the overlaps summed into bumps (customer, 25.09.2026:
- * "АЧХ кострубата"). So the table below is not the sliders: tools/eq/fit_presets.py fits each
- * preset's curve with this chain's own filters — octave peaks at Q 1.0, shelves at the two
- * ends — and the firmware applies the result as it is.
+ * put straight onto parametric peaks, the overlaps sum into bumps. So the table below is not
+ * the sliders: tools/eq/fit_presets.py fits each preset's curve with this chain's own
+ * filters — octave peaks at Q 1.0, shelves at the two ends — and the firmware applies the
+ * result as it is.
  */
 
 #include "eq_presets.h"
@@ -40,8 +40,8 @@ constexpr EqPreset PRESETS[] = {
     { "classical", "Класика", { 0.0f, 0.0f, 0.0f, -0.1f, -0.2f, -0.0f, 0.7f, -1.0f, -3.5f, -5.5f } },   // 1.0 dB off at worst
     { "electronic", "Електроніка", { 4.9f, 3.4f, 3.0f, 1.1f, -2.3f, -2.4f, -1.1f, 1.3f, 4.3f, 6.1f } },   // 0.7 dB off at worst
     { "hiphop", "Хіп-хоп", { 5.3f, 3.3f, 1.8f, 0.4f, -0.6f, -0.1f, 0.3f, 0.6f, 1.0f, 2.1f } },   // 0.3 dB off at worst
-    // Not offered since 2026-10-14: kept so a set saved as one of them still plays under its
-    // name. EQ_PRESET_SHOWN (eq_presets.h) is where this part starts.
+    // Not offered: kept so a set saved as one of them still plays under its name.
+    // EQ_PRESET_SHOWN (eq_presets.h) is where this part starts.
     { "loudness", "Тонкомпенсація", { 3.9f, 3.1f, 2.6f, -0.3f, -0.3f, 0.1f, 0.0f, -0.1f, 0.9f, 2.4f } },   // 1.3 dB off at worst
     { "night", "Ніч", { -5.8f, -4.6f, -3.8f, 0.4f, 0.5f, -0.2f, 0.2f, 0.2f, -2.2f, -3.4f } },   // 0.9 dB off at worst
     { "more_bass", "Більше басу", { 6.1f, 4.0f, 3.5f, 3.9f, 2.9f, 0.6f, -0.8f, -2.3f, -4.1f, -7.0f } },   // 0.4 dB off at worst
@@ -64,7 +64,7 @@ static_assert(EQ_PRESET_SHOWN <= N_PRESET, "the sounds offered are rows of the t
 /// Ids a sound had before, still understood: a page left open, the app or a file may name them.
 struct Former { const char* id; const char* now; };
 constexpr Former FORMER[] = {
-    {"techno", "electronic"},   // Електроніка is the Techno curve (2026-10-14)
+    {"techno", "electronic"},   // Електроніка is the Techno curve
 };
 
 bool id_is(const char* id, size_t len, const char* s) { return strlen(s) == len && !strncmp(id, s, len); }

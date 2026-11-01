@@ -6,8 +6,7 @@ A preset is a curve: gains at a handful of frequencies with straight lines betwe
 log axis — how a graphic EQ's sliders are read. The panel does not have sliders, it has ten
 parametric peaking filters, and they overlap. Setting each filter to the curve's value at its
 own centre (what the firmware did first) sums the overlaps into bumps: up to 4 dB of ripple
-per octave and 3.5 dB off the curve with octave-wide filters (customer, 25.09.2026: "АЧХ
-виглядає кострубатою").
+per octave and 3.5 dB off the curve with octave-wide filters.
 
 So the gains are FITTED: least squares on the heard response — the sum of the ten filters'
 analogue prototypes (the RBJ cookbook's), which is what the audio core plays at every rate since
@@ -17,9 +16,8 @@ the second difference of neighbouring gains, so the handles on the screen read a
 of a saw. The result is a C++ table for components/audio_dsp/src/eq_presets.cpp, which the
 panel's DSP page and the web both use; the firmware applies it as is.
 
-Until 2026-10-02 the fit was against the bilinear (RBJ digital) responses at 48 kHz, which near
-Nyquist are a different curve from the same filters at 96 kHz — and from what the panel plays
-now.
+The fit is not against the bilinear (RBJ digital) responses at 48 kHz: near Nyquist those are a
+different curve from the same filters at 96 kHz — and from what the panel plays.
 
 Sources of the preset curves:
   * Winamp's presets, as Audacious ships them (0.375 is Winamp's neutral step, read as 0):
@@ -31,12 +29,12 @@ Sources of the preset curves:
     WiiM Home (faq.wiimhome.com/en/support/solutions/articles/72000594355): Jazz lifts
     "sub-bass, midrange, and brilliance", Hip-Hop "sub-bass and bass"; Producer Hive and
     MacObserver on Apple Music's Hip-Hop: bass-heavy, a little top-end lift, the voice kept
-    clear. Moderate on purpose, and checked by ear on the panel (2026-10-14).
+    clear. Moderate on purpose, and checked by ear on the panel.
   * "Рівно" is every band at 0 dB, so all ten are off (eq_build_preset).
 
 The order is the table's: the sounds offered first
-(«Власний» before them is the user's own set, not a curve), then the presets offered until
-then, kept so that a set saved as one of them still plays under its name.
+(«Власний» before them is the user's own set, not a curve), then the presets not offered,
+kept so that a set saved as one of them still plays under its name.
 
   python tools/eq/fit_presets.py --eval               # how Q and the penalty trade off
   python tools/eq/fit_presets.py                      # the C++ table, with the chosen Q, MU
@@ -52,10 +50,9 @@ import numpy as np
 OCT_F = np.array([31.25, 62.5, 125, 250, 500, 1000, 2000, 4000, 8000, 16000], dtype=float)
 WINAMP_F = [60, 170, 310, 600, 1000, 3000, 6000, 12000, 14000, 16000]
 
-# The band layout every preset uses, and the chosen trade-off (see --eval, and the comparison
-# drawn on 25.09.2026): peaks one octave apart at Q 1.0, the two end bands shelves so the
-# curve holds its level out to 20 Hz and 20 kHz instead of rolling off past the last peak,
-# and a light smoothness penalty on the gains.
+# The band layout every preset uses, and the chosen trade-off (see --eval): peaks one octave
+# apart at Q 1.0, the two end bands shelves so the curve holds its level out to 20 Hz and 20 kHz
+# instead of rolling off past the last peak, and a light smoothness penalty on the gains.
 Q = 1.0
 MU = 0.002
 LOW_SHELF_F, HIGH_SHELF_F, SHELF_Q = 40.0, 12000.0, 0.707
@@ -71,8 +68,7 @@ SOUNDS = [
     ("electronic", "Електроніка",  WINAMP_F, [4.875, 3.75, 0, -3.375, -3, 0, 4.875, 6, 6, 5.625]),
     ("hiphop", "Хіп-хоп",        list(OCT_F), [5, 4.5, 3, 1, -0.5, 0, 0.5, 1, 1.5, 2]),
 ]
-# Offered until 2026-10-14 and not since: kept, so that a set saved as one of them still plays
-# under its name.
+# Not offered: kept, so that a set saved as one of them still plays under its name.
 KEPT = [
     ("loudness", "Тонкомпенсація", list(OCT_F), [4, 4, 4, 0, 0, 0, 0, 0, 0, 2]),
     ("night", "Ніч",            list(OCT_F), [-6, -6, -6, 0, 0, 0, 0, 0, -3, -3]),
@@ -197,8 +193,8 @@ def main():
           f"Do not edit by hand.")
     for part, rows in (("sounds", SOUNDS), ("kept", KEPT)):
         if part == "kept":
-            print("    // Not offered since 2026-10-14: kept so a set saved as one of them still plays under its")
-            print("    // name. EQ_PRESET_SHOWN (eq_presets.h) is where this part starts.")
+            print("    // Not offered: kept so a set saved as one of them still plays under its name.")
+            print("    // EQ_PRESET_SHOWN (eq_presets.h) is where this part starts.")
         for pid, name, f, g in rows:
             fitted = fit(f, g, Q, MU)
             dev = float(np.max(np.abs(heard(fitted, Q, EVAL) - target(f, g, EVAL))))

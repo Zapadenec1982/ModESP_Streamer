@@ -693,7 +693,7 @@ ResampleResult resampleProcessInterleaved (Resample *cxt, const artsample_t *inp
      * exact in Q32 — a ratio of two either way (192 -> 96 kHz under the output's ceiling,
      * 22.05 -> 44.1): every position is then the same number on both paths, and the soft
      * doubles per frame go. With them, halving a 192 kHz stream cost the P4 more than the
-     * producer had (30-50 % of the output blocks short, 15.10.2026). Other fixed ratios
+     * producer had (30-50 % of the output blocks short). Other fixed ratios
      * (44.1 <-> 48, the 160-filter bank) keep the double path. */
     const int exact_q32 = (cxt->flags & RESAMPLE_FIXED_RATIO) &&
         step * 4294967296.0 == floor (step * 4294967296.0) &&

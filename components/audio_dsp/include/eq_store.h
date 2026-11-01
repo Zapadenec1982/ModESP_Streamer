@@ -4,7 +4,7 @@
  *
  * Until the web could edit it, the EQ lived in the panel's
  * screen and its module wrote the files. A second editor writing the same files on its own
- * schedule would overwrite the first, as the EQ lost on 24.09.2026 was. So the document lives
+ * schedule would overwrite the first — that is how an EQ was once lost. So the document lives
  * here, once: the current bands, the user's own set («Власний»), the preset that is on, and a
  * revision that moves with every change.
  *

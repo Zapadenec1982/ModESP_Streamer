@@ -67,8 +67,8 @@ struct PortFit {
 /// closed box, or a roll-off, has none at all). OK — clear enough to apply unasked — takes 12 dB
 /// above, 6 dB below and 15 dB over the noise; anything less is WEAK. Port sound reaching the
 /// microphone moves the dip: on a modelled rear-ported box (port 5 % of the cone's near-field
-/// level) 3-4 % low; through a room mode at fb it can fill the dip and push it up (an SC-G101 on
-/// 04.10.2026: 67.7 Hz measured, the cone stood still at 63). A finger on the dust cap settles it.
+/// level) 3-4 % low; through a room mode at fb it can fill the dip and push it up (an SC-G101:
+/// 67.7 Hz measured, the cone stood still at 63). A finger on the dust cap settles it.
 PortFit find_port(const float* hz, const float* level, const float* noise, int n);
 
 /// The sweep's frequencies: whole hertz (the tone takes integers), about 1/24 octave apart,
