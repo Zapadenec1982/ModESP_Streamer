@@ -488,9 +488,9 @@ curl -u <user>:<password> -X POST http://<panel>/api/loglevel -d '{"tag":"UiLvgl
 - A tab that was open while the web was reflashed compares `/build.txt` every time the WebSocket
   opens and offers to reload (`lib/update.js`).
 - `npm run dev` — `dev-server.js` on `http://localhost:5000`: a fake API over the state in
-  `dev/state.json`, WebSocket, stations, EQ (presets are read from
-  `components/audio_dsp/src/eq_presets.cpp`), the library, the DLNA browser, a cover. It runs
-  `rollup -c -w`, which means an unminified `dist/`; deploy only through `npm run deploy`.
+  `dev/state.json`, WebSocket, stations (a tune, ‹ ›, a station kept from the catalog), EQ (presets
+  are read from `components/audio_dsp/src/eq_presets.cpp`), the library, the DLNA browser, a cover.
+  It runs `rollup -c -w`, which means an unminified `dist/`; deploy only through `npm run deploy`.
 
 ### Shell and routes
 
@@ -535,7 +535,7 @@ the pairing dialog (`PairDialog.svelte`).
 
 | page | state | own endpoints |
 |---|---|---|
-| Player | `stores/now.js` (the source's face, as in `screen_now.cpp`, but for a station the web keeps play/stop, ⏮ ⏭ and the buffer line), `audio.volume`, `audio.mute`, `audio.leveler`, transport `*.cmd`, `player.repeat/shuffle`, `*.seek_s`, `radio.fav_add` | `GET /api/cover?px=280` following `ui.cover` |
+| Player | `stores/now.js` (the source's face, as in `screen_now.cpp`), `audio.volume`, `audio.mute`, `audio.leveler`, transport `*.cmd`, `player.repeat/shuffle`, `*.seek_s`; a station: `radio.station`, `radio.list_rev`, `radio.web_*`, `radio.fav_add` | `GET /api/cover?px=280` following `ui.cover`; a station: `GET /api/stations`, Radio Browser's logos from the browser |
 | Source | `audio.sources`, `audio.source` (the same cards and order as on the panel) | — |
 | Settings | `airplay.enabled/mode`, `dlna.enabled`, `radio.covers`, captions | `POST /api/restart` |
 | Tone and volume | `audio.bass_db`, `treble_db`, `loudness` (switched on: `loud_back`), `eq_enabled`, `vol_max`, `vol_start`; "Volume leveling": `lev_sched` and, while it is on, `lev_from`/`lev_to` as time fields (5-minute step) | `/api/eq` (presets, `lib/eq.js`) |
@@ -553,6 +553,36 @@ the pairing dialog (`PairDialog.svelte`).
 
 The endpoint formats are in [NETWORK.md](NETWORK.md); the EQ document and calibration in
 [AUDIO.md](AUDIO.md).
+
+**The Player's station card** (`audio.source` = 5, `radio.mode` not `push`; a pushed DLNA track
+has the track's card) is the glass's station face: no transport, no progress, no buffer line.
+From the top:
+
+- where it plays from, then a small tile — 152 px, down to 96 on a short screen — with the cover
+  (`/api/cover`), else the station's logo, else its stand-in: `lib/stationbadge.js`, a copy of
+  `station_badge.h` held to the header's pinned cases by `tools/tests/test_webui_station_badge.py`;
+- the station's name between ‹ and › (`radio.cmd` 4 and 3, greyed while the list has no other
+  station); beside the name, for a catalog station outside the list (`radio.station` = −1), ♥,
+  which keeps it there (`radio.fav_add`);
+- what it plays, or the state ("Connecting…", "Buffering…", "Reconnecting…", "Stopped"), and the
+  codec badge;
+- the six presets, 3×2 buttons 56 px tall: the station's disc and its name in up to two lines,
+  the playing one outlined in the accent colour, an empty one with its number and "Empty" — "Store
+  here" while a tap would store;
+- "All stations · N ›" to `#/stations`, the volume, "Sound" and the moon.
+
+On a 390×844 phone the card fits above the bottom bar in all four languages. The presets come from
+`GET /api/stations`, read again when `radio.list_rev` moves and kept between visits. They have the
+glass's rules: a tap tunes (`radio.station`; the tuned station, when it is not on, `radio.cmd` 1),
+a 500 ms hold or the context menu (the right button, the menu key) stores what plays, and so does a
+tap on an empty one. A store names the station in `radio.web_name`, `radio.web_url`,
+`radio.web_uuid` and the preset in `radio.web_act` 2–7 (the panel finds a station of the list by
+its stream and adds one from the catalog); for a catalog station `radio.fav_add` goes in the same
+request, so the stream that plays becomes the list's station, as on the glass. The logos are Radio
+Browser's favicons, which the browser asks for itself (`lib/radiobrowser.js`): one
+`/json/stations/byuuid?uuids=…` for the presets' and the playing station's uuids once the list is
+read, each uuid once in the tab's session (`sessionStorage`). A station without a uuid, or a
+picture that does not load, keeps its stand-in. The mini-player keeps play/stop for a station.
 
 ### State: reading and writing
 
@@ -625,8 +655,9 @@ shown as `value`. `tools/tests/test_webui_service.py` keeps the lists in agreeme
   Language page has two settings: the panel language (`ui.lang`: the screen speaks it, and so does
   every browser without a choice of its own) and this browser's language.
 - Gestures (`lib/gesture.js`): a slider is taken after 8 px along (more than across), a tap changes
-  nothing, a mouse takes it at once; an EQ point moves after 300 ms or 8 px; "Undo" for 5 s
-  (`lib/undo.js`). Test `tools/tests/test_webui_gesture.py`.
+  nothing, a mouse takes it at once; an EQ point moves after 300 ms or 8 px; a preset stores after
+  a 500 ms hold, or from the context menu, and a finger that moved 8 px scrolls the page; "Undo"
+  for 5 s (`lib/undo.js`). Test `tools/tests/test_webui_gesture.py`.
 - Texts are in the system's `Roboto, system-ui, …` font; the web carries no text font file.
 - The title and the subtitle of an `m3/Row` take up to two lines each, then "…". Below 420 px the
   `m3/Tabs` tabs are 14 px with 10 px padding (the five Stations tabs on one line), and the top bar's

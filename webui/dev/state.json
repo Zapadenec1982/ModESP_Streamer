@@ -148,7 +148,7 @@
   "radio.seekable": false,
   "radio.state": "idle",
   "radio.station": 0,
-  "radio.url": "https://ice1.somafm.com/groovesalad-128-mp3",
+  "radio.url": "http://ice1.somafm.com/groovesalad-128-mp3",
   "radio.uuid": "",
   "storage.sd_free_mb": 0,
   "storage.sd_present": false,

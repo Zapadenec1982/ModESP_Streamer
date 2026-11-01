@@ -435,7 +435,9 @@ it came — the web, the catalog, the file.
 **Web** (Stations → catalog, `webui/src/lib/radiobrowser.js`): the browser itself goes to Radio
 Browser over HTTPS (the API gives CORS `*`) with the same filters. Only `radio.web_name`,
 `radio.web_url`, `radio.web_uuid` are passed to the panel, then `radio.web_act`: 0 play, 1 to the
-list, 2–7 to preset 1–6. The URL must be `http(s)://` and ≤ 223 B.
+list, 2–7 to preset 1–6. The URL must be `http(s)://` and ≤ 223 B. The Player stores what plays on
+a preset through the same keys, and asks `/json/stations/byuuid?uuids=…` for its stations' logos
+([UI.md](UI.md), "Pages and what they read/write").
 
 **Clicks.** When a station with a `uuid` (from the list or from the catalog) has started playing, the
 module makes `GET /json/url/<uuid>` once per tuning — this is how Radio Browser counts what is

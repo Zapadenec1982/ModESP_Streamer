@@ -4,7 +4,7 @@
  * MP3, AAC, AAC+ and FLAC, no HLS, a stream URL that fits the station list, the quality floor,
  * one row per stream. Ranking only within a country or a genre: global votes are inflated
  * (docs/NETWORK.md, "Radio Browser catalog"). The panel gets only a station's name, stream
- * and uuid (radio.web_*).
+ * and uuid (radio.web_*). The Player asks here too, for its stations' logos (favicons).
  */
 
 import { URL_MAX } from './stations.js';
@@ -91,4 +91,50 @@ export async function genres() {
 /** A genre's name in `lang`: name_en, name_de, name_pl; Ukrainian, `name`, when it has none. */
 export function genreName(g, lang) {
   return (lang !== 'uk' && g[`name_${lang}`]) || g.name;
+}
+
+// ── the stations' logos, for the Player's discs ──
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ICONS = 'rb.favicons';
+let icons = null;               // lower-case uuid → favicon URL, '' where Radio Browser lists none
+let lookup = Promise.resolve();
+
+function iconCache() {
+  if (!icons) {
+    try { icons = JSON.parse(sessionStorage.getItem(ICONS)) || {}; } catch (e) { icons = {}; }
+  }
+  return icons;
+}
+
+async function lookUp(uuids) {
+  const cache = iconCache();
+  const ask = [...new Set(uuids.filter((u) => UUID.test(u || '')).map((u) => u.toLowerCase()))]
+    .filter((u) => !(u in cache));
+  if (ask.length) {
+    // the panel's own lookup (radio_catalog byuuid_path): every station in one request
+    const rows = await rb('/json/stations/byuuid?uuids=' + ask.join(','));
+    for (const u of ask) cache[u] = '';
+    for (const r of rows) {
+      const u = String(r.stationuuid || '').toLowerCase();
+      if (u in cache && /^https?:\/\//.test(r.favicon || '')) cache[u] = r.favicon;
+    }
+    try { sessionStorage.setItem(ICONS, JSON.stringify(cache)); } catch (e) { /* no storage */ }
+  }
+  const out = {};
+  for (const u of uuids) if (u && u.toLowerCase() in cache) out[u] = cache[u.toLowerCase()];
+  return out;
+}
+
+/**
+ * The logos of these stations by their Radio Browser uuids: { uuid: favicon URL, '' for none }.
+ * Each uuid is asked once in the tab's session — the ones not yet known in one byuuid request —
+ * and lookups go one at a time, so a second waits for the first's answers instead of asking
+ * again. A malformed uuid is never sent and gets no entry; a failed request throws and keeps
+ * nothing, so the next call asks again.
+ */
+export function favicons(uuids) {
+  const run = lookup.then(() => lookUp(uuids));
+  lookup = run.catch(() => {});
+  return run;
 }

@@ -42,6 +42,40 @@ const stations = {
 state['radio.list_rev'] = stations.rev;
 const auth = { enabled: false, username: 'admin', pass: 'modesp' };
 
+// The radio as the Player sees it: a tune names the list's station, ‹ › step through the list
+// (from a catalog station, its first), and a station kept from the catalog (radio.web_act 1–7,
+// radio.fav_add) goes into the list, found there by its stream if it is in it already, as
+// modules/radio/src/catalog.cpp does — the one playing becoming the list's station.
+function tuned(i) {
+  const st = stations.list.stations[i];
+  return st ? { 'radio.station': i, 'radio.name': st.name, 'radio.url': st.url, 'radio.uuid': st.uuid || '',
+                'radio.state': 'playing', 'radio.now_playing': '' } : {};
+}
+function keep(name, url, uuid, slot) {
+  const list = stations.list;
+  let i = list.stations.findIndex((st) => st.url === url);
+  if (i < 0) {
+    list.stations.push(uuid ? { name: name || url, url, uuid } : { name: name || url, url });
+    i = list.stations.length - 1;
+  }
+  if (slot >= 0) list.presets[slot] = i;
+  stations.rev += 2;
+  return { i, delta: { 'radio.list_rev': stations.rev, 'radio.count': list.stations.length } };
+}
+function radioWrite(k, v) {
+  if (k === 'radio.station') return tuned(v);
+  if (k === 'radio.web_act' && v >= 0) {
+    const [name, url, uuid] = ['radio.web_name', 'radio.web_url', 'radio.web_uuid'].map((x) => state[x] || '');
+    if (v === 0) return { 'radio.station': -1, 'radio.name': name, 'radio.url': url, 'radio.uuid': uuid, 'radio.state': 'playing' };
+    return { ...keep(name, url, uuid, v - 2).delta, 'radio.web_act': -1 };
+  }
+  if (k === 'radio.fav_add' && v && state['radio.station'] === -1) {
+    const kept = keep(state['radio.name'], state['radio.url'], state['radio.uuid'], -1);
+    return { ...kept.delta, 'radio.station': kept.i, 'radio.fav_add': false };
+  }
+  return {};
+}
+
 // The EQ as GET/POST /api/eq keep it (modules/audio/src/eq_http.inc, audio_dsp/eq_store.h). The
 // presets are read out of the firmware's own table, so the page's dropdown is the panel's.
 const PRESET_SRC = readFileSync(join(__dirname, '..', 'components', 'audio_dsp', 'src', 'eq_presets.cpp'), 'utf8');
@@ -376,6 +410,10 @@ function json(res, code, body) {
 function command(key, v) {
   const out = {};
   if (key === 'radio.cmd') out['radio.state'] = v === 2 ? 'idle' : 'playing';
+  if (key === 'radio.cmd' && (v === 3 || v === 4)) {
+    const n = stations.list.stations.length, i = state['radio.station'];
+    Object.assign(out, tuned(v === 3 ? (i >= 0 ? (i + 1) % n : 0) : (i > 0 ? i - 1 : n - 1)));
+  }
   if (key === 'player.cmd') out['player.state'] = v === 2 || (v === 6 && state['player.state'] === 'playing') ? 'paused' : 'playing';
   if (key === 'player.cmd' && v === 1 && state['player.track']) {
     // a track asked for by its path, as the library page does: the card plays it
@@ -432,7 +470,7 @@ const server = createServer((req, res) => {
         for (const [k, v] of Object.entries(JSON.parse(body))) {
           if (k === 'dlna.browse_cmd') dlnaCommand(v);
           else if (k.endsWith('.cmd')) Object.assign(delta, command(k, v));
-          else { delta[k] = v; state[k] = v; }
+          else { delta[k] = v; state[k] = v; Object.assign(delta, radioWrite(k, v)); Object.assign(state, delta); }
         }
       } catch {
         return json(res, 400, 'Invalid JSON');

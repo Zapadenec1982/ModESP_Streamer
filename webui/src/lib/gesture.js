@@ -12,14 +12,19 @@
  * A point on the equalizer's graph: only the point itself takes a finger (the rest of the graph
  * scrolls), and it moves once it has been held HOLD_MS or the finger went SLOP px away.
  *
- * The decisions are pure — tools/tests/test_webui_gesture.py runs them in Node — and `slide`
- * wires them to a slider's pointer events. No imports, for the same reason.
+ * A button with a second meaning held, as a preset has (a tap tunes it, a hold stores what plays
+ * in it): a press held still PRESS_HOLD_MS is the hold, one that went SLOP px is the page's.
+ *
+ * The decisions are pure — tools/tests/test_webui_gesture.py runs them in Node — and `slide` and
+ * `press` wire them to pointer events. No imports, for the same reason.
  */
 
 /** px a finger goes before a press is a drag or a scroll */
 export const SLOP = 8;
 /** ms a still finger holds an EQ point before it is picked up */
 export const HOLD_MS = 300;
+/** ms a still finger holds a preset before it stores (the glass's long press) */
+export const PRESS_HOLD_MS = 500;
 
 /** What a press has become after moving (dx, dy): 'press' still, 'drag' along x, 'scroll' across. */
 export function intent(dx, dy, slop = SLOP) {
@@ -89,6 +94,37 @@ export function pointGesture(pointerType, { slop = SLOP, hold = HOLD_MS } = {}) 
       const s = state;
       state = 'idle';
       return s === 'drag' ? 'drag' : 'tap';
+    },
+  };
+}
+
+/**
+ * One press on a button that a hold means something else on: 'press' while still, 'scroll' once
+ * the finger went `slop` px (the page's: neither meaning), 'hold' once the caller says the press
+ * has lasted long enough (`held`, from its timer). `end` says 'tap' for a press that was neither.
+ */
+export function holdGesture(slop = SLOP) {
+  let x0 = 0, y0 = 0, state = 'idle';
+  return {
+    get state() { return state; },
+    down(x, y) {
+      x0 = x;
+      y0 = y;
+      state = 'press';
+      return state;
+    },
+    move(x, y) {
+      if (state === 'press' && Math.hypot(x - x0, y - y0) >= slop) state = 'scroll';
+      return state;
+    },
+    held() {
+      if (state === 'press') state = 'hold';
+      return state;
+    },
+    end() {
+      const s = state;
+      state = 'idle';
+      return s === 'press' ? 'tap' : s;
     },
   };
 }
@@ -167,6 +203,76 @@ export function slide(node, opts) {
       node.removeEventListener('pointermove', move);
       node.removeEventListener('pointerup', up);
       node.removeEventListener('pointercancel', up);
+    },
+  };
+}
+
+/**
+ * use:press={{ tap, hold }} — a button with two meanings, as above. A still press calls `hold`
+ * once it has lasted PRESS_HOLD_MS, while the finger is still down, and its release is then no
+ * tap; a press that ends sooner calls `tap`; one the page took for a scroll calls neither. The
+ * context menu is the hold too — a mouse's right button, the keyboard's menu key or Shift+F10 —
+ * and a long touch's own menu (Android) is not a second one. Enter and Space click the button,
+ * which is a tap; a pointer's click is left alone, its tap having come with the release.
+ */
+export function press(node, opts) {
+  let o = opts || {};
+  let g = null;
+  let id = null;
+  let timer = null;
+
+  const stop = () => { clearTimeout(timer); timer = null; };
+  function hold() {
+    stop();
+    g.held();
+    o.hold?.();
+  }
+  function down(e) {
+    stop();
+    g = null;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;   // the right button is the menu's
+    g = holdGesture();
+    id = e.pointerId;
+    g.down(e.clientX, e.clientY);
+    // a mouse let go off the button still ends this press
+    try { node.setPointerCapture(e.pointerId); } catch (err) { /* the pointer is gone */ }
+    timer = setTimeout(() => { if (g && g.state === 'press') hold(); }, PRESS_HOLD_MS);
+  }
+  function move(e) {
+    if (g && e.pointerId === id && g.move(e.clientX, e.clientY) === 'scroll') stop();
+  }
+  function up(e) {
+    if (!g || e.pointerId !== id) return;
+    const s = e.type === 'pointerup' ? g.end() : 'scroll';
+    g = null;
+    stop();
+    if (s === 'tap') o.tap?.();
+  }
+  function click(e) {
+    if (e.detail === 0) o.tap?.();
+  }
+  function menu(e) {
+    e.preventDefault();
+    if (!g) o.hold?.();
+    else if (g.state === 'press') hold();
+  }
+
+  node.addEventListener('pointerdown', down);
+  node.addEventListener('pointermove', move);
+  node.addEventListener('pointerup', up);
+  node.addEventListener('pointercancel', up);
+  node.addEventListener('click', click);
+  node.addEventListener('contextmenu', menu);
+  return {
+    update(n) { o = n || {}; },
+    destroy() {
+      stop();
+      node.removeEventListener('pointerdown', down);
+      node.removeEventListener('pointermove', move);
+      node.removeEventListener('pointerup', up);
+      node.removeEventListener('pointercancel', up);
+      node.removeEventListener('click', click);
+      node.removeEventListener('contextmenu', menu);
     },
   };
 }
