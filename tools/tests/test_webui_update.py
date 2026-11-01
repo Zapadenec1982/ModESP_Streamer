@@ -1,9 +1,9 @@
 """«Веб-інтерфейс оновлено · Перезавантажити»: webui/src/lib/update.js in Node.
 
-The customer, 14.10.2026: a tab left open across a flash of data.bin kept the old page, and its
-sliders still took a touch at once, until it was reloaded. The page notes /build.txt the first
-time its WebSocket is up and looks again each time it comes back; a different list is said once,
-and nothing is asked while the socket is down.
+A tab left open across a flash of data.bin keeps the old page, and its sliders still take a
+touch at once, until it is reloaded. The page notes /build.txt the first time its WebSocket is
+up and looks again each time it comes back; a different list is said once, and nothing is asked
+while the socket is down.
 """
 
 import json

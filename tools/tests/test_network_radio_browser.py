@@ -48,7 +48,7 @@ def test_radio_http_icy_station_and_seek(tmp_path):
         "bool seek_stream(", "bool looks_like_playlist(",
     )
     # One hop per call and a loop around them: a redirect handled by recursion took the
-    # 12 KB radio stack past its end on a four-redirect CDN chain (04.10.2026).
+    # 12 KB radio stack past its end on a four-redirect CDN chain.
     assert "http_open(" not in extract(source, "Hop http_open_hop("), "a hop must not open the next one"
     assert extract(source, "bool http_open(").count("http_open(") == 1, "redirects must not recurse"
     for signature in signatures:

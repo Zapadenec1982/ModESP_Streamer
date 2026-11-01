@@ -3,7 +3,7 @@
 read_int/read_bool/read_float/read_string and state_get/state_set take SharedState's FreeRTOS
 mutex. Inside a critical section interrupts are off on that core, and a contended take there
 corrupts the kernel's event list or spins until the interrupt watchdog resets the board.
-44d4cbc moved three such reads out of UiLvglModule::mirror_state; a fourth was later found
+Three such reads were moved out of UiLvglModule::mirror_state, and a fourth was later found
 put back. This test keeps the whole tree honest instead of one function.
 """
 

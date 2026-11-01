@@ -2,11 +2,11 @@
 """
 m3_scheme.py — a dark Material 3 colour scheme from one seed colour, for modules/ui_lvgl/src/ui_m3.cpp.
 
-The three schemes came from the design package (Material Theme Builder). On 25.09.2026 the
-customer asked for two of them to move: the blue one more saturated, darker and towards
-violet, the green one darker and towards olive — and showed the colour of each. Those two
-colours are the seeds here, and each becomes the scheme's primary AS IS: that is the colour
-the customer pointed at, and the swatch on the System page is drawn in it.
+The three schemes came from the design package (Material Theme Builder). Two of them are
+moved: the blue one more saturated, darker and towards violet, the green one darker and
+towards olive, each to a colour of its own. Those two colours are the seeds here, and each
+becomes the scheme's primary AS IS: that is the colour chosen, and the swatch on the System
+page is drawn in it.
 
 Every other role is a tone of a palette built on the seed's hue, at the tones Material's dark
 scheme uses (surface 6, containers 10..22, on_surface 90, primary_container 30, ...). Tone is

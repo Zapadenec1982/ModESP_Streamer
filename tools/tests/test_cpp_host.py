@@ -124,8 +124,7 @@ def find_compiler():
 
     # 2. MSVC (Visual Studio Build Tools). Ahead of the ESP-IDF clang on purpose: that
     #    clang is built for the chip and has no x86 target, so on a machine without MinGW it
-    #    was "found" and then failed every build — which is how the C++ half of the gate
-    #    went unrun on the bench PC until 2026-10-02.
+    #    was "found" and then failed every build, and the C++ half of the gate went unrun.
     msvc_env = _find_msvc_env()
     if msvc_env and ninja:
         return {'gxx': 'cl', 'gcc': 'cl', 'make': ninja, 'generator': 'Ninja',
@@ -267,9 +266,9 @@ def runner_timeout_s():
     --cpp-timeout sets it), else RUNNER_TIMEOUT_DEFAULT_S. Exceeding it is a FAILURE.
 
     Generous on purpose: the runner is unoptimised (no CMAKE_BUILD_TYPE) and the two-thread
-    ring tests (tests/host/test_pcm_ring.cpp) crawl when the host is busy — on 2026-09-21 a
-    green 181-case run took ~41 min under five concurrent idf.py builds and the old fixed
-    120 s reported a false failure. On an idle machine the whole suite takes seconds.
+    ring tests (tests/host/test_pcm_ring.cpp) crawl when the host is busy — a green 181-case
+    run took ~41 min under five concurrent idf.py builds, where a fixed 120 s reported a false
+    failure. On an idle machine the whole suite takes seconds.
     """
     raw = os.environ.get('P4_CPP_TEST_TIMEOUT_S', '').strip()
     if not raw:
@@ -297,8 +296,8 @@ def built_binary():
     compiler = find_compiler()
     if not compiler:
         # A missing toolchain used to be a skip, which let the per-commit gate pass with
-        # zero C++ tests executed (audit 2026-09-21). It is a failure: install a compiler,
-        # or run tools/run_host_tests.py --no-cpp when a Python-only run is really meant.
+        # zero C++ tests executed. It is a failure: install a compiler, or run
+        # tools/run_host_tests.py --no-cpp when a Python-only run is really meant.
         pytest.fail(
             "No host C++ compiler found — the C++ host tests cannot run.\n"
             "  Windows: scoop install mingw   |   winget install MSYS2.MSYS2, then\n"
@@ -429,9 +428,9 @@ def parse_doctest_summary(out):
 def test_all_pass(built_binary):
     """Run the full suite: zero failures AND a non-empty suite.
 
-    Until 2026-09-21 a binary that registered no test cases passed as "placeholders
-    only — OK", so a runner that had lost every TEST_CASE (a CMake list edit, a wrong
-    binary, a filter typo) still turned the gate green. An empty suite is a failure:
+    A binary that registered no test cases used to pass as "placeholders only — OK", so a
+    runner that had lost every TEST_CASE (a CMake list edit, a wrong binary, a filter typo)
+    still turned the gate green. An empty suite is a failure:
     the gate has to prove the C++ tests ran, not merely that a binary exited 0.
     """
     out, rc, elapsed = _run_suite(built_binary)

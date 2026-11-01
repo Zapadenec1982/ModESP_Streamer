@@ -377,7 +377,7 @@ esp_err_t ota_partition_perform(const char* partition_label)
 
 		/* player-fork: the CP image's app description carries the git tag ("v3.0.7") while the
 		 * co-processor reports "3.0.7"; without stripping the prefix the updater re-flashed an
-		 * up-to-date CP on every boot (seen on the bench 2026-09-15). */
+		 * up-to-date CP on every boot (seen on the bench). */
 		const char *new_ver = new_app_version;
 		if (*new_ver == 'v' || *new_ver == 'V') {
 			new_ver++;

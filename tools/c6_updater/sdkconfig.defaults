@@ -6,7 +6,7 @@
 
 # ── Chip revision: the Guition panel ships ESP32-P4 v1.3 (engineering-sample silicon; the factory
 #    firmware was built with min rev v1.0). IDF 5.5 defaults to v3.1 and its bootloader/app refuse
-#    to run on v1.x — select the pre-v3 range explicitly. Verified on the bench 2026-09-15. ──
+#    to run on v1.x — select the pre-v3 range explicitly. Verified on the bench. ──
 CONFIG_ESP32P4_SELECTS_REV_LESS_V3=y
 CONFIG_ESP32P4_REV_MIN_100=y
 

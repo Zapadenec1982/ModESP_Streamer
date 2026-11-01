@@ -1,7 +1,7 @@
 """A finger that scrolls does not set anything: webui/src/lib/gesture.js and lib/undo.js in Node.
 
-The customer, 14.10.2026: scrolling a page of the web interface moved the equalizer, the tone or
-another setting. The rules: a press changes nothing; a slider is the finger's once it went 8 px
+Without them scrolling a page of the web interface moves the equalizer, the tone or another
+setting. The rules: a press changes nothing; a slider is the finger's once it went 8 px
 along, more along than across, and the page's if it went up or down first; a tap changes
 nothing; a mouse takes a slider at once. An EQ point moves once held 300 ms or once the finger
 went 8 px from it. After a slider or a drag moved a sound setting, a snackbar offers to put it

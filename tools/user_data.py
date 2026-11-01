@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Move a panel's own files onto the partition a flash cannot reach, and back them up.
 
-Until 22.09.2026 this tool was the workaround for a design fault it described itself:
+This tool used to be the workaround for a design fault it described itself:
 
     "This does not fix that; the fix is to stop storing user files next to build output."
 
@@ -82,8 +82,8 @@ USER_FILES = ["eq.json", "stations.json", "last_track", "devices.json", "eq_cust
 # The geometry the device mounts with: CONFIG_LITTLEFS_* in sdkconfig, block size 4096.
 # No name_max: littlefs refuses to mount (LFS_ERR_INVAL) when it is below what the superblock
 # records, and the firmware formats `userdata` with littlefs's own 255, not the 64 of
-# CONFIG_LITTLEFS_OBJ_NAME_LEN — so `backup --partition userdata` failed with it set (seen
-# 11.10.2026). Left out, it is taken from the superblock: 64 for data.bin, 255 for userdata.
+# CONFIG_LITTLEFS_OBJ_NAME_LEN — so `backup --partition userdata` failed with it set. Left
+# out, it is taken from the superblock: 64 for data.bin, 255 for userdata.
 GEOMETRY = dict(block_size=4096, read_size=128, prog_size=256, cache_size=512,
                 lookahead_size=128, block_cycles=512)
 

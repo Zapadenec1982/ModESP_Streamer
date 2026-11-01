@@ -10,7 +10,7 @@
 
     Verdicts
       DELETE    build_*.log, build_done.txt, soak_done.txt, soak_stop.txt, soak_build.log:
-                superseded one-off logs/markers of builds that no longer exist (2026-09-15/16).
+                superseded one-off logs/markers of builds that no longer exist.
                 testfiles\*.wav: only when MD5-identical to the tracked testfiles\ copy.
                 Docs\*: only when byte-identical to a tracked docs\ counterpart.
       REVIEW    Docs\* that differ from, or have no, tracked counterpart: a person decides.
@@ -74,7 +74,7 @@ function Add-Row([string]$Verdict, [string]$Path, [string]$Reason) {
 # 1. Superseded one-off build/soak logs and run markers.
 foreach ($pattern in 'build_*.log', 'build_done.txt', 'soak_done.txt', 'soak_stop.txt', 'soak_build.log') {
     foreach ($f in @(Get-ChildItem -LiteralPath $Root -File -Filter $pattern -ErrorAction SilentlyContinue)) {
-        Add-Row 'DELETE' $f.FullName 'superseded one-off build/soak log or marker (2026-09-15/16); the build tree it records is gone'
+        Add-Row 'DELETE' $f.FullName 'superseded one-off build/soak log or marker; the build tree it records is gone'
     }
 }
 

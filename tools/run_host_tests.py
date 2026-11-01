@@ -19,15 +19,14 @@ python (inside an ESP-IDF shell), e.g.::
 The C++ runner is part of the per-commit gate (every commit passes the esp32p4 build and
 this suite), so it runs by default.
 It needs a host C++ compiler and cmake, and a missing toolchain is a test FAILURE, not a
-skip: before 2026-09-21 the default run ignored test_cpp_host.py altogether and the gate
-executed zero C++ tests. ``--cpp-host`` (the old opt-in flag) is still accepted and does
-nothing.
+skip: a skip would let the gate pass with zero C++ tests executed. ``--cpp-host`` (the old
+opt-in flag) is still accepted and does nothing.
 
 The C++ binary runs under a time bound — P4_CPP_TEST_TIMEOUT_S or --cpp-timeout, default
 900 s — and exceeding it is a failure, never a skip. The bound is generous because the
 two-thread ring tests (tests/host/test_pcm_ring.cpp) crawl on a busy host: a green run
-took ~41 min under five concurrent idf.py builds on 2026-09-21, while on an idle machine
-the whole suite takes seconds.
+took ~41 min under five concurrent idf.py builds, while on an idle machine the whole suite
+takes seconds.
 
 The link-protocol mirror check (tools/check_protocol_mirror.py) runs from
 tools/tests/test_protocol_mirror.py when P4_SATELLITE_ROOT names a modesp-bt-satellite
@@ -48,7 +47,7 @@ def main() -> int:
     for a in it:
         if a == "--no-cpp":
             no_cpp = True
-        elif a == "--cpp-host":            # the pre-2026-09-21 opt-in flag; C++ is the default now
+        elif a == "--cpp-host":            # the old opt-in flag; C++ is the default
             pass
         elif a == "--cpp-timeout":
             cpp_timeout = next(it, "")

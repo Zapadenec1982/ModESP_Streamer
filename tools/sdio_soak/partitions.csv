@@ -2,7 +2,7 @@
 # COPY of ../../partitions_p4_16mb.csv — keep identical. Flashing this tool REPLACES the
 # panel's partition table, so a stale copy here would put the old single-`data` layout back
 # and take the `userdata` partition (and everything in it) with it.
-# Two 4 MB OTA slots (3 MB until 05.10.2026), coredump (the USB-CDC console gives no output after a panic),
+# Two 4 MB OTA slots, coredump (the USB-CDC console gives no output after a panic),
 # slave_fw = ESP-Hosted co-processor image for the ESP32-C6 (pushed to the C6 over
 # SDIO by the updater, see docs/C6_UPDATE.md), data = LittleFS build output, userdata = the
 # person's own files, which no flash writes an image over.

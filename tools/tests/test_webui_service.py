@@ -137,7 +137,7 @@ const out = {{}};
 for (const [c, xs] of Object.entries(inputs)) out[c] = xs.map((x) => s[names[c]](x));
 out.boot_grade = {json.dumps(BOOTS)}.map(s.bootGrade);
 const U = {{ b: 'Б', kb: 'КБ', mb: 'МБ' }};
-// The panel's Ukrainian, with its decimal comma (the customer's decision 7, 12.10.2026).
+// The panel's Ukrainian, with its decimal comma.
 out.bytes = {json.dumps(BYTES)}.map((b) => s.bytes(b, U, ','));
 out.uptime = {json.dumps(UPTIME)}.map((x) => s.uptime(x, 'д'));
 out.gain_reduction = {json.dumps(GAIN)}.map((x) => s.gainReduction(x, ',') + ' дБ');
@@ -157,7 +157,7 @@ console.log(JSON.stringify(out));
 
 def test_the_tone_keys_match_the_firmware():
     """The test tone as lib/calib.js names it: the manifest's defaults and the firmware's timeout.
-    The amplifier ceiling's arithmetic left with its page (customer, 18.10.2026)."""
+    The amplifier ceiling's arithmetic left with its page."""
     lib = (WEBUI / "lib" / "calib.js").as_uri()
     out = json.loads(node(f"""
 import * as c from {json.dumps(lib)};
@@ -187,8 +187,8 @@ def test_a_test_tone_leaves_nothing_saved():
 
 
 def test_calibration_page_and_shell_keep_the_rules():
-    """The amplifier's ceiling is set nowhere in the web (customer, 18.10.2026: «Максимум» is the one
-    limit); the tone bar is the shell's, so a tone shows, and stops, on every page."""
+    """The amplifier's ceiling is set nowhere in the web («Максимум» is the one limit); the tone
+    bar is the shell's, so a tone shows, and stops, on every page."""
     import re
     for p in WEBUI.rglob("*"):
         if p.suffix in (".svelte", ".js") and p.is_file():

@@ -4,7 +4,7 @@ Svelte 4 re-evaluates a template expression only when a variable written in that
 changes. A plain function that reads `$t` inside, called as `{label(x)}`, is therefore
 evaluated once with the catalog that was there at the first render — the bundled Ukrainian
 one — and keeps those words after `/lang/<lang>.json` arrives. That is how the English
-Stations page said «кнопка 1» (customer, 25.10.2026) although en.json had `st.preset_n`.
+Stations page said «кнопка 1» although en.json had `st.preset_n`.
 
 The fix is `$: label = (x) => ...` (or passing `$t` into the call). This test finds plain
 `function name(...)` and `const name = (...) =>` declarations whose body reads `$t`, and fails
@@ -105,7 +105,7 @@ def test_catalog_helpers_called_from_markup_are_reactive():
 
 
 def test_the_check_catches_the_stations_bug(tmp_path, monkeypatch):
-    # The exact shape of the 25.10 bug, so the check above is known to bite.
+    # The exact shape of the Stations bug, so the check above is known to bite.
     bad = tmp_path / "Bad.svelte"
     bad.write_text(
         "<script>\n  import { t } from './i18n.js';\n"

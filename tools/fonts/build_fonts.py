@@ -54,9 +54,9 @@ SYMBOLS_FILL = {0: BUILD / "MaterialSymbolsRounded-fill0.ttf",
 # ── character coverage ──
 # The interface itself is Ukrainian, but the text faces also draw what other people wrote: track
 # tags, station names, ICY titles, DLNA servers, phone names. Those come in every European
-# language, and a glyph the face lacks is a box on the glass. Until 11.10.2026 the set was cut
-# to Ukrainian ("Russian-only letters we never render") and Latin-1 letters; the customer then
-# saw "Режисс□р" on the standby face, and boxes in Latin names too. The set is now European:
+# language, and a glyph the face lacks is a box on the glass. A set cut to Ukrainian ("Russian-only
+# letters we never render") and Latin-1 letters drew "Режисс□р" on the standby face, and boxes
+# in Latin names too. The set is European:
 #
 #   latin subset     ASCII; all of Latin-1 — the no-break space tags are full of, © ® ½ ¿ ²,
 #                    é ü ñ; ı Œ œ (Turkish, French), which @fontsource keeps here and not in
@@ -69,8 +69,8 @@ SYMBOLS_FILL = {0: BUILD / "MaterialSymbolsRounded-fill0.ttf",
 #   cyrillic         the whole basic block 0x400-0x45F (Ё ё, Belarusian Ў ў, Serbian and
 #                    Macedonian), Ґ ґ, and №.
 #
-# Left out, and still a box: Greek, Vietnamese, CJK, emoji, Arabic, Hebrew. Measured on
-# 11.10.2026: about 210 more glyphs per face, ≈ +235 KB of flash across the seven text faces.
+# Left out, and still a box: Greek, Vietnamese, CJK, emoji, Arabic, Hebrew. Measured: about
+# 210 more glyphs per face, ≈ +235 KB of flash across the seven text faces.
 ASCII = "0x20-0x7F"
 LATIN1 = "0xA0-0xFF"
 # lv_font_conv refuses a range in which the font has nothing, so the codepoints are listed one
@@ -86,9 +86,9 @@ CLOCK_RANGE = "0x20,0x2D,0x30-0x39,0x3A"     # space, dash (the "--:--" before t
 
 # ── text faces: (symbol, weight, px, latin range, latin-ext range or None, cyrillic range or None) ──
 # One face per type role in modules/ui_lvgl/src/ui_m3.h, and no more: every face is flash.
-# Nothing under 16 px: the customer read the first component page on the glass (24.09.2026)
-# and could not read 12 or 14 from where a stereo is looked at, and wanted 16 larger still —
-# so the whole scale moved up a step from the mock's, and the smallest role is 16.
+# Nothing under 16 px: 12 or 14 cannot be read on the glass from where a stereo is looked at,
+# and 16 reads small there too — so the whole scale is a step up from the mock's, and the
+# smallest role is 16.
 FACES = [
     ("ui_font_500_16",  500, 16,  TEXT_RANGE, LATIN_EXT, CYR),   # label_s
     ("ui_font_500_18",  500, 18,  TEXT_RANGE, LATIN_EXT, CYR),   # label_m
