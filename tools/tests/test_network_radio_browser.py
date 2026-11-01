@@ -346,13 +346,16 @@ static bool post_if_command(ModuleManager* m, const char* key, int32_t value) {
   return true;
 }
 static void log_clamp(const char*, const char*, double, double, const gen::StateMeta*) {}
+struct PersistService { int flushes = 0; void flush_now() { ++flushes; } };
 struct HttpService {
   SharedState* state_ = nullptr;
   ModuleManager* modules_ = nullptr;
+  PersistService* persist_ = nullptr;
   static bool check_auth(httpd_req_t*) { return true; }
   static void set_cors_headers(httpd_req_t*) {}
   static esp_err_t handle_post_settings(httpd_req_t*);
   static esp_err_t handle_get_backup(httpd_req_t*);
+  static esp_err_t handle_post_restore(httpd_req_t*);
 };
 """
 
@@ -411,6 +414,52 @@ int main() {
   req.user_ctx = &backup;
   HttpService::handle_get_backup(&req);
   if (req.resp != R"({"modesp_backup":1,"keys":{"audio.volume":40,"audio.mute":true}})") return 6;
+  return 0;
+}
+"""
+    build_and_run(tmp_path, harness,
+                  [ROOT / "components/jsmn", ROOT / "components/modesp_net/include"])
+
+
+def test_restore_takes_a_value_of_the_keys_type(tmp_path):
+    source = (ROOT / "components/modesp_net/src/http_service.cpp").read_text(encoding="utf-8")
+    handlers = "\n".join(extract(source, signature) for signature in (
+        "static bool value_fits(",
+        "esp_err_t HttpService::handle_post_restore(",
+    ))
+    harness = HTTPD_STUBS + SETTINGS_STUBS + r"""
+#define pdMS_TO_TICKS(ms) (ms)
+static void vTaskDelay(int) {}
+static void esp_restart() {}
+static void stop_modules_on_main(ModuleManager*) {}
+""" + handlers + "\n}\n" + r"""
+using namespace modesp;
+static httpd_req_t restore(HttpService& svc, const char* body) {
+  httpd_req_t req;
+  req.user_ctx = &svc;
+  req.body = body;
+  HttpService::handle_post_restore(&req);
+  return req;
+}
+int main() {
+  SharedState st;
+  PersistService ps;
+  HttpService svc;
+  svc.state_ = &st;
+  svc.persist_ = &ps;
+  st.set("audio.volume", (int32_t)30);
+  st.set("audio.mute", false);
+  // a hand-edited backup: no value of its key's type, and a key that is not persisted
+  httpd_req_t r = restore(svc, R"({"modesp_backup":1,"keys":{"audio.volume":true,"audio.mute":1,)"
+                               R"("ui.backlight":null,"radio.cmd":2}})");
+  if (r.status != 200 || r.resp != R"({"ok":true,"restored":0,"skipped":4})") return 1;
+  if (std::get<int32_t>(*st.get("audio.volume")) != 30 || std::get<bool>(*st.get("audio.mute")) ||
+      st.get("ui.backlight")) return 2;
+  // the values of their key's type go in around one that is not
+  r = restore(svc, R"({"modesp_backup":1,"keys":{"audio.volume":"50","ui.backlight":80,"audio.mute":true}})");
+  if (r.status != 200 || r.resp != R"({"ok":true,"restored":2,"skipped":1})") return 3;
+  if (std::get<int32_t>(*st.get("audio.volume")) != 30 || std::get<int32_t>(*st.get("ui.backlight")) != 80 ||
+      !std::get<bool>(*st.get("audio.mute")) || ps.flushes != 2) return 4;
   return 0;
 }
 """

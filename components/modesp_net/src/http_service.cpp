@@ -1293,9 +1293,18 @@ esp_err_t HttpService::handle_post_restore(httpd_req_t* req) {
             skipped++;
             continue;
         }
+        // player-fork: of the key's type, as POST /api/settings takes it. A true for an int key (a
+        // hand-edited backup) was answered "restored" while PersistService had no int to write,
+        // and a null went in as 0. No persist key is a string (generate_ui.py refuses one), so
+        // nothing restored here needs unescaping.
+        if (!value_fits(meta, tokens[j + 1], val_str)) {
+            ESP_LOGW(TAG, "POST /restore: skipped '%s' (not a %s)", key_str, meta->type);
+            skipped++;
+            continue;
+        }
 
         if (tokens[j + 1].type == JSMN_PRIMITIVE) {
-            if (val_str[0] == 't' || val_str[0] == 'f') {
+            if (strcmp(meta->type, "bool") == 0) {
                 self->state_->set(key_str, val_str[0] == 't');
                 restored++;
             } else if (strcmp(meta->type, "float") == 0) {

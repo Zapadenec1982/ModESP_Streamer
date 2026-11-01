@@ -266,7 +266,7 @@ HTTP Basic, realm `ModESP`. NVS-простір `auth`: `user`, `pass`, `enabled`
 | `GET`/`POST /api/auth` | `{"enabled","username"}` / див. «Автентифікація» |
 | `GET`/`POST /api/loglevel` | рівні логів: `{"tag","level"}`, `level` — `none`, `error`, `warn` або `info`, не вище стелі збірки (INFO); не зберігається |
 | `GET /api/log`, `GET /api/log/summary` | історія журналу ModESP; у `project.json` немає модуля-джерела, тож відповідь — 500 |
-| `GET /api/backup`, `POST /api/restore` | persist-ключі (числа й bool), `{"modesp_backup":1,"keys":{…}}`, ≤ 2 КБ; відновлення перезапускає панель |
+| `GET /api/backup`, `POST /api/restore` | persist-ключі (числа й bool), `{"modesp_backup":1,"keys":{…}}`, ≤ 2 КБ; відновлення пропускає ключ, що не є persist-ключем або чиє значення не має типу з маніфесту, відповідає `{"ok":true,"restored":N,"skipped":M}` і перезапускає панель |
 | `POST /api/restart` | запис налаштувань, зупинка модулів у головному циклі (≤ 2 с), перезапуск |
 | `POST /api/factory-reset` | стирає NVS (Wi-Fi, логін, налаштування, ключі AirPlay) і перезапускає; розділ `userdata` не чіпає |
 | `GET`/`POST /api/ota` | див. «OTA» |

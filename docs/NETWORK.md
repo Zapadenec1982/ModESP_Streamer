@@ -272,7 +272,7 @@ Framework routes (`http_service.cpp`):
 | `GET`/`POST /api/auth` | `{"enabled","username"}` / see "Authentication" |
 | `GET`/`POST /api/loglevel` | log levels: `{"tag","level"}`, `level` — `none`, `error`, `warn` or `info`, not above the build's ceiling (INFO); not persisted |
 | `GET /api/log`, `GET /api/log/summary` | ModESP journal history; `project.json` has no source module, so the response is 500 |
-| `GET /api/backup`, `POST /api/restore` | persist keys (numbers and bool), `{"modesp_backup":1,"keys":{…}}`, ≤ 2 KB; restoring restarts the panel |
+| `GET /api/backup`, `POST /api/restore` | persist keys (numbers and bool), `{"modesp_backup":1,"keys":{…}}`, ≤ 2 KB; a restore skips a key that is not a persist key or whose value is not of its manifest type, answers `{"ok":true,"restored":N,"skipped":M}` and restarts the panel |
 | `POST /api/restart` | saving settings, stopping the modules in the main loop (≤ 2 s), restart |
 | `POST /api/factory-reset` | erases NVS (Wi-Fi, login, settings, AirPlay keys) and restarts; does not touch the `userdata` partition |
 | `GET`/`POST /api/ota` | see "OTA" |
