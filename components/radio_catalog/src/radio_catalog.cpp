@@ -156,15 +156,8 @@ size_t url_encode(const char* in, char* out, size_t out_sz) {
 }
 
 size_t search_path(const Query& q, uint32_t limit, char* out, size_t out_sz) {
-    size_t n = 0;
-    bool ok = true;
-    auto add = [&](const char* fmt, auto... args) {
-        if (!ok) return;
-        const int w = snprintf(out + n, out_sz - n, fmt, args...);
-        if (w < 0 || (size_t)w >= out_sz - n) { ok = false; return; }
-        n += (size_t)w;
-    };
     if (!out || !out_sz) return 0;
+    jsmn_util::Appender add(out, out_sz);
     char enc[3 * sizeof(q.arg)];
     add("%s", "/json/stations/search?hidebroken=true");
     switch (q.kind) {
@@ -194,7 +187,7 @@ size_t search_path(const Query& q, uint32_t limit, char* out, size_t out_sz) {
     case Quality::LOSSLESS: add("%s", "&codec=FLAC"); break;
     }
     add("&limit=%u&offset=%u", (unsigned)limit, (unsigned)q.offset);
-    return ok ? n : 0;
+    return add.size();
 }
 
 bool keep(const Row& r, Quality q) {

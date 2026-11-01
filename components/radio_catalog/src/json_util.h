@@ -3,13 +3,15 @@
  * @brief jsmn helpers shared by radio_catalog.cpp and radio_art.cpp. Internal to the component.
  *
  * Header-only and in an anonymous namespace, so each source file gets its own copy, as with
- * jsmn itself (JSMN_STATIC).
+ * jsmn itself (JSMN_STATIC). What every parser needs (key_is, span, the UTF-8 writer) is
+ * components/jsmn_util's; what is here is the catalog's own.
  */
 
 #pragma once
 
 #define JSMN_STATIC          // jsmn is header-only and linked in several places
 #include "jsmn.h"
+#include "jsmn_util.h"
 
 #include <cstdint>
 #include <cstdlib>
@@ -17,63 +19,10 @@
 
 namespace {
 
-inline bool key_is(const char* json, const jsmntok_t& t, const char* name) {
-    const int n = t.end - t.start;
-    return t.type == JSMN_STRING && (int)strlen(name) == n &&
-           !strncmp(json + t.start, name, (size_t)n);
-}
-
-/// How many tokens one value occupies, everything nested inside it included. jsmn lays them
-/// out depth-first, so skipping a value is a matter of counting its children.
-///
-/// A loop, not recursion: the depth is whatever the body says, and these bodies come over
-/// plain HTTP. A few hundred levels of '[' overflowed the 8 KB catalog task's stack and
-/// rebooted the panel (deep review 2026-10-12, RP-2). Each token takes the place of one
-/// child still owed and owes its own in turn; the value ends when nothing is owed.
-inline int span(const jsmntok_t* tok, int count, int i) {
-    if (i >= count) return 1;
-    int j = i + 1;
-    for (int pending = tok[i].size; pending > 0 && j < count; ++j) pending += tok[j].size - 1;
-    return j - i;
-}
-
-inline int hex4(const char* p) {
-    int v = 0;
-    for (int i = 0; i < 4; i++) {
-        const char c = p[i];
-        v <<= 4;
-        if (c >= '0' && c <= '9')      v |= c - '0';
-        else if (c >= 'a' && c <= 'f') v |= c - 'a' + 10;
-        else if (c >= 'A' && c <= 'F') v |= c - 'A' + 10;
-        else return -1;
-    }
-    return v;
-}
-
-/// Appends one code point as UTF-8, keeping room for the terminator. False if it does not fit.
-inline bool put_utf8(uint32_t cp, char* out, size_t& o, size_t cap) {
-    unsigned char b[4];
-    size_t n;
-    if (cp < 0x80) {
-        b[0] = (unsigned char)cp; n = 1;
-    } else if (cp < 0x800) {
-        b[0] = (unsigned char)(0xC0 | (cp >> 6));
-        b[1] = (unsigned char)(0x80 | (cp & 0x3F)); n = 2;
-    } else if (cp < 0x10000) {
-        b[0] = (unsigned char)(0xE0 | (cp >> 12));
-        b[1] = (unsigned char)(0x80 | ((cp >> 6) & 0x3F));
-        b[2] = (unsigned char)(0x80 | (cp & 0x3F)); n = 3;
-    } else {
-        b[0] = (unsigned char)(0xF0 | (cp >> 18));
-        b[1] = (unsigned char)(0x80 | ((cp >> 12) & 0x3F));
-        b[2] = (unsigned char)(0x80 | ((cp >> 6) & 0x3F));
-        b[3] = (unsigned char)(0x80 | (cp & 0x3F)); n = 4;
-    }
-    if (o + n >= cap) return false;
-    memcpy(out + o, b, n);
-    o += n;
-    return true;
-}
+using jsmn_util::hex4;
+using jsmn_util::key_is;
+using jsmn_util::put_utf8;
+using jsmn_util::span;
 
 /// Copies a JSON string token, undoing every escape — \uXXXX and surrogate pairs included,
 /// which Radio Browser does send now and then — and never cutting a UTF-8 sequence in half
