@@ -105,8 +105,9 @@ export function createSettingSender(key, { debounceMs = 500, endpoint = '/api/se
  * Write `keys` now, with no sender's delay, and show them at once. If the device does not take
  * them, the page shows again what it showed before (where nothing newer came in meanwhile) and
  * the error is thrown: a page that goes on after a failed write must not show what was never
- * written. For the writes that end something — «Прийняти», «Лишити як було» — after which the
- * page goes and a sender's cleanup() would drop a value it had not sent yet.
+ * written. For a one-off write a tap makes (a source, a queue mode, a tone, a measurement), and
+ * for the writes that end something — «Прийняти», «Лишити як було» — after which the page goes and
+ * a sender's cleanup() would drop a value it had not sent yet.
  */
 export async function writeNow(keys) {
   const was = get(state);

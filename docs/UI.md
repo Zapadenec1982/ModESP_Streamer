@@ -535,8 +535,9 @@ The endpoint formats are in [NETWORK.md](NETWORK.md); the EQ document and calibr
   the newest; otherwise, one after a `debounceMs` pause. There is never more than one request in
   flight. A refusal puts the device's value back on the page; `cleanup()` on leaving the page sends
   the delayed one.
-- `writeNow(keys)` — a write without delay for actions that close the page; on a refusal the page
-  shows the previous value and gets an error.
+- `writeNow(keys)` — a write without delay, for a one-off write a tap makes (a source, a queue mode,
+  a tone, a measurement) and for actions that close the page; on a refusal the page shows the
+  previous value and gets an error.
 
 **Documents with a revision** have endpoints of their own: EQ (`/api/eq`, an edit carries the
 revision, a stale one gets 409 and the page rereads; `audio.eq_rev` says that the panel changed the

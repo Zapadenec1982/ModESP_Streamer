@@ -15,9 +15,7 @@
   import { t, fmt, msg } from '../../stores/i18n.js';
   import { state } from '../../stores/state.js';
   import { live } from '../../lib/live.js';
-  import { apiPost } from '../../lib/api.js';
-  import { setStateKey } from '../../stores/state.js';
-  import { createSettingSender } from '../../lib/settings.js';
+  import { createSettingSender, writeNow } from '../../lib/settings.js';
   import { toastError, toastSuccess } from '../../stores/toast.js';
   import { playTone, stopTone, CHAIN } from '../../lib/tone.js';
   import { portWrites, meterOutcome } from '../../lib/speakers.js';
@@ -49,13 +47,13 @@
   $: measCh = s['audio.port_meas_ch'] ?? 1;
   $: measHz = Number(ro('audio.port_meas_hz')) || 0;
   $: measSays = msg($t, ro('audio.port_meas_status') || '');   // a message of the catalog (U8.5)
-  const portMeas = (on) => act(async () => { setStateKey('audio.port_meas', on); await apiPost('/api/settings', { 'audio.port_meas': on }); });
+  // the meter and what it found are shown at once, and taken back if the device refuses them
+  const portMeas = (on) => act(() => writeNow({ 'audio.port_meas': on }));
   // The meter offers what it found and writes nothing (S6): «Застосувати» writes it, as measured.
   $: measFound = meterOutcome(ro('audio.port_meas_status'), measuring) === 'found' && measHz > 0;
   const portApply = () => act(async () => {
     const keys = portWrites(measHz, true);
-    Object.entries(keys).forEach(([k, v]) => setStateKey(k, v));
-    await apiPost('/api/settings', keys);
+    await writeNow(keys);
     toastSuccess(fmt($t['cal.port_is'], { hz: keys['audio.port_hz'] }));
   });
   const measChSend = createSettingSender('audio.port_meas_ch', { debounceMs: 0 });

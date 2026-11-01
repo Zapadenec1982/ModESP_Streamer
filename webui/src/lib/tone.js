@@ -1,6 +1,6 @@
 import { writable, get } from 'svelte/store';
-import { state, setStateKey } from '../stores/state.js';
-import { apiPost } from './api.js';
+import { state } from '../stores/state.js';
+import { writeNow } from './settings.js';
 import { CHAIN, TONE_DEFAULTS } from './calib.js';
 
 /*
@@ -17,6 +17,7 @@ import { CHAIN, TONE_DEFAULTS } from './calib.js';
  * A step that plays a tone sends every key it needs in one body, the source last, so the device
  * never starts the tone with the previous step's level (/api/settings sets keys in order, and the
  * audio module may look between two of them). Stopping sends the source first for the same reason.
+ * Both go through writeNow (lib/settings.js): shown at once, taken back if the device refuses.
  */
 
 export { CHAIN, RAW, BURSTS, LEFT, RIGHT, BOTH, CAL_MAX_S } from './calib.js';
@@ -67,11 +68,6 @@ function previous() {
   }
 }
 
-async function send(body) {
-  for (const [k, v] of Object.entries(body)) setStateKey(k, v);
-  await apiPost('/api/settings', body);
-}
-
 let stopTimer = null;
 
 /**
@@ -86,7 +82,7 @@ export async function playTone({ mode, hz, db10, ch }, { extra = {}, forMs = 0 }
   if (db10 !== undefined) body['audio.tone_db10'] = db10;
   if (ch !== undefined) body['audio.tone_ch'] = ch;
   body['audio.source'] = SRC_TONE;
-  await send(body);
+  await writeNow(body);
   if (forMs) stopTimer = setTimeout(() => stopTone().catch(() => {}), forMs);
 }
 
@@ -106,7 +102,7 @@ export async function stopTone({ restore = false, extra = {} } = {}) {
   else if (playing) body['audio.source'] = 0;
   body['audio.tone_mode'] = CHAIN;
   Object.assign(body, extra);
-  await send(body);
+  await writeNow(body);
   if (restore) {
     try { sessionStorage.removeItem(PREV); } catch (e) { /* storage blocked */ }
   }

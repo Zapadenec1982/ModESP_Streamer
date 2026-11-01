@@ -158,3 +158,21 @@ check(get(state)['audio.port_hz'] === 0, 'what was shown before comes back');
 check(get(state)['audio.new_key'] === undefined, 'a key that was not there is not left behind');
 check(get(state)['audio.spk_type'] === 2, 'a newer value from the device is not overwritten');
 """)
+
+
+def test_a_tone_the_device_refuses_is_taken_back():
+    """lib/tone.js writes through writeNow(): a tone the device did not start is not left on the
+    page as playing — the shell's tone bar and the source cards read audio.source."""
+    run(f"""
+const {{ get }} = await import('svelte/store');
+const {{ state, setStateKey }} = await import({lib("stores/state.js")});
+const {{ playTone, CHAIN }} = await import({lib("lib/tone.js")});
+setStateKey('audio.source', 4);
+refuse = true;
+let failed = null;
+try {{ await playTone({{ mode: CHAIN, hz: 40 }}, {{ extra: {{ 'audio.cal_vol_cap': 20 }} }}); }} catch (e) {{ failed = e; }}
+check(failed && /busy/.test(failed.message), 'the error is thrown to the step');
+check(posts.length === 1 && posts[0].body['audio.source'] === 1, 'the tone was asked for');
+check(get(state)['audio.source'] === 4, 'the source that played is shown again');
+check(get(state)['audio.cal_vol_cap'] === undefined, 'the step keys are not left behind');
+""")

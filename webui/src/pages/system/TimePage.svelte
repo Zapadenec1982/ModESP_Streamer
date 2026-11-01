@@ -40,18 +40,29 @@
   $: known = TIMEZONES.some((z) => z.tz === tz);
   $: s = $state;
 
-  async function save(body) {
+  async function save(body, undo = () => {}) {
     try {
       await apiPost('/api/time', body);
       toastSuccess($t['time.saved']);
       setTimeout(load, 1500);
     } catch (e) {
+      undo();
       toastError(e.message);
     }
   }
 
-  const setNtp = (on) => { ntp = on; save({ mode: on ? 'ntp' : 'manual', timezone: tz }); };
-  const setTz = (v) => { tz = v; save({ mode: ntp ? 'ntp' : 'manual', timezone: v }); };
+  // Shown at once; one the device refuses is taken back, unless it was changed again meanwhile
+  // (as lib/settings.js writeNow does) — the switch and the zone show what the panel keeps.
+  const setNtp = (on) => {
+    const was = ntp;
+    ntp = on;
+    save({ mode: on ? 'ntp' : 'manual', timezone: tz }, () => { if (ntp === on) ntp = was; });
+  };
+  const setTz = (v) => {
+    const was = tz;
+    tz = v;
+    save({ mode: ntp ? 'ntp' : 'manual', timezone: v }, () => { if (tz === v) tz = was; });
+  };
   const setManual = (ms) => save({ mode: 'manual', timezone: tz, time: Math.floor(ms / 1000) });
 </script>
 

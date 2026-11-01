@@ -8,13 +8,13 @@
   // screen_now.cpp), and so is the background: the shell tints the page with ui.cover_rgb.
   import { onDestroy } from 'svelte';
   import { now, subLine } from '../stores/now.js';
-  import { state, setStateKey } from '../stores/state.js';
+  import { state } from '../stores/state.js';
   import { t, fmt, msg, plural, language, K } from '../stores/i18n.js';
   import { href } from '../stores/router.js';
   import { command } from '../lib/cmd.js';
   import { badge } from '../lib/numbers.js';
   import { apiPost, apiBlob } from '../lib/api.js';
-  import { createSettingSender } from '../lib/settings.js';
+  import { createSettingSender, writeNow } from '../lib/settings.js';
   import { toastSuccess, toastError } from '../stores/toast.js';
   import Icon from '../m3/Icon.svelte';
   import IconButton from '../m3/IconButton.svelte';
@@ -72,15 +72,13 @@
     soundOpen = true;
   }
 
-  // ── the card's queue modes ──
+  // ── the card's queue modes: shown at once, taken back if the device refuses them ──
   function cycleRepeat() {
     const next = ((np.repeat || 0) + 1) % 3;
-    setStateKey('player.repeat', next);
-    apiPost('/api/settings', { 'player.repeat': next }).catch((e) => toastError(e.message));
+    writeNow({ 'player.repeat': next }).catch((e) => toastError(e.message));
   }
   function toggleShuffle() {
-    setStateKey('player.shuffle', !np.shuffle);
-    apiPost('/api/settings', { 'player.shuffle': !np.shuffle }).catch((e) => toastError(e.message));
+    writeNow({ 'player.shuffle': !np.shuffle }).catch((e) => toastError(e.message));
   }
 
   function seek(e) {

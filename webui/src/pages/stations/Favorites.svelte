@@ -5,9 +5,9 @@
   // goes back whole, with the generation it was made from (lib/stations.js), and the page
   // reloads when radio.list_rev says the list moved — by its own hand or the panel's.
   import { onMount, onDestroy } from 'svelte';
-  import { state, setStateKey } from '../../stores/state.js';
+  import { state } from '../../stores/state.js';
   import { t, fmt, plural, language, K } from '../../stores/i18n.js';
-  import { apiPost } from '../../lib/api.js';
+  import { writeNow } from '../../lib/settings.js';
   import { toastError, toastSuccess, toastWarn } from '../../stores/toast.js';
   import * as S from '../../lib/stations.js';
   import Group from '../../m3/Group.svelte';
@@ -102,9 +102,8 @@
     const body = i === s['radio.station'] && radioOn
       ? { 'audio.source': 5, 'radio.cmd': 1 }
       : { 'audio.source': 5, 'radio.station': i };
-    setStateKey('audio.source', 5);
     try {
-      await apiPost('/api/settings', body);
+      await writeNow(body);           // shown at once, taken back if the device refuses it
     } catch (e) {
       toastError(e.message);
     }

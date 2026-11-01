@@ -9,10 +9,10 @@
   // The lists — the stations, the catalog, the library — are the Player's, for the source that
   // plays.
   import { now } from '../stores/now.js';
-  import { state, setStateKey } from '../stores/state.js';
+  import { state } from '../stores/state.js';
   import { t, K, plural, language } from '../stores/i18n.js';
   import { go } from '../stores/router.js';
-  import { apiPost } from '../lib/api.js';
+  import { writeNow } from '../lib/settings.js';
   import { toastError } from '../stores/toast.js';
   import { badge } from '../lib/numbers.js';
   import Icon from '../m3/Icon.svelte';
@@ -77,12 +77,12 @@
       return;
     }
     if ($now.kind !== c.id) {
-      // in body order: the source first, then the radio's "play" (screen_src.cpp:90-113)
+      // in body order: the source first, then the radio's "play" (screen_src.cpp:90-113); shown
+      // at once, and taken back if the device refuses it
       const body = { 'audio.source': c.source };
       if (c.id === 'radio') body['radio.cmd'] = 1;
-      setStateKey('audio.source', c.source);
       try {
-        await apiPost('/api/settings', body);
+        await writeNow(body);
       } catch (e) {
         toastError(e.message);
         return;
