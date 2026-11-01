@@ -6,8 +6,8 @@
  * The Player's tile shows what a station plays — the track's cover, else the station's logo
  * (modules/radio/src/art.cpp) — and for a station with neither, this: a disc whose colour comes
  * from the name, so a station keeps it from day to day and from the tile to its preset button,
- * and a label made from the name. The presets show the same disc, smaller, with the label's
- * first character (docs/UI.md, "Panel pages").
+ * and a label made from the name. A preset shows the same disc, smaller, with the label's first
+ * character, while the panel keeps no logo for its station (docs/UI.md, "Panel pages").
  *
  * The label is the first word that says something — leading numbers and frequencies ("106.5")
  * and the word "radio", which so many names start with, skipped — when it has at most

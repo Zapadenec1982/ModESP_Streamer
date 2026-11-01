@@ -52,6 +52,7 @@
 #include "bt_settings.h"
 #include "stations.h"
 #include "station_badge.h"
+#include "radio_catalog_ui.h"   // the presets' logos the radio module keeps (station_logo.h)
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -109,9 +110,10 @@ constexpr int32_t PH_TEXT = PH_DISC - 40;
 // The station face. ‹ and › are a finger's 64 whatever their glyph, and start where the row's
 // buttons stop taking a finger, so neither steals the other's; the name is one headline line 4 px
 // lower, between them, and their glyphs stand on that line. The presets are two rows of three
-// 64-px buttons that end where the tile does, as the transport did: the station's disc, then its
-// name in up to two lines. Each keeps the outline the playing one shows, uncoloured, so nothing in
-// a button moves when it plays (LVGL lays a child out inside the border).
+// 64-px buttons that end where the tile does, as the transport did: the station's logo in its disc
+// (or its stand-in), then its name in up to two lines. Each keeps the outline the playing one
+// shows, uncoloured, so nothing in a button moves when it plays (LVGL lays a child out inside the
+// border).
 constexpr int32_t ST_Y      = ROW_H + ROW_EXT;               // 56
 constexpr int32_t ST_ARROW  = 64;
 constexpr int32_t ST_NAME_Y = ST_Y + 4;
@@ -128,6 +130,7 @@ constexpr int32_t PRE_TEXT_X = PRE_PAD + PRE_LOGO + PRE_PAD;   // 56
 constexpr int32_t PRE_TEXT_W = PRE_W - PRE_TEXT_X - PRE_PAD;   // 80: «Порожньо», the widest word, is 78.4
 static_assert(N_PRE == 2 * PRE_COLS, "the presets are two rows of three");
 static_assert(PRE_COLS * PRE_W + (PRE_COLS - 1) * PRE_GAP == COL_W, "the grid fills the column");
+static_assert(PRE_LOGO == station_logo::SIDE, "a logo is kept at the disc's own size, drawn unscaled");
 static_assert(ST_Y + ST_ARROW <= PRE_Y, "the arrows stand over the grid, not on it");
 
 struct Now {
@@ -187,8 +190,10 @@ struct Now {
     lv_obj_t*   st_name = nullptr;
     lv_obj_t*   pre[N_PRE]      = {};
     lv_obj_t*   pre_disc[N_PRE] = {};   ///< the station's disc, or the empty button's number
-    lv_obj_t*   pre_mark[N_PRE] = {};   ///< what is on the disc
+    lv_obj_t*   pre_logo[N_PRE] = {};   ///< the station's logo in the disc, when the panel keeps one
+    lv_obj_t*   pre_mark[N_PRE] = {};   ///< what is on the disc otherwise
     lv_obj_t*   pre_lbl[N_PRE]  = {};
+    lv_image_dsc_t pre_dsc[N_PRE] = {};
     // spectrum
     lv_obj_t* spec = nullptr;
 
@@ -202,6 +207,7 @@ struct Now {
     char  dur_txt[12]     = "";
     char  st_name_txt[64] = "";
     uint32_t pre_gen      = 0xFFFFFFFF;   ///< the station list's generation the presets show
+    uint32_t logo_gen     = 0xFFFFFFFF;   ///< …and the logos' (radio_catalog::logo_shelf())
     int32_t  pre_station  = -2;
     int8_t   pre_storable = -1;
     int8_t   st_steps     = -1;           ///< ‹ and › have a station to step to
@@ -218,6 +224,13 @@ struct Now {
 };
 
 Now& n = uih::in_psram<Now>();   // internal RAM is the Wi-Fi co-processor's and the I2S descriptors'
+
+/// The presets' logos as the radio module last published them (radio_catalog::logo_shelf()):
+/// copied on this task when they move, into the copy the buttons are not drawing from, which then
+/// becomes theirs — a copy cut short by a write is never drawn. Not in `Now`: build() resets that
+/// through a temporary on this task's stack, and six logos are 19 KB.
+station_logo::Shelf* logos[2] = {&uih::in_psram<station_logo::Shelf>(), &uih::in_psram<station_logo::Shelf>()};
+int logos_drawn = 0;                 ///< the copy the buttons draw from
 
 /// m:ss, with the minutes clamped so a nonsense duration cannot overrun the field.
 void mmss(int32_t sec, char* out, size_t n_out) {
@@ -544,6 +557,11 @@ lv_obj_t* build(lv_obj_t* parent, UiCtx& c) {
         n.pre[i] = p;
         n.pre_disc[i] = m3w::surface(p, PRE_PAD - PRE_LINE, (PRE_H - PRE_LOGO) / 2 - PRE_LINE, PRE_LOGO,
                                      PRE_LOGO, t.c.surface_highest, m3::shape::FULL);
+        // The station's logo fills the disc, clipped to its circle; the mark is for the rest.
+        lv_obj_set_style_clip_corner(n.pre_disc[i], true, 0);
+        n.pre_logo[i] = lv_image_create(n.pre_disc[i]);
+        lv_obj_set_pos(n.pre_logo[i], 0, 0);
+        uih::show(n.pre_logo[i], false);
         n.pre_mark[i] = m3w::text(n.pre_disc[i], t.t.label_m, t.c.on_surface_var, "");
         lv_obj_center(n.pre_mark[i]);
         n.pre_lbl[i] = m3w::text(p, t.t.label_s, t.c.on_surface, "");
@@ -644,13 +662,24 @@ void set_placeholder(const char* name) {
     lv_label_set_text(n.ph_lbl, b.label);
 }
 
-/// The logo a preset shows for its station: the generated stand-in (station_badge.h), as the
-/// panel keeps no station's logo but the playing one's, in the tile.
-station_badge::Badge logo_for(const radio_core::Station& st) { return station_badge::make(st.name); }
+/// What a preset shows for its station: the logo the panel keeps for it (src/logos.cpp in the
+/// radio module — a station with a Radio Browser uuid, once its logo has been had), else the
+/// generated stand-in (station_badge.h).
+struct PresetLogo {
+    const uint16_t*      px = nullptr;   ///< station_logo::SIDE square, RGB565; nullptr: the stand-in
+    station_badge::Badge badge;
+};
+PresetLogo logo_for(const radio_core::Station& st) {
+    PresetLogo l;
+    if (const station_logo::Thumb* kept = logos[logos_drawn]->find(st.uuid)) l.px = kept->px;
+    else l.badge = station_badge::make(st.name);
+    return l;
+}
 
 /// The presets as the Stations page paints its own: the station's name — or «Порожньо», and
 /// «Зберегти сюди» while a tap would store — and the playing one outlined in the accent. A
-/// station's disc carries the first character of its label; an empty button's, its number.
+/// station's disc carries its logo, or the first character of its label; an empty button's, its
+/// number.
 void paint_presets(const UiLvglModule::Snapshot& s, bool storable) {
     const auto& t = m3::theme();
     auto& list = radio_core::stations();
@@ -661,12 +690,27 @@ void paint_presets(const UiLvglModule::Snapshot& s, bool storable) {
         const bool have = idx >= 0 && list.at(idx, st);
         lv_obj_set_style_border_opa(n.pre[i], have && idx == s.radio_station ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
         const char* txt;
+        bool logo = false;
         if (have) {
-            const station_badge::Badge b = logo_for(st);
-            lv_obj_set_style_bg_color(n.pre_disc[i], m3::col(b.rgb), 0);
-            lv_obj_set_style_text_font(n.pre_mark[i], t.t.title_m, 0);
-            lv_obj_set_style_text_color(n.pre_mark[i], m3::col(station_badge::INK), 0);
-            lv_label_set_text(n.pre_mark[i], b.first);
+            const PresetLogo l = logo_for(st);
+            logo = l.px != nullptr;
+            if (logo) {
+                lv_image_dsc_t& d = n.pre_dsc[i];
+                d = lv_image_dsc_t{};
+                d.header.magic  = LV_IMAGE_HEADER_MAGIC;
+                d.header.cf     = LV_COLOR_FORMAT_RGB565;
+                d.header.w      = station_logo::SIDE;
+                d.header.h      = station_logo::SIDE;
+                d.header.stride = station_logo::SIDE * 2;
+                d.data          = (const uint8_t*)l.px;
+                d.data_size     = station_logo::PIXELS * 2;
+                lv_image_set_src(n.pre_logo[i], &d);
+            } else {
+                lv_obj_set_style_bg_color(n.pre_disc[i], m3::col(l.badge.rgb), 0);
+                lv_obj_set_style_text_font(n.pre_mark[i], t.t.title_m, 0);
+                lv_obj_set_style_text_color(n.pre_mark[i], m3::col(station_badge::INK), 0);
+                lv_label_set_text(n.pre_mark[i], l.badge.first);
+            }
             txt = st.name[0] ? st.name : "—";
             lv_obj_set_style_text_color(n.pre_lbl[i], m3::col(t.c.on_surface), 0);
         } else {
@@ -679,6 +723,8 @@ void paint_presets(const UiLvglModule::Snapshot& s, bool storable) {
             txt = tr(storable ? S::st_preset_store : S::st_preset_empty);
             lv_obj_set_style_text_color(n.pre_lbl[i], m3::col(storable ? t.c.primary : t.c.on_surface_var), 0);
         }
+        uih::show(n.pre_logo[i], logo);
+        uih::show(n.pre_mark[i], !logo);
         lv_label_set_text(n.pre_lbl[i], txt);
         // one line or two, centred in the button either way
         lv_point_t sz;
@@ -690,8 +736,9 @@ void paint_presets(const UiLvglModule::Snapshot& s, bool storable) {
 }
 
 /// The station face's controls: ‹ and › while the list has a station to step to, and the presets
-/// once the list, the station or what a tap on an empty one does has changed. The list is read
-/// settled — an odd generation is a write under way — as the Stations page reads it.
+/// once the list, the station, what a tap on an empty one does or the logos have changed. The
+/// list and the logos are read settled — an odd generation is a write under way — as the Stations
+/// page reads the list.
 void refresh_station(const UiLvglModule::Snapshot& s) {
     auto& list = radio_core::stations();
     const int count = list.count();
@@ -704,7 +751,17 @@ void refresh_station(const UiLvglModule::Snapshot& s) {
     }
     const uint32_t gen = list.generation();
     const int8_t storable = ui_preset_storable(s) ? 1 : 0;
-    if ((gen != n.pre_gen && !(gen & 1u)) || s.radio_station != n.pre_station || storable != n.pre_storable) {
+    // A logo arrived, or the presets moved: the radio module published the shelf again.
+    auto& shelf = radio_catalog::logo_shelf();
+    const uint32_t lgen = shelf.generation();
+    bool logos_moved = false;
+    if (lgen != n.logo_gen && !(lgen & 1u) && shelf.get(*logos[logos_drawn ^ 1])) {
+        logos_drawn ^= 1;
+        n.logo_gen = lgen;
+        logos_moved = true;
+    }
+    if (logos_moved || (gen != n.pre_gen && !(gen & 1u)) || s.radio_station != n.pre_station ||
+        storable != n.pre_storable) {
         n.pre_gen = gen;
         n.pre_station = s.radio_station;
         n.pre_storable = storable;

@@ -250,9 +250,12 @@ chosen. Its block, under the same row:
 - under it, centred, what it plays (`radio.now_playing`) and the codec badge; until it plays,
   "Connecting…", "Buffering…" or "Reconnecting…", and "Stopped" while it is idle;
 - where the transport stands, the six presets: a 3×2 grid of 144×64 buttons, each with the
-  station's disc (40 px, the first character of its label) and its name in up to two lines, the
-  playing station outlined in the accent colour, an empty one with its number and "Empty" — "Store
-  here" while a tap would store. They are the Stations page's buttons, with its rules ("Lists").
+  station's 40 px disc and its name in up to two lines, the playing station outlined in the accent
+  colour, an empty one with its number and "Empty" — "Store here" while a tap would store. The disc
+  shows the station's logo, clipped to the circle, once the panel keeps it — a station with a Radio
+  Browser `uuid` ([NETWORK.md](NETWORK.md), "Covers and logos"); otherwise it is the stand-in with
+  the first character of its label. The buttons are repainted when a logo arrives
+  (`radio_catalog::logo_shelf()`). They are the Stations page's buttons, with its rules ("Lists").
 
 Seeking — the progress bar's knob under a finger moves the bar and the time; letting go writes
 `player.seek_s` (card) or `radio.seek_s` (a DLNA track, when `radio.seekable`) once. Repeat and
