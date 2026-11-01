@@ -74,13 +74,13 @@ void WatchdogService::on_stall(liveness::Entry& e, uint32_t timeout_ms) {
     ESP_LOGE(TAG, "'%s' (%s) has not made progress for %lu ms — its task is stuck",
              e.name, owner, (unsigned long)timeout_ms);
 
+    // ErrorService makes the stall's one report out of this message (its on_message). A
+    // report() of our own beside it counted every stall twice — error.count, the history and
+    // MsgSystemError all saw two.
     MsgModuleTimeout msg;
     msg.module_name  = owner;
     msg.last_seen_ms = e.last_change_ms;
     publish(msg);
-
-    error_service_.report(owner, -201, ErrorSeverity::ERROR,
-                          "Task stopped making progress");
 
     // Restarting is opt-in per entry, and nothing opts in today. restart_module() calls
     // on_stop() and then on_init(), and every module here creates its tasks and buffers in

@@ -69,6 +69,7 @@ set(MODULE_SOURCES
     "${ROOT}/components/modesp_hal/src/driver_registry.cpp"
     "${ROOT}/components/modesp_services/src/config_service.cpp"  # fopen + mocked esp_log/littlefs/heap_caps
     "${ROOT}/components/modesp_services/src/error_service.cpp"   # portMUX → std::mutex in freertos_mock.h
+    "${ROOT}/components/modesp_services/src/watchdog_service.cpp" # liveness stalls, on the host clock in esp_timer_mock.h
     "${ROOT}/components/modesp_services/src/nvs_helper.cpp"      # over the in-memory NVS in mocks/nvs.h
     "${ROOT}/components/modesp_services/src/persist_service.cpp" # restore + the one-shot positional-key pass
     "${ROOT}/components/audio_dsp/src/dsp_chain.cpp"         # band design, the EQ/width/limiter chain, the tone
@@ -163,6 +164,7 @@ set(TEST_SOURCES
     "${CMAKE_SOURCE_DIR}/test_etl_asserts.cpp"
     "${CMAKE_SOURCE_DIR}/test_config_service.cpp"
     "${CMAKE_SOURCE_DIR}/test_error_service.cpp"
+    "${CMAKE_SOURCE_DIR}/test_watchdog_service.cpp"  # a stalled task is one error
     "${CMAKE_SOURCE_DIR}/test_persist_service.cpp"
     "${CMAKE_SOURCE_DIR}/test_liveness.cpp"
     "${CMAKE_SOURCE_DIR}/test_base_module.cpp"
