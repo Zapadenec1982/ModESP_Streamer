@@ -261,7 +261,7 @@ private:
     int32_t pend_source_ = -1;
     /// Frames sent to the DAC since the output gate last let anything through. The amplifier
     /// goes off only once this covers the whole TX queue. Until then the DMA is still playing
-    /// the fade (review A03).
+    /// the fade.
     uint32_t quiet_frames_ = 0;
     uint32_t tx_frames_ = 0;                ///< the port's TX queue, frames
     /// Audio the ring must hold before playback resumes after the queue is dropped.
@@ -270,7 +270,7 @@ private:
     /// guarantees an underrun — and in the middle of a steady tone an underrun is heard as a
     /// tick even when the samples either side of it are perfectly continuous, because the
     /// gap itself is the artefact. 100 ms is longer than the gap and far shorter than
-    /// opening the next file. A time at every rate, like the fades (review A06).
+    /// opening the next file. A time at every rate, like the fades.
     static constexpr float PRIME_S = 0.100f;
     size_t prime_frames_ = 4800;
     bool priming_ = true;

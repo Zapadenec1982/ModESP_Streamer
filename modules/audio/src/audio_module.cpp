@@ -2219,7 +2219,7 @@ void AudioModule::task_loop() {
         // music before it, which is a step. Now the
         // old source plays on while both gates close over it, and the switch happens in the
         // silence they leave. Going OFF also waits for the TX queue to play that silence out,
-        // because the amplifier goes off with it (A03).
+        // because the amplifier goes off with it.
         if (pend_source_ >= 0 && sig_gain_ <= 0.0f && out_gate_.shut()) {
             const bool amp_goes_off = pend_source_ == SRC_OFF && amp_on_;
             if (!amp_goes_off || quiet_frames_ >= tx_frames_ + (uint32_t)BLOCK) {
@@ -2375,7 +2375,7 @@ void AudioModule::task_loop() {
                 // nothing is audible while it happens.
                 if (ring.flush_pending()) { ring.reset(ring_generation); priming_ = true; }
                 // The clock waits for the output gate as well. retune() resets the chain, and
-                // after the envelope shuts the chain can still be ringing (review A02).
+                // after the envelope shuts the chain can still be ringing.
                 if (rate_due && out_gate_.shut()) {
                     retune(want_rate_);
                     want_rate_ = 0;
@@ -2480,7 +2480,7 @@ void AudioModule::task_loop() {
                 }
                 memset(s_blk, 0, sizeof(s_blk));
                 // Adopting may move the output clock, and that resets the chain: wait for the
-                // output gate to close over what the chain still holds (review A02).
+                // output gate to close over what the chain still holds.
                 if (!out_gate_.shut()) break;
                 if (!bt_reader_paused_.load()) break; // wait without blocking DAC servicing
                 if (!master) release_link();

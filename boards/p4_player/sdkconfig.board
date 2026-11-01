@@ -105,7 +105,7 @@ CONFIG_MODESP_BLE_ENABLE=n
 # any defaults file here). That is 238 of the 708 LVGL translation units in this build,
 # compiled and linked on every agent's every build, for code nothing references: grep finds
 # no lv_example_* or lv_demo_* anywhere outside the component. Flash and build time only —
-# no runtime behaviour depends on either. Found during the stage-5 build review, 21.09.2026.
+# no runtime behaviour depends on either.
 CONFIG_LV_BUILD_EXAMPLES=n
 CONFIG_LV_BUILD_DEMOS=n
 # LVGL heap in PSRAM through modules/ui_lvgl/src/lv_mem_psram.c; string/sprintf from newlib.

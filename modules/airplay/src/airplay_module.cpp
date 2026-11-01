@@ -422,7 +422,7 @@ void AirplayModule::switch_mode(int32_t selected) {
 
 /// airplay.enabled off: no sender, old or new, until it is turned on again. Taking only the
 /// mDNS record away left the receiver listening, and a sender with a stored address connected
-/// and took the output (review AP-6; the customer chose "off", 13.10.2026). The listener comes
+/// and took the output (the customer chose "off", 13.10.2026). The listener comes
 /// back through switch_mode(), which starts it with the selected profile.
 void AirplayModule::stop_listening() {
     attempted_mode_ = -1;                 // turned on again, the selected profile is started

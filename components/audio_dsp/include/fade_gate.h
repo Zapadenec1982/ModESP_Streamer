@@ -22,9 +22,9 @@ namespace audio_core {
 ///
 /// The curvature is what gets heard. A fade that is continuous in value but turns a corner, in
 /// slope (a straight line) or in curvature (smoothstep, p^2(3 - 2p)), spreads that corner across the
-/// spectrum. The review measures that with an 8th-order 500 Hz high-pass. On a -12 dBFS 62 Hz tone
-/// faded over 10 ms, smoothstep leaves -73 dBFS of splatter and this curve -83. Over 20 ms the two
-/// leave -85 and -101.
+/// spectrum. Measured with an 8th-order 500 Hz high-pass, as tests/host/test_out_gate.cpp
+/// measures the gate: on a -12 dBFS 62 Hz tone faded over 10 ms, smoothstep leaves -73 dBFS of
+/// splatter and this curve -83. Over 20 ms the two leave -85 and -101.
 /// Never above 1: in float the polynomial can land an ulp over just short of p = 1, and a gate
 /// after the brickwall must not undo its ceiling, even by that much.
 inline float smootherstep(float p) {

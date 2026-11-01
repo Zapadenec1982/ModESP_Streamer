@@ -2,7 +2,7 @@
   // Налаштування › Екран, as on the glass (screen_display.cpp): the brightness, the standby face's
   // level while music plays, the auto-sleep and the scheme. It was a group on Налаштування itself,
   // which made that page the longest of the web; the glass has kept it a page of its own (the
-  // customer, 16.10.2026, from a review: the settings were too long on the web).
+  // customer, 16.10.2026: the settings were too long on the web).
   import { onDestroy } from 'svelte';
   import { t, fmt } from '../../stores/i18n.js';
   import { state } from '../../stores/state.js';

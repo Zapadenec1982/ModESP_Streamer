@@ -446,7 +446,7 @@ void build_undo(lv_obj_t* scr) {
 
 /// A click on the face wakes it. A finger on the glass already has through the touch driver
 /// (UiLvglModule::publish_touch), and a second WAKE only re-syncs the shell's standby face with
-/// the module (UI-1); this is for the presses that do
+/// the module; this is for the presses that do
 /// not come from the touch controller — the bench's tap=, which could not wake the panel.
 void sb_click_cb(lv_event_t*) {
     if (g.ctx && g.ctx->mod) g.ctx->mod->lvgl_post(UiLvglModule::Req::WAKE, 0);

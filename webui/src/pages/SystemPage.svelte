@@ -4,7 +4,7 @@
   // clock, the login, firmware, a backup of the user's files. Each page under it is its own file,
   // fetched the first time it is opened. No Home Assistant row: MQTT stays off (customer,
   // 11.10.2026). Екран is a page of its own, as on the glass: inline, its sliders made this the
-  // longest page of the web (the customer, 16.10.2026, from a review).
+  // longest page of the web (the customer, 16.10.2026).
   import { onDestroy } from 'svelte';
   import { t, fmt, msg, language, LANG_NAMES } from '../stores/i18n.js';
   import { state, wsOpened } from '../stores/state.js';

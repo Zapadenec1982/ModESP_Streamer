@@ -321,7 +321,7 @@ uint8_t* read_blob(FILE* f, uint64_t off, uint32_t len) {
 /// JPEG goes to stb_image at about 1.1 us a source pixel (bench, 05.10.2026), and this task
 /// waited for it with half a second of audio in the ring. A 1000 px progressive cover was an
 /// audible gap a moment into every track of its album, and the UI froze for as long, because
-/// the decoder runs at its caller's priority and this one's is 5 (audit 2026-09-17, item 4).
+/// the decoder runs at its caller's priority and this one's is 5.
 struct CoverJob {
     uint8_t* jpg;                   ///< the picture inside the track, or null; the worker frees it
     uint32_t len;

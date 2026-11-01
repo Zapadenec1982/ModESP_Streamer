@@ -2212,7 +2212,7 @@ void RadioModule::on_update(uint32_t dt_ms) {
     // A seek, from the screen, from MQTT, or from a DLNA control point's progress bar.
     // Consumed like play_url: it is a request, not a setting, and -1 means nothing pending.
     // Consumed only once the task's queue took it: with the queue full the position stays
-    // asked for and goes on the next pass, instead of being dropped (display review, item 4).
+    // asked for and goes on the next pass, instead of being dropped.
     {
         const int32_t want = read_int("radio.seek_s", -1);
         if (want >= 0 && send(Cmd::SEEK, want)) state_set("radio.seek_s", (int32_t)-1);
