@@ -9,9 +9,11 @@
   // Where the sound comes from; the cover, big; what plays, its codec; the
   // transport with a big pause; a thin volume that shows its number while it moves; one «Звук»
   // button for the sheet with the sounds, Бас, Високі and the loudness, and the moon beside it,
-  // «Вирівнювання гучності» (audio.leveler, as on the glass). Below, what can be done
-  // about the source that plays. The faces, texts and commands are the panel's (stores/now.js after
-  // screen_now.cpp), and so is the background: the shell tints the page with ui.cover_rgb.
+  // «Вирівнювання гучності» (audio.leveler, as on the glass), and where the source has a list —
+  // the card's library, a DLNA server's folders — the glass's list button after them. Nothing
+  // beside the card: what plays and from where is on it already, and the sources are the rail's.
+  // The faces, texts and commands are the panel's (stores/now.js after screen_now.cpp), and so is
+  // the background: the shell tints the page with ui.cover_rgb.
   //
   // A station is the glass's station face, not a track: no transport and no buffer line — it
   // does not pause, stopping it is only the mute. The station's name between ‹ and ›, what it
@@ -21,7 +23,7 @@
   import { onDestroy } from 'svelte';
   import { now, subLine } from '../stores/now.js';
   import { state } from '../stores/state.js';
-  import { t, fmt, msg, plural, language, K } from '../stores/i18n.js';
+  import { t, fmt, language } from '../stores/i18n.js';
   import { href } from '../stores/router.js';
   import { command } from '../lib/cmd.js';
   import { badge } from '../lib/numbers.js';
@@ -35,9 +37,6 @@
   import Icon from '../m3/Icon.svelte';
   import IconButton from '../m3/IconButton.svelte';
   import Slider from '../m3/Slider.svelte';
-  import Button from '../m3/Button.svelte';
-  import Group from '../m3/Group.svelte';
-  import Row from '../m3/Row.svelte';
   import TrackProgress from '../m3/TrackProgress.svelte';
   import BottomSheet from '../m3/BottomSheet.svelte';
 
@@ -246,15 +245,16 @@
   }
   onDestroy(dropCover);
 
-  K('srcsub.tracks.one'); K('srcsub.tracks.few'); K('srcsub.tracks.many'); K('srcsub.tracks.other');
-
   $: hasTransport = !!np.toggle;
+  // the glass's list button (screen_now.cpp list_cb): the station's list is «Усі станції» here
+  $: listPage = np.kind === 'card' ? 'library' : np.kind === 'dlna' ? 'dlna' : '';
+  $: listLabel = np.kind === 'card' ? 'page.library' : 'page.dlna';
   $: playIcon = np.playing ? 'pause' : 'play_arrow';
   $: playLabel = np.playing ? $t['transport.pause'] : $t['transport.play'];
   $: repeatLabel = np.repeat === 1 ? $t['transport.repeat_one'] : np.repeat === 2 ? $t['transport.repeat_all'] : $t['transport.repeat_off'];
 </script>
 
-<div class="page" class:solo={station}>
+<div class="page">
   <section class="pult" class:station aria-label={$t['nav.player']}>
     {#if np.fromKey}
       <a class="from" href={href('source')}>
@@ -348,8 +348,6 @@
             <IconButton icon={np.repeat === 1 ? 'repeat_one' : 'repeat'} label={repeatLabel} selected={np.repeat > 0} on:click={cycleRepeat} />
           {/if}
         </div>
-      {:else}
-        <div class="pick"><Button variant="tonal" icon="speaker_group" href={href('source')}>{$t['nav.source']}</Button></div>
       {/if}
     {/if}
 
@@ -364,6 +362,7 @@
     <div class="quick">
       <button class="pill" type="button" on:click={openSound}><Icon name="tune" size={20} />{$t['sys.sound']}</button>
       <IconButton icon="bedtime" label={$t['sound.leveler']} selected={leveling} on:click={() => leveler.send(!leveling)} />
+      {#if listPage}<IconButton icon="queue_music" variant="outlined" label={$t[listLabel]} href={href(listPage)} />{/if}
     </div>
   </section>
 
@@ -379,34 +378,6 @@
     </BottomSheet>
   {/if}
 
-  {#if !station}
-    <section class="manage" aria-label={$t[np.nameKey]}>
-      {#if np.kind === 'card'}
-        <Group caption={$t['src.card']}>
-          <Row icon="queue_music" title={$t['manage.queue']}
-               subtitle={s['player.count'] ? fmt($t['manage.queue_sub'], { i: (s['player.index'] || 0) + 1, n: s['player.count'] }) : '—'} />
-          {#if s['player.dir']}<Row icon="folder" title={s['player.dir']} />{/if}
-          <Row icon="view_list" title={$t['page.library']}
-               subtitle={s['player.count'] ? plural($t, $language, 'srcsub.tracks', s['player.count']) : $t['srcsub.card_none']}
-               href={href('library')} />
-        </Group>
-      {:else if np.kind === 'dlna'}
-        <Group caption={$t['src.dlna']}>
-          <Row icon="cast" title={fmt($t['manage.visible_as'], { name: s['dlna.name'] || 'P4 Player' })} />
-          <Row icon="hub" title={$t['page.dlna']} href={href('dlna')} />
-        </Group>
-      {:else if np.kind === 'bt'}
-        <Group caption={$t['src.bt']}>
-          <Row icon="smartphone" title={s['bt.peer'] || $t['srcsub.phone_off']} subtitle={s['bt.peer'] ? badge(np.format, $t, $language) : ''} />
-        </Group>
-      {:else if np.kind === 'airplay'}
-        <Group caption={$t['src.airplay']}>
-          <Row icon="airplay" title={fmt($t['manage.visible_as'], { name: s['airplay.name'] || 'P4 Player' })}
-               subtitle={msg($t, s['airplay.active_mode_label'] || '')} href={href('system')} />
-        </Group>
-      {/if}
-    </section>
-  {/if}
 </div>
 
 <style>
@@ -420,11 +391,6 @@
   @media (min-width: 600px) {
     /* a rail, and no bar at the bottom */
     .art { max-width: max(200px, calc(100vh - 420px)); max-width: max(200px, calc(100svh - 420px)); }
-  }
-  @media (min-width: 900px) {
-    .page { grid-template-columns: minmax(320px, 420px) minmax(0, 1fr); gap: 8px 32px; }
-    .page.solo { grid-template-columns: minmax(0, 1fr); }
-    .manage { min-width: 0; padding-top: 66px; }
   }
   .pult {
     display: flex;
@@ -681,7 +647,6 @@
     box-shadow: 0 8px 20px rgb(0 0 0 / 0.35);
   }
   .tbtn:disabled { opacity: 0.38; cursor: default; }
-  .pick { display: flex; justify-content: center; margin: 16px 0 8px; }
 
   /* the volume: the mute button, then the one slider with the number at its right */
   .vol { margin-top: 8px; display: flex; align-items: center; gap: 8px; }

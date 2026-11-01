@@ -66,8 +66,6 @@
   "progress.position": "Позиція в треку",
   "manage.keep": "Зберегти станцію в улюблені",
   "manage.kept": "Станцію додано до списку",
-  "manage.queue": "Черга",
-  "manage.queue_sub": "{i} з {n}",
   "manage.visible_as": "Видно як «{name}»",
   "srcsub.phone_on": "Телефон підключено",
   "srcsub.phone_off": "Телефон не підключено",

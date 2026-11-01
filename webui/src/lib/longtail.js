@@ -16,7 +16,6 @@ export const SHOWN = [
   // Player, Source
   'audio.source', 'audio.volume', 'audio.mute',
   'radio.state', 'radio.name', 'radio.now_playing', 'radio.format', 'radio.fav_add',
-  'airplay.active_mode_label',
   // DSP, and the sound (Player's sheet, Налаштування › Звук)
   'audio.eq_enabled', 'audio.loudness', 'audio.loud_db', 'audio.bass_db', 'audio.treble_db',
   'audio.vol_max', 'audio.vol_start',
@@ -71,6 +70,8 @@ export const DROPPED = [
   // The whole heap's minimum counts the free PSRAM too, tens of MB, so it can never warn:
   // Service shows the lowest free internal RAM (system.heap_internal_min) in its place.
   'system.heap_min',
+  // The mode the stopped receiver runs in: System's AirPlay row has the mode and its status.
+  'airplay.active_mode_label',
 ];
 
 /**

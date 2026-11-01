@@ -66,8 +66,6 @@
   "progress.position": "Pozycja w utworze",
   "manage.keep": "Zachowaj stację w ulubionych",
   "manage.kept": "Dodano stację do listy",
-  "manage.queue": "Kolejka",
-  "manage.queue_sub": "{i} z {n}",
   "manage.visible_as": "Jako „{name}”",
   "srcsub.phone_on": "Telefon połączony",
   "srcsub.phone_off": "Telefon niepołączony",

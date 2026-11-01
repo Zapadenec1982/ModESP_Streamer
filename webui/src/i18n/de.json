@@ -66,8 +66,6 @@
   "progress.position": "Position im Titel",
   "manage.keep": "Sender in Favoriten behalten",
   "manage.kept": "Sender zur Liste hinzugefügt",
-  "manage.queue": "Warteschlange",
-  "manage.queue_sub": "{i} von {n}",
   "manage.visible_as": "Als „{name}“",
   "srcsub.phone_on": "Telefon verbunden",
   "srcsub.phone_off": "Kein Telefon verbunden",

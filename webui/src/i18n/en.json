@@ -66,8 +66,6 @@
   "progress.position": "Position in the track",
   "manage.keep": "Keep this station in favourites",
   "manage.kept": "Station added to the list",
-  "manage.queue": "Queue",
-  "manage.queue_sub": "{i} of {n}",
   "manage.visible_as": "Visible as “{name}”",
   "srcsub.phone_on": "Phone connected",
   "srcsub.phone_off": "No phone connected",
