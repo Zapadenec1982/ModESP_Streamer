@@ -186,6 +186,12 @@ protected:
     // prefix, which is a file that cannot be opened.
     bool read_string(const char* key, char* out, size_t out_sz) const;
 
+    /// The store's change count (SharedState::version()): it moves with every tracked
+    /// state_set() that changed a value, so a module that reads its settings on every pass
+    /// can skip the reads while it stands still. A key written with track_change = false does
+    /// not move it. 0 when the store could not be read in time: take that as "changed".
+    uint32_t state_version() const;
+
     /// Take the next command, oldest first. False when there is none. Call it in a loop
     /// from on_update(): the point of the queue is that a burst is not collapsed into one.
     bool next_command(Command& out);

@@ -37,6 +37,7 @@ public:
     using BaseModule::read_number;
     using BaseModule::read_string;
     using BaseModule::state_set;
+    using BaseModule::state_version;
 };
 
 struct Rig {
@@ -133,4 +134,26 @@ TEST_CASE("read_number refuses the types that are not numbers, and the keys that
     rig.peek.state_set("t.s", "192000");
     CHECK(rig.peek.read_number("t.s", -7) == -7);
     CHECK(rig.peek.read_number("t.missing", -7) == -7);
+}
+
+TEST_CASE("state_version moves with a tracked change, and only with one") {
+    Rig rig;
+    const uint32_t before = rig.peek.state_version();
+    rig.peek.state_set("t.v", (int32_t)1);
+    const uint32_t after = rig.peek.state_version();
+    CHECK(after != before);
+    CHECK(after != 0);
+
+    // The same value again is no change, and a quiet set is not seen at all: a module that
+    // skips its reads on an unmoved version has to have every key it skips written tracked.
+    rig.peek.state_set("t.v", (int32_t)1);
+    CHECK(rig.peek.state_version() == after);
+    rig.peek.state_set("t.v", (int32_t)2, false);
+    CHECK(rig.peek.state_version() == after);
+    rig.peek.state_set("t.v", (int32_t)3);
+    CHECK(rig.peek.state_version() != after);
+
+    // A module that is not registered has no store: 0, which a reader takes as "changed".
+    Peek loose;
+    CHECK(loose.state_version() == 0);
 }

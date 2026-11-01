@@ -69,6 +69,10 @@ bool BaseModule::read_string(const char* key, char* out, size_t out_sz) const {
     return shared_state_->get_string(key, out, out_sz);
 }
 
+uint32_t BaseModule::state_version() const {
+    return shared_state_ ? shared_state_->version() : 0;
+}
+
 void BaseModule::publish(const etl::imessage& msg) {
     if (manager_) {
         manager_->publish(msg);
