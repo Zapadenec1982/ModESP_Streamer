@@ -37,6 +37,7 @@ private:
 
     uint32_t report_ms_ = 0;
     uint32_t health_ms_ = 0;   ///< pacing for the stream-health line
+    uint32_t logos_ms_  = 0;   ///< pacing for the presets' logos (src/logos.cpp)
     uint32_t up_wait_ms_ = 0;  ///< after a failed radio_up(), how long until the next try
     bool     idle_shown_ = false;  ///< radio.state says "idle" while another source plays
     bool     restored_  = false;   ///< the last station is tuned once, on the first pass

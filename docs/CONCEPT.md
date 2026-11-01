@@ -467,7 +467,8 @@ The control plane is a fork of [ModESP_Framework](https://github.com/Zapadenec19
   `ui.json`, the web interface, the factory `eq.json`. User files — `eq.json`,
   `eq_custom.json`, `stations.json`, `last_track`, `devices.json` — live in the
   `userdata` partition, which `idf.py flash` does not rewrite; access goes through `UserStore`
-  (`components/user_store`).
+  (`components/user_store`). Beside them, `logos/` keeps the presets' logos, a cache the radio
+  fills and prunes itself ([NETWORK.md](NETWORK.md), "Covers and logos").
 
 ### Product modules
 

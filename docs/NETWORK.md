@@ -380,9 +380,10 @@ two 5-second reports in a row in which the network delivers < 95 % of what the s
 buffer is < 10 % — reconnection to another address of the same host (connection by IP, the name in
 `Host` and SNI), no more often than once per 35 s. Stations only.
 
-**TLS.** A station can play over HTTPS; the catalog and track covers go over HTTP only, the logo over
-HTTPS only when the station itself plays over HTTP: there is one TLS session, and while a station
-plays, the station holds it.
+**TLS.** A station can play over HTTPS; the catalog and track covers go over HTTP only, the logos
+over HTTPS only while the station itself plays over HTTP — its address and, after a redirect or a
+playlist, its connection: there is one TLS session, and while a station plays, the station holds
+it. One HTTPS fetch of a logo at a time (`radio_http::get_url`).
 
 ### Station list
 
@@ -457,6 +458,37 @@ choosing the result — `components/radio_catalog/include/radio_art.h`, test
 - Tile `CoverSource::Radio`: the track cover, without it — the logo, without that — nothing, and the
   panel draws the station's stand-in ([UI.md](UI.md), "Panel pages"). A track pushed through DLNA
   shows the control point's cover (`CoverSource::Network`), without it — the Radio tile.
+
+**Preset logos** (`modules/radio/src/logos.cpp`; the rules — `components/radio_catalog/include/
+station_logo.h`, test `tests/host/test_station_logo.cpp`; fitting into the disc —
+`components/cover/include/cover_thumb.h`, test `tests/host/test_cover_thumb.cpp`). The panel keeps
+the logo of every preset station that has a Radio Browser `uuid`, so its preset button shows it
+while an HTTPS station holds the TLS session and after a restart ([UI.md](UI.md), "Panel pages").
+
+- **Storage**: `logos/<uuid>.565` in the `UserStore` folder (`/userdata`; on a panel without that
+  partition, `/data`) — 40×40, the size of the preset's disc, drawn unscaled: an 8-byte header
+  (`SLG1`, the side twice) and RGB565, 3208 B a file. Read at start and when the presets change;
+  written through `safe_file` when a logo arrives or changes; the file of a station that is no
+  longer on a preset is deleted. Only a well-formed uuid names a file.
+- **Fetching**: task `radio_logo` (12 KB, PSRAM, idle priority), one at a time, made for one batch
+  and gone after it; on the main task's 500 ms pass, when the network has been up for 20 s, at
+  least 30 s after the last batch, and only while the TLS session is free — the radio is not the
+  source, is stopped, or plays a station over plain HTTP past its buffering (not a pushed track).
+  One `/json/stations/byuuid?uuids=a,b,…` for every station without a logo, then each favicon as
+  the station logo above: HTTP first, ≤ 128 KB, JPEG or PNG by the first bytes. Before each
+  favicon the task looks again whether the TLS session is free; when it is not, the rest wait for
+  the next batch.
+- **Decoding**: `cover_thumb()` (`components/cover`) — the JPEG engine for baseline JPEG, the
+  software decoder at the task's idle priority for PNG and progressive JPEG, with the limits of a
+  cover. The picture is fitted whole, not cropped, and averaged down; transparent pixels and the
+  margins go on a ground: the colour of the picture's edge when it has no transparency, otherwise
+  a light neutral under dark ink and a dark one under light ink.
+- The playing station's logo, fetched for the tile, becomes its preset logo without a second
+  download.
+- **Failures**: a station whose logo cannot be had — none listed, the address does not answer, the
+  file is not JPEG or PNG (ICO, SVG, WebP) or does not decode — is asked for again after 6 h; when
+  Radio Browser does not answer the lookup, after 10 min. The waits are not kept over a restart.
+  A station without a `uuid` (typed in by hand) has no logo source and keeps its stand-in.
 
 ### External URLs: position, seek, next track
 

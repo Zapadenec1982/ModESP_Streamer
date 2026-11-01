@@ -467,7 +467,8 @@ Control plane — форк [ModESP_Framework](https://github.com/Zapadenec1982/M
   `ui.json`, вебінтерфейс, заводський `eq.json`. Файли користувача — `eq.json`,
   `eq_custom.json`, `stations.json`, `last_track`, `devices.json` — живуть у розділі
   `userdata`, який `idf.py flash` не переписує; доступ — через `UserStore`
-  (`components/user_store`).
+  (`components/user_store`). Поруч із ними `logos/` тримає логотипи пресетів — кеш, який радіо
+  саме наповнює й чистить ([NETWORK.uk.md](NETWORK.uk.md), «Обкладинки й логотипи»).
 
 ### Модулі продукту
 

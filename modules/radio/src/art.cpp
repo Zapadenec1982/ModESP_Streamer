@@ -6,7 +6,8 @@
  * The song's cover: the station's ICY title goes to Deezer's search over plain HTTP, and the
  * first hit that is the same song (radio_art::best) has its 500 px JPEG fetched over plain
  * HTTP too. The station's logo: its favicon from Radio Browser — carried by a catalog row,
- * or asked for by the station's uuid — fetched once per station.
+ * or asked for by the station's uuid — fetched once per station, and handed on as a preset
+ * shows it to the logos kept on the panel (logos.cpp).
  *
  * What the tile shows, in order: the song's cover; the station's logo; nothing. Last song's
  * album beside this song's title is worse than the station's logo, and the logo of the last
@@ -22,6 +23,8 @@
 #include "radio_art.h"
 #include "radio_catalog.h"
 #include "radio_http.h"
+#include "radio_logos.h"
+#include "station_logo.h"
 #include "cover.h"
 
 #include "esp_heap_caps.h"
@@ -70,6 +73,7 @@ struct ArtTask {
     uint8_t*              image    = nullptr;   // PSRAM
     uint8_t*              logo     = nullptr;   // PSRAM: the current station's logo
     size_t                logo_len = 0;
+    station_logo::Thumb*  thumb    = nullptr;   // PSRAM: the same, as a preset shows it
     char                  logo_uuid[rc::UUID_LEN]   = "";   // whose logo it is
     char                  logo_favicon[rc::URL_LEN] = "";
     radio_art::Hit*       hits     = nullptr;   // PSRAM
@@ -169,6 +173,17 @@ bool favicon_by_uuid(const char* uuid, char* out, size_t out_sz) {
     return ok;
 }
 
+/// The logo just fetched as a preset shows it, for the logos kept on the panel (logos.cpp):
+/// made while the bytes are here, so a station that is a preset, or becomes one, has its logo
+/// kept without a second download. Only for a station with a uuid, which a kept logo is found by.
+void offer_thumb(const StationAsk& rq) {
+    if (!station_logo::valid_uuid(rq.uuid)) return;
+    if (!player_core::cover_thumb(a.logo, a.logo_len, a.thumb->px, station_logo::SIDE)) return;
+    if (a.station.load(std::memory_order_acquire) != rq.serial) return;   // a newer station
+    snprintf(a.thumb->uuid, sizeof(a.thumb->uuid), "%s", rq.uuid);
+    radio_logos::offer(*a.thumb);
+}
+
 void serve_station(const StationAsk& rq) {
     // The same station again (Play after Stop): its logo is already here.
     if (a.logo_len && !strcmp(rq.uuid, a.logo_uuid) && !strcmp(rq.favicon, a.logo_favicon)) {
@@ -200,6 +215,7 @@ void serve_station(const StationAsk& rq) {
     ESP_LOGI(TAG, "art: logo %d B (%s) from %s", len, kind == rc::Image::JPEG ? "JPEG" : "PNG",
              favicon);
     if (a.shown != Shown::TRACK) fall_back();   // shows it, unless a song's cover is up
+    offer_thumb(rq);
 }
 
 void art_task(void*) {
@@ -235,7 +251,9 @@ bool start() {
         a.hits = static_cast<radio_art::Hit*>(h);
         for (int i = 0; i < HITS; i++) new (&a.hits[i]) radio_art::Hit();
     }
-    if (!a.titles || !a.stations || !a.search || !a.image || !a.logo || !a.hits) return false;
+    void* t    = heap_caps_calloc(1, sizeof(station_logo::Thumb), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    a.thumb    = t ? new (t) station_logo::Thumb() : nullptr;
+    if (!a.titles || !a.stations || !a.search || !a.image || !a.logo || !a.hits || !a.thumb) return false;
     // Idle priority, as the card player's artwork worker has (player_module.cpp, on_init): a
     // PNG or progressive picture goes to the software decoder, which takes this task's
     // priority and never blocks. At 2 it ran above the radio's decoder and reader, LVGL, main

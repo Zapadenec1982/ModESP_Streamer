@@ -31,6 +31,7 @@
 #include "http_body.h"
 #include "radio_art_task.h"
 #include "radio_catalog_task.h"
+#include "radio_logos.h"
 #include "next_stream.h"
 #include "stream_watch.h"
 #include "modesp/liveness.h"
@@ -1979,6 +1980,17 @@ bool stream_tls() {
     return strncmp(url, "https://", 8) == 0;
 }
 
+/// The presets' logos may be fetched now (src/logos.cpp): the stream holds no TLS session and
+/// is not starting — the radio is not the source, is stopped, or plays a station over plain
+/// HTTP that is past its buffering. A pushed track is left alone: near its end the next one is
+/// being fetched.
+bool logos_may_fetch(bool mine) {
+    if (!mine || !s.up) return true;
+    const uint8_t st = s.state.load(std::memory_order_acquire);
+    if (st == ST_IDLE) return true;
+    return st == ST_PLAYING && !s.one_shot.load(std::memory_order_acquire) && !stream_tls();
+}
+
 #include "stations_http.inc"
 
 /// radio.list_rev as last published; the store's generation is never all ones.
@@ -2102,6 +2114,15 @@ void RadioModule::on_update(uint32_t dt_ms) {
 
     // The source decides whether this module exists at all.
     const bool mine = (read_int("audio.source", 0) == AUDIO_SRC_RADIO);
+
+    // The presets' logos, whatever the source (src/logos.cpp): fetched only while the panel's
+    // one TLS session is free and no stream is starting.
+    logos_ms_ += dt_ms;
+    if (logos_ms_ >= 500) {
+        radio_logos::update(logos_ms_, read_bool("wifi.connected", false), logos_may_fetch(mine));
+        logos_ms_ = 0;
+    }
+
     if (!mine) {
         if (s.up) radio_down();
         // Not what plays any more, whatever the radio was doing when the source moved on. The
