@@ -7,7 +7,7 @@
   // in the name would split Basic auth's "user:pass" in the wrong place.
   import { onMount } from 'svelte';
   import { t } from '../../stores/i18n.js';
-  import { apiGet, apiPost, setAuth, clearAuth, utf8Bytes } from '../../lib/api.js';
+  import { apiGet, apiPost, setAuth, authPass, clearAuth, utf8Bytes } from '../../lib/api.js';
   import { toastSuccess, toastError, toastWarn } from '../../stores/toast.js';
   import Group from '../../m3/Group.svelte';
   import Row from '../../m3/Row.svelte';
@@ -80,7 +80,13 @@
   async function saveName() {
     busy = true;
     try {
-      await apiPost('/api/auth', { username: username.trim() });
+      const name = username.trim();
+      await apiPost('/api/auth', { username: name });
+      // The panel checks the name as well: this tab signs in with the new one from now on. Its
+      // requests with the old one would each count as a wrong login, and five lock the panel's
+      // login for every browser.
+      const pass = authPass();
+      if (pass !== null) setAuth(name, pass);
       toastSuccess($t['access.saved']);
     } catch (e) {
       toastError(reason(e));
