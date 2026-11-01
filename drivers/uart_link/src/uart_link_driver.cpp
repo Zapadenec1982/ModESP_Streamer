@@ -4,15 +4,14 @@
  *
  * Moved out of modules/bt unchanged in order and in effect (item 8.9). It is here because
  * none of it is about the protocol: the RX-FIFO threshold, the event queue that is the only
- * place an overflow is ever reported, the flush that follows one, and the pin probe are all
- * answers to "is this wire carrying bytes", which is the same question on any board and for
- * any protocol. What is said over the wire stays in modules/bt, and the frames it is said in
- * stay in components/sat_link.
+ * place an overflow is ever reported, and the pin probe are all answers to "is this wire
+ * carrying bytes", which is the same question on any board and for any protocol. What is said
+ * over the wire stays in modules/bt, and the frames it is said in stay in components/sat_link.
  *
  * The contract this serves: 460800 baud, COBS frames, an 8 KB receive ring (commit 5222100 —
  * 2048 bytes is 44 ms of wire against a drain that was a 100 Hz poll). A lost byte loses the
  * whole frame it was in, so losing one has to be REPORTED rather than merely survived; that
- * is what Rx::Lost is, and why HAL installs this port with an event queue at all.
+ * is what the overrun count is, and why HAL installs this port with an event queue at all.
  */
 
 #include "uart_link_driver.h"
@@ -73,16 +72,19 @@ Rx UartLinkDriver::wait_rx(uint32_t timeout_ms) {
     // that loop keep a heartbeat rather than a traffic meter.
     const bool woke = (xQueueReceive(static_cast<QueueHandle_t>(events_), &ev,
                                      pdMS_TO_TICKS(timeout_ms)) == pdTRUE);
-    if (woke && (ev.type == UART_FIFO_OVF || ev.type == UART_BUFFER_FULL)) {
-        // The driver has already dropped bytes, so whatever frame was in flight is incomplete
-        // no matter what is done now. Throw away the rest of it and let the next delimiter put
-        // the framer back in step — which is the whole reason the contract uses COBS instead
-        // of a length header.
-        overruns_.fetch_add(1, std::memory_order_relaxed);
-        uart_flush_input((uart_port_t)bus_->port);
-        xQueueReset(static_cast<QueueHandle_t>(events_));
-        return Rx::Lost;
-    }
+    // An overflow is counted here, the one place it is ever reported, and nothing else is
+    // thrown away (IDF v5.5.5, esp_driver_uart/src/uart.c). UART_FIFO_OVF: the ISR has already
+    // reset the hardware FIFO, so the loss is done and what the ring holds is good. The
+    // UART_DATA event of the same interrupt was queued ahead of this one, so the reader may
+    // already have taken bytes from after the loss: the flush that used to follow cut into the
+    // next frame, and a framer reset now could throw away a good partial one. So this is not
+    // Rx::Lost, which promises that nothing from after the loss has been handed over yet. The
+    // frame the loss cut through fails its CRC or its COBS on its own, and the next delimiter
+    // puts the framer back in step. UART_BUFFER_FULL has lost nothing at all: the ISR keeps
+    // the bytes that did not fit and takes no more until a read makes room
+    // (uart_check_buf_full), so it is a wake-up like any other — a reader too slow even then
+    // lets the FIFO overflow, and that is counted.
+    if (woke && ev.type == UART_FIFO_OVF) overruns_.fetch_add(1, std::memory_order_relaxed);
     return woke ? Rx::Data : Rx::Idle;
 }
 

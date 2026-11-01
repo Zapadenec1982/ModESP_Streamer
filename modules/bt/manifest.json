@@ -126,7 +126,7 @@
       "type": "int",
       "access": "read",
       "default": 0,
-      "description": "Переповнення UART (FIFO_OVF/BUFFER_FULL) — байти, втрачені драйвером"
+      "description": "Переповнення UART FIFO (FIFO_OVF) — байти, втрачені драйвером"
     },
     "bt.rx_drops": {
       "type": "int",
