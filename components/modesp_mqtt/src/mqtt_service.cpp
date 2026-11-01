@@ -588,8 +588,8 @@ void MqttService::publish_heartbeat() {
 
     // player-fork: no esp_wifi_sta_get_ap_info() here. Over esp_hosted it is a synchronous RPC
     // to the C6 with a 5 s timeout, made from the task that feeds the 5 s watchdog, and it
-    // reads rssi=0 on this stack anyway — see the 17.09.2026 note in wifi_service.cpp, where
-    // the same call reset the board. The field stays for the payload's consumers.
+    // reads rssi=0 on this stack anyway — see the RSSI note in wifi_service.cpp, where the
+    // same call resets the board. The field stays for the payload's consumers.
     const int rssi = 0;
 
     // Get firmware version
