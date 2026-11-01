@@ -106,7 +106,7 @@ constexpr int      ASRC_TAPS    = 48, ASRC_FILTERS = 48;   // dbry preset -1 (~1
 // stream now, so the ratio is 1.0 +-500 ppm, and a 48-tap 4-term Blackman-Harris transition
 // is already a sixth of the band wide: at 0.92 the corner sat at 20.3 kHz for a 44.1 kHz
 // stream and cost about 2 dB at 20 kHz; at 0.98 it sits at 21.6 kHz and the top octave is
-// flat. Nothing else in the converter moves — 256 phases wait for the customer's WIP.
+// flat.
 constexpr double   ASRC_LOWPASS = 0.98;
 // The servo exists to absorb the difference between two crystals, which is tens of ppm —
 // the satellite measured its own APLL at +40 ppm. It was given +-1 %, fifty times wider than

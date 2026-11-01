@@ -173,8 +173,7 @@ public:
     static constexpr float LOUD_TAU_S = 0.050f;     ///< how fast the shelves follow the volume
     static constexpr float PORT_Q = 1.4f;           ///< the port lift's peak (set_port)
     static constexpr float PORT_SUB_RATIO = 0.8f;   ///< the subsonic under a port, × its frequency
-    // Бас and Високі (set_tone): where the shelves turn, to be settled by ear on the owner's
-    // speakers, and how far they go.
+    // Бас and Високі (set_tone): where the shelves turn, and how far they go.
     static constexpr float TONE_LO_HZ = 100.0f, TONE_HI_HZ = 10000.0f, TONE_Q = 0.71f;
     static constexpr float TONE_MAX_DB = 6.0f;
     static constexpr float BAL_MAX_DB = 6.0f;       ///< set_balance_db()
