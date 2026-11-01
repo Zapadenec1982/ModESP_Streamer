@@ -213,7 +213,7 @@ public:
         LANG,         ///< value = ui.lang: 0 Українська, 1 English, 2 Deutsch, 3 Polski
         BASS,         ///< value = audio.bass_db, −6…+6 (the «Звук» sheet, S3)
         TREBLE,       ///< value = audio.treble_db, −6…+6
-        LOUDNESS,     ///< value = audio.loudness, 0…100 (0 = off)
+        LOUDNESS,     ///< value = audio.loudness, 0…100 (0 = off); −1 = on at audio.loud_back
         BALANCE,      ///< value = audio.balance_db10, −60…+60 in steps of 5 (Колонки)
         LEVELER,      ///< value = audio.leveler 0/1, −1 = toggle (the Player's moon)
         LEV_SCHED,    ///< value = audio.lev_sched 0/1 (Налаштування › Звук › Тембр)

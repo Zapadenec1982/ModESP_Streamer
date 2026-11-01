@@ -940,7 +940,14 @@ bool AudioModule::follow_settings() {
     const int32_t cap = read_int("audio.rms_cap_db10", 0);
     if (cap != last_rms_cap_) { last_rms_cap_ = cap; send(CmdType::RMS_CAP, cap); }
     const int32_t loud = read_int("audio.loudness", 70);
-    if (loud != last_loud_) { last_loud_ = loud; send(CmdType::LOUDNESS, loud); bass_moved = true; }
+    if (loud != last_loud_) {
+        // Off is 0, and switching it on puts back the strength it had: kept here, where every
+        // change of it arrives, and saved, so the glass and every browser put back the same one.
+        if (loud == 0 && last_loud_ > 0) state_set("audio.loud_back", last_loud_);
+        last_loud_ = loud;
+        send(CmdType::LOUDNESS, loud);
+        bass_moved = true;
+    }
     const int32_t ref = loud_ref();
     if (ref != last_loud_ref_) { last_loud_ref_ = ref; send(CmdType::LOUD_REF, ref); bass_moved = true; }
     const int32_t port = read_port();

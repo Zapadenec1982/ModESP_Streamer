@@ -250,14 +250,10 @@ int main() {
     compile_run(tmp_path, code)
 
 
-def test_settings_are_read_again_only_when_the_store_moved(tmp_path):
-    # AudioModule::on_update runs every 10 ms and used to read some thirty settings each time,
-    # every lookup under the store's mutex. It reads them only when the store's version moved
-    # (BaseModule::state_version). The production on_update, up to its 500 ms report, and
-    # follow_settings run here against a store that counts its reads: a quiet pass reads no
-    # setting, a change is sent in its pass, a store that does not answer (version 0) is read
-    # anyway, and what runs on every pass — the schedule, the volume taken, a tone's clock —
-    # still runs while nothing is read.
+def settings_harness():
+    """The production on_update, up to its 500 ms report, and follow_settings with the helpers
+    they call, against a store that counts its reads and moves a version as SharedState does.
+    The caller appends main()."""
     source = (ROOT / "modules/audio/src/audio_module.cpp").read_text(encoding="utf-8")
 
     def function(signature):
@@ -388,7 +384,17 @@ bool sends(CmdType t, int32_t v) {
     for (const auto& c : sent) if (c.first == t && c.second == v) return true;
     return false;
 }
+'''
+    return code
 
+
+def test_settings_are_read_again_only_when_the_store_moved(tmp_path):
+    # AudioModule::on_update runs every 10 ms and used to read some thirty settings each time,
+    # every lookup under the store's mutex. It reads them only when the store's version moved
+    # (BaseModule::state_version): a quiet pass reads no setting, a change is sent in its pass,
+    # a store that does not answer (version 0) is read anyway, and what runs on every pass —
+    # the schedule, the volume taken, a tone's clock — still runs while nothing is read.
+    compile_run(tmp_path, settings_harness() + r'''
 int main() {
     put("audio.source", (int32_t)SRC_FILE);
     put("audio.volume", (int32_t)30);
@@ -442,7 +448,31 @@ int main() {
     assert(std::get<int32_t>(store.at("audio.source")) == SRC_OFF);
     pass(m, 10);
     assert(sends(CmdType::SOURCE, SRC_OFF));
-    std::puts("gate ok");
 }
-'''
-    compile_run(tmp_path, code)
+''')
+
+
+def test_loudness_switched_off_keeps_the_strength_it_had(tmp_path):
+    # Loudness off is audio.loudness = 0, and on puts back the strength it had: the audio module
+    # keeps it in audio.loud_back (saved), so the glass and every browser put back the same one.
+    compile_run(tmp_path, settings_harness() + r'''
+int main() {
+    put("audio.source", (int32_t)SRC_FILE);
+    put("audio.loudness", (int32_t)40);
+    AudioModule m;
+    pass(m, 10);
+    assert(!store.count("audio.loud_back"));                    // on: nothing to keep yet
+    put("audio.loudness", (int32_t)0);
+    pass(m, 10);
+    assert(sends(CmdType::LOUDNESS, 0) && std::get<int32_t>(store.at("audio.loud_back")) == 40);
+    put("audio.loudness", (int32_t)55);                         // on again, at another strength
+    pass(m, 10);
+    assert(std::get<int32_t>(store.at("audio.loud_back")) == 40);
+    put("audio.loudness", (int32_t)30);                         // moved while on: no switch
+    pass(m, 10);
+    assert(std::get<int32_t>(store.at("audio.loud_back")) == 40);
+    put("audio.loudness", (int32_t)0);
+    pass(m, 10);
+    assert(std::get<int32_t>(store.at("audio.loud_back")) == 30);
+}
+''')

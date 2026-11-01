@@ -1088,10 +1088,13 @@ void UiLvglModule::apply_requests() {
             if (it.value >= -6 && it.value <= 6 && state_get("audio.treble_db").has_value())
                 state_set("audio.treble_db", it.value);
             break;
-        case Req::LOUDNESS:
-            if (it.value >= 0 && it.value <= 100 && state_get("audio.loudness").has_value())
-                state_set("audio.loudness", it.value);
+        case Req::LOUDNESS: {
+            // −1: on again, at the strength it had when it went off (the audio module keeps it)
+            const int32_t v = it.value < 0 ? read_int("audio.loud_back", 70) : it.value;
+            if (v >= 0 && v <= 100 && state_get("audio.loudness").has_value())
+                state_set("audio.loudness", v);
             break;
+        }
         case Req::BALANCE:
             // the manifest's range and step: half a dB, as the web's slider moves it
             if (it.value >= -60 && it.value <= 60 && it.value % 5 == 0 &&

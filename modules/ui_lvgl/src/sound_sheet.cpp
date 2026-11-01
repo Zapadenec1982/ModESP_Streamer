@@ -110,7 +110,6 @@ struct Sheet {
 // in PSRAM (uih::in_psram): internal RAM is the Wi-Fi co-processor's and the I2S descriptors'
 Sheet&    sheet = uih::in_psram<Sheet>();
 Controls& page  = uih::in_psram<Controls>();
-int32_t  loud_back = 70;               ///< the loudness the switch puts back; 70 is the default
 
 // ── actions ──
 
@@ -132,14 +131,8 @@ void set_tone(Controls& c, bool bass, int32_t v) {
     post(c, bass ? UiLvglModule::Req::BASS : UiLvglModule::Req::TREBLE, v);
 }
 
-void set_loudness(Controls& c, bool on) {
-    if (!on) {
-        if (c.ctx && c.ctx->s.loudness > 0) loud_back = c.ctx->s.loudness;
-        post(c, UiLvglModule::Req::LOUDNESS, 0);
-    } else {
-        post(c, UiLvglModule::Req::LOUDNESS, loud_back > 0 ? loud_back : 70);
-    }
-}
+/// Off is 0; on is the strength it had, which the firmware keeps for the web too (audio.loud_back).
+void set_loudness(Controls& c, bool on) { post(c, UiLvglModule::Req::LOUDNESS, on ? -1 : 0); }
 
 void close_sheet();
 

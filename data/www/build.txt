@@ -17,7 +17,7 @@ ca41f0b6a77d7bd1  chunk-LogPage.js.gz
 de7862e6eb7203b9  chunk-MorePage.js.gz
 8fbcbb847fe75de3  chunk-ScreenshotPage.js.gz
 3ea969a2745ae1cd  chunk-ServicePage.js.gz
-8cd4be8645b68d68  chunk-SoundControls.js.gz
+e1a93230b7fd81e6  chunk-SoundControls.js.gz
 5ca5a7b03a6e6d20  chunk-SoundPage.js.gz
 4634b93c7148a237  chunk-SoundPick.js.gz
 62a2fec93021c927  chunk-SpeakersPage.js.gz

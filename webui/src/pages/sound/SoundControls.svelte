@@ -83,18 +83,10 @@
   }
   $: eqValue = !eqOn ? $t['sys.eq_off'] : d ? soundName($t, d.preset) : '';
 
-  // The loudness off writes 0; the strength it had is kept in this browser and comes back with it
-  // on (as the Player's chip did before S3).
-  const LOUD_KEY = 'p4-loudness';
+  // The loudness off writes 0; on puts back the strength it had, which the panel keeps
+  // (audio.loud_back), so the glass and every browser put back the same one.
   function toggleLoudness(on) {
-    if (!on) {
-      try { localStorage.setItem(LOUD_KEY, String(loud)); } catch (e) { /* storage blocked */ }
-      loudness.send(0);
-      return;
-    }
-    let back = 70;
-    try { back = Number(localStorage.getItem(LOUD_KEY)) || 70; } catch (e) { /* storage blocked */ }
-    loudness.send(back);
+    loudness.send(on ? s['audio.loud_back'] || 70 : 0);
   }
 
   function hidden() {

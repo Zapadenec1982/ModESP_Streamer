@@ -256,9 +256,10 @@ page opens and there are no servers yet.
 
 **Sound and EQ.** The "Sound" sheet and the Tone page are the same controls (`sound_sheet.cpp`): the
 preset field (pick list), Bass and Treble (−6…+6 dB), loudness compensation (the `audio.loudness`
-switch), the way to the equalizer. The Tone page also has, at its foot, "Volume leveling": "On a
-schedule" (`audio.lev_sched`) and, while it is on, the two times with − and + (a quarter hour a
-press, a held button keeps stepping; `audio.lev_from`, `audio.lev_to`), as on the web. The equalizer (`screen_eq.cpp`) draws the frequency response with
+switch; on puts back `audio.loud_back`, as on the web), the way to the equalizer. The Tone page
+also has, at its foot, "Volume leveling": "On a schedule" (`audio.lev_sched`) and, while it is on,
+the two times with − and + (a quarter hour a press, a held button keeps stepping; `audio.lev_from`,
+`audio.lev_to`), as on the web. The equalizer (`screen_eq.cpp`) draws the frequency response with
 the same function, `audio_core::eq_magnitude_db()`, that the audio core computes the biquads with;
 the band points are dragged with a finger. At the top: the PEQ switch captioned "On" (the row takes
 a finger anywhere), the preset field and, while "Custom" plays, "Reset “Custom”". Edits go to a local
@@ -495,7 +496,7 @@ the pairing dialog (`PairDialog.svelte`).
 | Player | `stores/now.js` (the source's face, as in `screen_now.cpp`), `audio.volume`, `audio.mute`, `audio.leveler`, transport `*.cmd`, `player.repeat/shuffle`, `*.seek_s`, `radio.fav_add` | `GET /api/cover?px=280` following `ui.cover` |
 | Source | `audio.sources`, `audio.source` (the same cards and order as on the panel) | — |
 | Settings | `airplay.enabled/mode`, `dlna.enabled`, `radio.covers`, captions | `POST /api/restart` |
-| Tone and volume | `audio.bass_db`, `treble_db`, `loudness`, `eq_enabled`, `vol_max`, `vol_start`; "Volume leveling": `lev_sched` and, while it is on, `lev_from`/`lev_to` as time fields (5-minute step) | `/api/eq` (presets, `lib/eq.js`) |
+| Tone and volume | `audio.bass_db`, `treble_db`, `loudness` (switched on: `loud_back`), `eq_enabled`, `vol_max`, `vol_start`; "Volume leveling": `lev_sched` and, while it is on, `lev_from`/`lev_to` as time fields (5-minute step) | `/api/eq` (presets, `lib/eq.js`) |
 | Equalizer | `audio.eq_enabled`, `audio.eq_rev` | `GET/POST /api/eq` |
 | Speakers, wizard, calibration | `audio.spk_*`, `audio.port_*`, `audio.balance_db10`, `audio.tone_*` | — |
 | Screen | `ui.backlight`, `ui.standby_bl`, `ui.standby_min`, `ui.theme` | — |

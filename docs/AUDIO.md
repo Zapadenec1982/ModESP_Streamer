@@ -240,6 +240,7 @@ block.
 | `audio.port_lift_db` | 0…6 dB, 3 | peak at the port frequency, Q 1.4 |
 | `audio.port_src` | 0 not set / 1 by hand / 3 measured | where the port frequency came from |
 | `audio.loudness` | 0…100 %, 70 | loudness compensation strength, 0 — off |
+| `audio.loud_back` | 1…100 %, 70, read-only | what switching loudness compensation on puts back: the last non-zero `audio.loudness`, kept by the audio module when it goes to 0 |
 | `audio.loud_ref` | 20…100 %, 100 | "Usual volume": where loudness compensation adds nothing |
 | `audio.bass_db`, `audio.treble_db` | −6…+6 dB, 0 | shelves at 100 Hz and 10 kHz, Q 0.71 |
 | `audio.eq_enabled` | bool, true | PEQ bypass (crossfade) |
