@@ -256,12 +256,12 @@ enum class S : uint16_t {
     svc_free,                // svc.free
     svc_gaps,                // svc.gaps
     svc_internal,            // svc.internal
+    svc_internal_min,        // svc.internal_min
     svc_largest,             // svc.largest
     svc_limiter,             // svc.limiter
     svc_link,                // svc.link
     svc_link_lost,           // svc.link_lost
     svc_link_up,             // svc.link_up
-    svc_min,                 // svc.min
     svc_none,                // svc.none
     svc_peer,                // svc.peer
     svc_peer_on,             // svc.peer_on

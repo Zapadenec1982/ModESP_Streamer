@@ -287,6 +287,10 @@ brightness, auto sleep (0, 5, 10, 15, 20, 30, 45, 60 min), scheme.
 internal SRAM) and three columns of detail (audio and scheduler, heap, satellite link). A number's
 colour is a verdict by the thresholds in `include/service_readout.h` (test
 `tests/host/test_service_readout.cpp`); a row is redrawn only when the value or the verdict changes.
+The heap column grades free internal SRAM, its lowest since boot (`system.heap_internal_min`, by the
+same thresholds) and the DMA-capable part; the largest internal block, PSRAM and the whole heap
+(`system.heap_free`, PSRAM included) have no verdict. The whole heap's minimum, `system.heap_min`,
+is published but not shown.
 
 **Wi-Fi** — the current network (or the panel's own access point, or an attempt), "Forget", the list
 of networks from a scan (a separate task, `net_scan`: a scan over the C6 RPC takes seconds) and a

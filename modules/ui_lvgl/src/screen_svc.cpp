@@ -69,7 +69,7 @@ enum RowId {
     // column 1, second group — the run itself
     R_UPTIME, R_BOOT, R_SAFE,
     // column 2 — memory
-    R_INT, R_DMA, R_BIG, R_PSRAM, R_HFREE, R_HMIN,
+    R_INT, R_DMA, R_BIG, R_PSRAM, R_HFREE, R_INTMIN,
     // column 3 — the satellite link
     R_LINK, R_PEER, R_RTT, R_OVF, R_DROPS, R_GAPS,
     R_COUNT
@@ -188,7 +188,7 @@ lv_obj_t* build(lv_obj_t* parent, UiCtx&) {
     make_row(root, R_BIG,   x2, y2, tr(S::svc_largest)); y2 += ROW_H;
     make_row(root, R_PSRAM, x2, y2, "PSRAM");      y2 += ROW_H;
     make_row(root, R_HFREE, x2, y2, tr(S::svc_free)); y2 += ROW_H;
-    make_row(root, R_HMIN,  x2, y2, tr(S::svc_min));  y2 += ROW_H;
+    make_row(root, R_INTMIN, x2, y2, tr(S::svc_internal_min)); y2 += ROW_H;
 
     // ── column 3: the link to the Bluetooth satellite ──
     const int32_t x3 = 2 * COL_PITCH;
@@ -304,21 +304,25 @@ void refresh(lv_obj_t*, UiCtx& c) {
 
     // ── memory ──
     //
-    // Internal and DMA are graded because they are the two this board runs out of. The other
-    // four are not. `system.heap_free` and `system.heap_min` are whole-heap figures, and with
+    // Internal and DMA are graded because they are the two this board runs out of, and so is
+    // the lowest internal since boot (`system.heap_internal_min`), on the same line as internal
+    // now: it is the same quantity at its worst moment, and a soak is judged on its worst
+    // moment. The other three are not. `system.heap_free` is a whole-heap figure, and with
     // CONFIG_SPIRAM_USE_MALLOC=y (boards/p4_player/sdkconfig.board:27) the whole heap is 32 MB
-    // of PSRAM plus a rounding error of SRAM, so a threshold on them would be a green light
-    // that can never turn red. They are shown because the Web page shows them and the two
-    // screens must not disagree — but without a verdict, because there is no honest one to
-    // give. `system.heap_largest` is the largest INTERNAL block (SystemMonitor: asking it of
-    // the whole heap walked PSRAM with interrupts off for milliseconds); it has no threshold
-    // yet because nobody has measured what a dangerous one looks like.
-    row_bytes(t, R_INT,   s.heap_internal, svc::internal_free(s.heap_internal));
-    row_bytes(t, R_DMA,   s.heap_dma,      svc::dma_free(s.heap_dma));
-    row_bytes(t, R_BIG,   s.heap_largest,  svc::Grade::Ok);
-    row_bytes(t, R_PSRAM, s.heap_psram,    svc::Grade::Ok);
-    row_bytes(t, R_HFREE, s.heap_free,     svc::Grade::Ok);
-    row_bytes(t, R_HMIN,  s.heap_min,      svc::Grade::Ok);
+    // of PSRAM plus a rounding error of SRAM, so a threshold on it would be a green light that
+    // can never turn red. It is shown because the Web page shows it and the two screens must
+    // not disagree — but without a verdict, because there is no honest one to give. Its
+    // minimum, `system.heap_min`, is the same green light, so neither screen shows it; its row
+    // is the internal minimum's. `system.heap_largest` is the largest INTERNAL block
+    // (SystemMonitor: asking it of the whole heap walked PSRAM with interrupts off for
+    // milliseconds); it has no threshold yet because nobody has measured what a dangerous one
+    // looks like.
+    row_bytes(t, R_INT,    s.heap_internal,     svc::internal_free(s.heap_internal));
+    row_bytes(t, R_DMA,    s.heap_dma,          svc::dma_free(s.heap_dma));
+    row_bytes(t, R_BIG,    s.heap_largest,      svc::Grade::Ok);
+    row_bytes(t, R_PSRAM,  s.heap_psram,        svc::Grade::Ok);
+    row_bytes(t, R_HFREE,  s.heap_free,         svc::Grade::Ok);
+    row_bytes(t, R_INTMIN, s.heap_internal_min, svc::internal_free(s.heap_internal_min));
 
     // ── the satellite link ──
     //

@@ -554,6 +554,7 @@
   "svc.largest": "Найб. блок",
   "svc.free": "Вільно",
   "svc.min": "Мінімум",
+  "svc.internal_min": "Внутр. мінімум",
   "svc.sat": "Модуль Bluetooth",
   "svc.link": "Зв'язок",
   "svc.link_up": "Є",

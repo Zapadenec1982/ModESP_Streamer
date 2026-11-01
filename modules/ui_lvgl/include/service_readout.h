@@ -194,7 +194,8 @@ inline Grade dma_free(int32_t b) {
 
 /// `system.heap_internal` — all free internal 8-bit SRAM, of which the DMA-capable part is a
 /// subset. Held a step above the DMA line for that reason: internal running out first is the
-/// same fault one allocation earlier.
+/// same fault one allocation earlier. Its lowest since boot, `system.heap_internal_min`, is
+/// held to the same line: under it, the fault was in reach at least once.
 inline Grade internal_free(int32_t b) {
     if (b < 48 * 1024) return Grade::Bad;
     if (b < 96 * 1024) return Grade::Warn;

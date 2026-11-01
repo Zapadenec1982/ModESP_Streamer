@@ -118,8 +118,8 @@ public:
         int32_t  loop_max_ms   = 0;     ///< system.main_loop_max_ms
         int32_t  stack_min     = 0;     ///< system.main_stack_min, BYTES on ESP-IDF
         int32_t  heap_free     = 0;     ///< system.heap_free — whole heap, PSRAM included
-        int32_t  heap_min      = 0;     ///< system.heap_min — its minimum since boot
         int32_t  heap_internal = 0;     ///< system.heap_internal — the scarce one
+        int32_t  heap_internal_min = 0; ///< system.heap_internal_min — its lowest since boot
         int32_t  heap_dma      = 0;     ///< system.heap_dma
         int32_t  heap_largest  = 0;     ///< system.heap_largest — largest INTERNAL block
         int32_t  heap_psram    = 0;     ///< system.heap_psram

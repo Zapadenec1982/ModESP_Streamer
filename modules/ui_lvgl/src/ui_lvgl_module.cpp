@@ -896,8 +896,8 @@ void UiLvglModule::mirror_diag() {
     const int32_t loop_max_ms   = read_number("system.main_loop_max_ms", 0);
     const int32_t stack_min     = read_number("system.main_stack_min", 0);
     const int32_t heap_free     = read_number("system.heap_free", 0);
-    const int32_t heap_min      = read_number("system.heap_min", 0);
     const int32_t heap_internal = read_number("system.heap_internal", 0);
+    const int32_t heap_internal_min = read_number("system.heap_internal_min", 0);
     const int32_t heap_dma      = read_number("system.heap_dma", 0);
     const int32_t heap_largest  = read_number("system.heap_largest", 0);
     const int32_t heap_psram    = read_number("system.heap_psram", 0);
@@ -956,8 +956,8 @@ void UiLvglModule::mirror_diag() {
     snap_.loop_max_ms   = loop_max_ms;
     snap_.stack_min     = stack_min;
     snap_.heap_free     = heap_free;
-    snap_.heap_min      = heap_min;
     snap_.heap_internal = heap_internal;
+    snap_.heap_internal_min = heap_internal_min;
     snap_.heap_dma      = heap_dma;
     snap_.heap_largest  = heap_largest;
     snap_.heap_psram    = heap_psram;
