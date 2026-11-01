@@ -31,10 +31,15 @@ The tool is kept for two jobs it still has, not as a step in the normal build:
 2. A BACKUP. `backup --partition userdata` reads the store off an upgraded panel, which is
    worth doing before anything experimental. `idf.py flash` no longer needs it.
 
-`backup` needs esptool and reboots the board into the loader. `seed` and `restore` touch
-only the working tree. Between the two, `idf.py build` regenerates data.bin because the
-seeded files change - but data.bin is NOT rebuilt when only eq.json changes (its DEPENDS
-list does not name it), so `seed` deletes build/data.bin to force it.
+`backup` needs esptool and reboots the board into the loader. Each backup replaces
+build/user_data whole, and only once it has read the panel to the end, so `seed` carries
+exactly what the last successful backup found: never a file left over from an earlier one,
+never half of a backup that failed.
+
+`seed` and `restore` touch only the working tree. Between the two, `idf.py build`
+regenerates data.bin because the seeded files change - but data.bin is NOT rebuilt when
+only eq.json changes (its DEPENDS list does not name it), so `seed` deletes build/data.bin
+to force it.
 
 Reading a LittleFS image needs littlefs-python. The build already provisions it in
 build/littlefs_py_venv for writing images, and this reuses that interpreter rather than
@@ -103,7 +108,14 @@ def cmd_backup(args):
                            "-b", str(args.baud), "read_flash",
                            hex(off), hex(size), IMAGE])
 
-    os.makedirs(SAVE, exist_ok=True)
+    # Read into a directory of its own and swap it in only when the read got to the end.
+    # Written over the old set, a file the panel no longer has stayed from an earlier backup,
+    # and a read that failed half way left half of each - and `seed` puts whatever is in
+    # build/user_data into the image as the panel's own.
+    new, old = SAVE + ".new", SAVE + ".old"
+    for left in (new, old):                     # what a backup cut short left behind
+        shutil.rmtree(left, ignore_errors=True)
+    os.makedirs(new)
     code = r'''
 import os, sys
 from littlefs import LittleFS
@@ -122,7 +134,15 @@ for name in sys.argv[3:]:
     saved.append("%%s (%%d bytes)" %% (name, len(data)))
 print("\n".join("  saved " + s for s in saved) or "  the panel had none of these files")
 ''' % {"block_size": GEOMETRY["block_size"], "geom": GEOMETRY}
-    subprocess.check_call([_lfs_python(), "-c", code, IMAGE, SAVE] + USER_FILES)
+    try:
+        subprocess.check_call([_lfs_python(), "-c", code, IMAGE, new] + USER_FILES)
+    except BaseException:
+        shutil.rmtree(new, ignore_errors=True)
+        raise
+    if os.path.isdir(SAVE):
+        os.rename(SAVE, old)
+    os.rename(new, SAVE)
+    shutil.rmtree(old, ignore_errors=True)
     print("backup in %s" % SAVE)
 
 
