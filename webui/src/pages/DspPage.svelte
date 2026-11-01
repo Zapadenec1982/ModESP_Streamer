@@ -14,7 +14,6 @@
   import { t, K, fmt, language } from '../stores/i18n.js';
   import { decimal } from '../lib/numbers.js';
   import { state } from '../stores/state.js';
-  import { apiGet } from '../lib/api.js';
   import { createSettingSender } from '../lib/settings.js';
   import { toastError, toastWarn, toastAction, noteUndo } from '../stores/toast.js';
   import { soundName } from '../lib/sounds.js';
@@ -149,28 +148,18 @@
     if (menu && menuEl && !menuEl.contains(e.target)) menu = false;
   }
 
-  // ── the whole system (lib/syscurve.js): the stages around the EQ, the loudness as it is now ──
+  // ── the whole system (lib/syscurve.js): the stages around the EQ, the loudness as it is now
+  //    (audio.loud_db: published on every change, so the WebSocket's deltas carry it) ──
   let showSystem = false;
   $: p = port(s);
   $: stages = showSystem ? systemBands({
     bass: s['audio.bass_db'] ?? 0,
     treble: s['audio.treble_db'] ?? 0,
-    loudDb,
+    loudDb: Number(s['audio.loud_db']) || 0,
     hpHz: s['audio.hp_hz'] ?? 40,
     portHz: p.hz,
     liftDb: s['audio.port_lift_db'] ?? 3,
   }) : null;
-
-  // ── the loudness now: not in the WebSocket deltas, so asked for ──
-  let loudDb = 0;
-  let poll;
-  async function readLoudness() {
-    if (document.visibilityState !== 'visible') return;
-    try {
-      const st = await apiGet('/api/state');
-      loudDb = Number(st['audio.loud_db']) || 0;
-    } catch (e) { /* the next tick tries again */ }
-  }
 
   function hidden() {
     if (document.visibilityState === 'hidden') eq.keep();
@@ -178,13 +167,10 @@
 
   onMount(() => {
     eq.load();
-    readLoudness();
-    poll = setInterval(readLoudness, 2000);
     document.addEventListener('visibilitychange', hidden);
     window.addEventListener('pagehide', eq.keep);
   });
   onDestroy(() => {
-    clearInterval(poll);
     document.removeEventListener('visibilitychange', hidden);
     window.removeEventListener('pagehide', eq.keep);
     eq.keep();
