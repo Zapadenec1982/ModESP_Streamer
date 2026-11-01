@@ -481,9 +481,9 @@ extern "C" void app_main(void)
     //
     // The idle tasks are watched again. The override to 0 disabled exactly the check that
     // catches CPU starvation: an idle task that never runs is the symptom of a core being
-    // held by a busy task, which is how this board rebooted on 20.09 — and with idle
-    // unwatched the only thing left to notice was `main` missing its own feed, several
-    // seconds later and naming the wrong culprit. The mask is built from the Kconfig
+    // held by a busy task, which is how this board has rebooted — and with idle unwatched
+    // the only thing left to notice is `main` missing its own feed, several seconds later
+    // and naming the wrong culprit. The mask is built from the Kconfig
     // settings, which is what the IDF startup code would have used.
     bool wdt_subscribed = false;
     uint32_t idle_core_mask = 0;
@@ -599,7 +599,7 @@ extern "C" void app_main(void)
         // heap_caps_get_largest_free_block(MALLOC_CAP_8BIT), once a second — and that call
         // walks every block of every heap, each heap under portENTER_CRITICAL_SAFE. With
         // the 32 MB PSRAM pool in it the walk measured 2.6-4.3 ms with interrupts off on
-        // this core (6 700 blocks, 11.10.2026), past the ~2 ms the satellite UART's RX
+        // this core (6 700 blocks), past the ~2 ms the satellite UART's RX
         // FIFO holds at 460800 baud; every overrun cost one cover frame. SystemMonitor
         // publishes the key now, from the internal heap only.
         static uint32_t sec_counter = 0;
@@ -626,9 +626,9 @@ extern "C" void app_main(void)
         // reference on by ONE period only: a loop N periods behind runs N turns back to back
         // without blocking. This task is the lowest priority above idle on CPU0, so for as
         // long as that lasts IDLE0 gets no CPU at all, and the task watchdog resets the board
-        // 5 s in. That is the 12.10.2026 reset under HTTP load: the coredump of 42a6a31 has
-        // `main` 432 turns (11.65 ms each against 10) past its last sleep, ~715 ms behind,
-        // IDLE0 starved for 5.03 s.
+        // 5 s in. That is the reset seen under HTTP load: its coredump has `main` 432 turns
+        // (11.65 ms each against 10) past its last sleep, ~715 ms behind, IDLE0 starved for
+        // 5.03 s.
         //
         // So a turn that overran drops the missed ones instead of making them up, and gives
         // the core away for one tick before the next: whatever else is ready on CPU0 runs,

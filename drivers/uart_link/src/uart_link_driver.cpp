@@ -8,10 +8,10 @@
  * carrying bytes", which is the same question on any board and for any protocol. What is said
  * over the wire stays in modules/bt, and the frames it is said in stay in components/sat_link.
  *
- * The contract this serves: 460800 baud, COBS frames, an 8 KB receive ring (commit 5222100 —
- * 2048 bytes is 44 ms of wire against a drain that was a 100 Hz poll). A lost byte loses the
- * whole frame it was in, so losing one has to be REPORTED rather than merely survived; that
- * is what the overrun count is, and why HAL installs this port with an event queue at all.
+ * The contract this serves: 460800 baud, COBS frames, an 8 KB receive ring (2048 bytes is
+ * 44 ms of wire against a drain that was a 100 Hz poll). A lost byte loses the whole frame it
+ * was in, so losing one has to be REPORTED rather than merely survived; that is what the
+ * overrun count is, and why HAL installs this port with an event queue at all.
  */
 
 #include "uart_link_driver.h"
