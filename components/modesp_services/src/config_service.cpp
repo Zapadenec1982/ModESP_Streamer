@@ -130,10 +130,9 @@ enum class ReadStatus { OK, MISSING, TOO_BIG, IO_ERROR };
 
 // Read a JSON file into the parse buffer. A file that does not fit is refused here, with
 // its limit in the log: fread() would otherwise stop at the buffer and jsmn would report -3
-// on a document that only looks truncated — the failure that cost a flashed panel on
-// 18.09.2026, when nothing in the log mentioned size. The limit is in docs/CONCEPT.md,
-// "Control plane — ModESP"; the root CMakeLists.txt guard catches the same thing at build
-// time, from the same constant.
+// on a document that only looks truncated — a failure that can cost a flashed panel, with
+// nothing in the log about size. The limit is in docs/CONCEPT.md, "Control plane — ModESP";
+// the root CMakeLists.txt guard catches the same thing at build time, from the same constant.
 static ReadStatus read_json_file(const char* path, char* buf, size_t& len) {
     FILE* f = fopen(path, "rb");
     if (!f) return ReadStatus::MISSING;

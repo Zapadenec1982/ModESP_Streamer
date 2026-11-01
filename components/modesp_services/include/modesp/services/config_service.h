@@ -11,7 +11,7 @@
  * The parse is strict on purpose: a capacity overflow, a file that does not fit the parse
  * buffer, or a malformed section fails the load, and because config is a CRITICAL module the
  * boot goes to safe mode instead of coming up half-configured. A partially configured board
- * that boots as if it were healthy is what cost a flashed panel on 18.09.2026.
+ * that boots as if it were healthy can cost a flashed panel.
  */
 
 #pragma once
@@ -45,9 +45,9 @@ public:
     ///
     /// Two directories because two kinds of file. board.json and bindings.json are build
     /// output and live in the image partition; devices.json is a registry someone builds at
-    /// runtime by subscribing devices, and since 22.09.2026 that lives in the `userdata`
-    /// partition a flash does not touch (UserStore). on_init() passes both; host tests pass
-    /// one fixture directory and get the old behaviour.
+    /// runtime by subscribing devices, and that lives in the `userdata` partition a flash
+    /// does not touch (UserStore). on_init() passes both; host tests pass one fixture
+    /// directory, which then serves for both.
     bool load(const char* dir, const char* user_dir = nullptr);
 
     /// Parse one board.json / bindings.json into a caller-owned table, without touching the

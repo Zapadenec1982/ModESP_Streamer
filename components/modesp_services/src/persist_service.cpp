@@ -32,10 +32,9 @@
  * wrote it; a manifest that gains or loses a state shifts every index after it. The
  * BUG-012 migration nevertheless ran on EVERY boot, for every persisted state that had no
  * hashed key yet — which is every state nobody has changed — so each state added to a
- * manifest inherited whatever stale positional value sat at its index. On 05.10.2026
- * radio.cat_quality (new, default 1) came up as 3 that way, and the migration then wrote
- * the 3 under its hashed key and erased the positional one: the wrong value became the
- * stored one.
+ * manifest inherited whatever stale positional value sat at its index. That way
+ * radio.cat_quality (new, default 1) came up as 3, and the migration then wrote the 3 under
+ * its hashed key and erased the positional one: the wrong value became the stored one.
  *
  * Positional keys are now read by one pass in a device's life, and only where they can
  * still mean something: on a device without a single hashed key, i.e. the first boot after

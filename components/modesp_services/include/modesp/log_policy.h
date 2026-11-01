@@ -10,14 +10,14 @@
  * ── Why there is an allowlist rather than a plain WARN ─────────────────────────────────
  *
  * Every fault diagnosed on this bench was diagnosed from the log, and not all of the lines
- * that did it are warnings. Two of the three that settled 22.09.2026 are ESP_LOGI:
+ * that did it are warnings. Two of the three that settled the DMA starvation below are ESP_LOGI:
  *
  *     Radio: stream heap: internal 42095, DMA 2535 (largest 2432)          (radio, INFO)
  *     Radio: stream: buffer 0%, net 147968 B/s (need 40000), audio 0.49x   (radio, INFO)
  *     [port_bt] now reading 48000 Hz, 16-bit slots, clocked from the crystal (i2s, INFO)
  *
  * A blanket WARN would have hidden all three, and the DMA starvation behind them would have
- * looked like "DLNA sometimes plays at half speed". The other two lines that day —
+ * looked like "DLNA sometimes plays at half speed". The other two lines of that diagnosis —
  * `cannot take 48000 Hz / 32-bit slots: ESP_ERR_NO_MEM` (E) and `48000 Hz in 32-bit slots
  * was not adopted` (W) — survive WARN on their own.
  *

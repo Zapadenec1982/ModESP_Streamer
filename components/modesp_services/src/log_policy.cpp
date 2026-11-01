@@ -15,32 +15,32 @@ namespace modesp {
 namespace log_policy {
 
 // Each line is a tag whose INFO output has already earned its place in a diagnosis. Anything
-// added here should come with the same kind of note: which fault it settled, and when.
+// added here should come with the same kind of note: which fault it settled.
 const Kept KEPT[] = {
     {"main",      ESP_LOG_INFO,
      "boot banner, running partition, heap by capability (log_heap) - the first thing anyone "
      "asks a panel that misbehaves"},
     {"ConfigSvc", ESP_LOG_INFO,
      "which board.json loaded and how many bindings; an over-size board.json costs a flashed "
-     "panel and the size is only visible here (18.09.2026)"},
+     "panel and the size is only visible here"},
     {"UserStore", ESP_LOG_INFO,
      "the one-time migration summary - the answer to 'where did my EQ go'"},
     {"I2sStd",    ESP_LOG_INFO,
      "'[port_bt] now reading N Hz, M-bit slots' - the repeated park/widen on every format "
-     "announcement was visible only as this pair repeating (22.09.2026, d7fc537)"},
+     "announcement was visible only as this pair repeating"},
     {"Audio",     ESP_LOG_INFO,
      "retunes, adopted formats and the EQ actually loaded; the audio core's own account of "
      "what rate it is running at"},
     {"Radio",     ESP_LOG_INFO,
      "'stream heap: internal N, DMA M' and 'stream: buffer P%, net ...' - the two lines that "
-     "showed 2535 bytes of DMA heap and half-speed playback (22.09.2026, eaf967e)"},
+     "showed 2535 bytes of DMA heap and half-speed playback"},
     {"Bt",        ESP_LOG_INFO,
      "the satellite's OWN log, relayed over the link as 'Bt: sat: ...'. It is kept for a "
      "reason none of the others have: COM13 is the satellite's console and the bench rule "
      "forbids opening it, so these relayed lines are the only window into a second processor "
-     "running firmware we also wrote. On 22.09.2026 they are what proved the satellite was "
-     "healthy and feeding real samples ('peak 17668/32768, wire 17668') while the panel read "
-     "digital silence - without them the fault would have been attributed to the wrong board"},
+     "running firmware we also wrote. They are what proved the satellite healthy and "
+     "feeding real samples ('peak 17668/32768, wire 17668') while the panel read digital "
+     "silence - without them that fault would have been attributed to the wrong board"},
     {"sdmmc_card", ESP_LOG_INFO,
      "'mounted /sd: SD, 29818 MB, 4-bit @ 20000 kHz' - the one line that says the card came "
      "up. It matters more here than the sentence suggests: this slot shares the SDMMC host "

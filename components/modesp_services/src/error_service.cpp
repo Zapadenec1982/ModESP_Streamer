@@ -108,7 +108,7 @@ void ErrorService::report(const char* source, int32_t code,
     // error.count: one writer at a time, writing the count as it stands now rather than the
     // one this call left the lock with. Two reporters could leave the lock in one order and
     // reach the store in the other, and the smaller count, written last, stayed (195 of 200
-    // in the host test, 14.10.2026). Not under lock_: SharedState takes a mutex.
+    // in the host test). Not under lock_: SharedState takes a mutex.
     SemaphoreHandle_t writer = count_writer();
     xSemaphoreTake(writer, portMAX_DELAY);
     portENTER_CRITICAL(&lock_);
