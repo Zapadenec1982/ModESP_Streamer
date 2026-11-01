@@ -61,6 +61,8 @@ struct UiScreen {
 
 namespace {
 
+using modesp::gen::AIRPLAY_MODE_MAX;
+using modesp::gen::AIRPLAY_MODE_MIN;
 using modesp::gen::AUDIO_SOURCE_AIRPLAY;
 using modesp::gen::AUDIO_SOURCE_AUX;
 using modesp::gen::AUDIO_SOURCE_BT;
@@ -1130,7 +1132,7 @@ void UiLvglModule::apply_requests() {
             if (state_get("airplay.enabled").has_value()) state_set("airplay.enabled", it.value != 0);
             break;
         case Req::AIRPLAY_MODE:
-            if ((it.value == 0 || it.value == 1) && state_get("airplay.mode").has_value())
+            if (it.value >= AIRPLAY_MODE_MIN && it.value <= AIRPLAY_MODE_MAX && state_get("airplay.mode").has_value())
                 state_set("airplay.mode", it.value);
             break;
         case Req::DLNA_ON:

@@ -44,6 +44,8 @@ namespace {
 
 using i18n::S;
 using i18n::tr;
+using modesp::gen::AIRPLAY_MODE_AIRPLAY2;
+using modesp::gen::AIRPLAY_MODE_WINDOWS;
 using modesp::gen::AUDIO_SOURCE_AIRPLAY;
 
 // ── geometry, all relative to the 752x384 content column ──
@@ -102,8 +104,11 @@ void ap_mode_chosen(int mode) {
 /// switched the protocol at once, with «змінити дотиком» under it to say so.
 void ap_mode_pick() {
     if (!g.ctx || !(g.ctx->s.sources & (1 << AUDIO_SOURCE_AIRPLAY))) return;
+    // a row per airplay.mode value, in its order: the row chosen is the mode
+    static_assert(AIRPLAY_MODE_AIRPLAY2 == 0 && AIRPLAY_MODE_WINDOWS == 1, "the rows are the modes");
     const char* items[] = {"AirPlay 2", tr(S::sys_airplay_1)};
-    ui_pick_show(tr(S::sys_airplay_mode), items, 2, g.ctx->s.ap_mode == 1 ? 1 : 0, ap_mode_chosen);
+    const int on = g.ctx->s.ap_mode == AIRPLAY_MODE_WINDOWS ? AIRPLAY_MODE_WINDOWS : AIRPLAY_MODE_AIRPLAY2;
+    ui_pick_show(tr(S::sys_airplay_mode), items, 2, on, ap_mode_chosen);
 }
 void ap_mode_cb(lv_event_t*) {
     ap_mode_pick();
@@ -291,7 +296,7 @@ void refresh(lv_obj_t*, UiCtx& c) {
     if (!ap_built) {
         snprintf(buf, sizeof(buf), "%s", tr(S::sys_not_built));
     } else {
-        const char* mode = s.ap_mode == 1 ? tr(S::sys_airplay_1) : "AirPlay 2";
+        const char* mode = s.ap_mode == AIRPLAY_MODE_WINDOWS ? tr(S::sys_airplay_1) : "AirPlay 2";
         if (s.ap_switching)       snprintf(buf, sizeof(buf), "%s · %s", mode, tr(S::sys_ap_switching));
         else if (s.ap_mode_error) snprintf(buf, sizeof(buf), "%s · %s", mode, tr(S::sys_ap_switch_failed));
         else if (s.ap_enabled)    snprintf(buf, sizeof(buf), "%s · %s", mode, s.ap_name[0] ? s.ap_name : "…");

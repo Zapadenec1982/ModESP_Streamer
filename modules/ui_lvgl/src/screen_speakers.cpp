@@ -27,6 +27,9 @@ namespace {
 
 using i18n::S;
 using i18n::tr;
+using modesp::gen::AUDIO_PORT_SRC_MEASURED;
+using modesp::gen::AUDIO_SPK_TYPE_CLOSED;
+using modesp::gen::AUDIO_SPK_TYPE_PORTED;
 
 // ── geometry, relative to the 752x384 content column ──
 constexpr int32_t STATE_H  = 212;
@@ -180,18 +183,19 @@ void draw(bool closed) {
 /// The card as the snapshot has it: lib/speakers.js speakerState(), word for word.
 void paint_state(const UiLvglModule::Snapshot& s) {
     if (s.spk_type == g.type && s.port_hz == g.hz && s.port_src == g.src) return;
-    const bool redraw = (g.type == 2) != (s.spk_type == 2) || g.type < 0;
+    const bool redraw = (g.type == AUDIO_SPK_TYPE_CLOSED) != (s.spk_type == AUDIO_SPK_TYPE_CLOSED) || g.type < 0;
     g.type = s.spk_type;
     g.hz = s.port_hz;
     g.src = s.port_src;
-    const bool closed = s.spk_type == 2;
+    const bool closed = s.spk_type == AUDIO_SPK_TYPE_CLOSED;
     const int32_t hz = closed ? 0 : s.port_hz;
-    const bool measured = hz > 0 && s.port_src == 3;
+    const bool measured = hz > 0 && s.port_src == AUDIO_PORT_SRC_MEASURED;
     if (redraw) draw(closed);
-    lv_label_set_text(g.title, tr(closed ? S::spk_closed : s.spk_type == 1 ? S::spk_ported : S::spk_unset));
+    lv_label_set_text(g.title, tr(closed ? S::spk_closed
+                                  : s.spk_type == AUDIO_SPK_TYPE_PORTED ? S::spk_ported : S::spk_unset));
     // the line says the port where there is one to say; closed, or not set up, the title is all
     char b[96];
-    const bool port = !closed && (s.spk_type == 1 || hz > 0);
+    const bool port = !closed && (s.spk_type == AUDIO_SPK_TYPE_PORTED || hz > 0);
     uih::set_text(g.line, g.line_txt, sizeof(g.line_txt), port ? ui_spk_line(s, b, sizeof(b)) : "");
     uih::show(g.ok, measured);
 }
@@ -300,12 +304,15 @@ void refresh(lv_obj_t*, UiCtx& c) {
 }  // namespace
 
 const char* ui_spk_line(const UiLvglModule::Snapshot& s, char* out, size_t cap) {
-    const bool closed = s.spk_type == 2;
+    const bool closed = s.spk_type == AUDIO_SPK_TYPE_CLOSED;
     const int32_t hz = closed ? 0 : s.port_hz;
     S key = S::spk_unset;                                     // as its page's title says it
-    if (closed)                        key = S::spk_closed;
-    else if (hz > 0)                   key = s.port_src == 3 ? S::spk_port_measured : S::spk_port_manual;
-    else if (s.spk_type == 1)          key = S::spk_port_none;
+    if (closed)
+        key = S::spk_closed;
+    else if (hz > 0)
+        key = s.port_src == AUDIO_PORT_SRC_MEASURED ? S::spk_port_measured : S::spk_port_manual;
+    else if (s.spk_type == AUDIO_SPK_TYPE_PORTED)
+        key = S::spk_port_none;
     char n[12];
     snprintf(n, sizeof(n), "%ld", (long)hz);
     i18n::fmt(out, cap, tr(key), {{"hz", n}});
