@@ -7,8 +7,8 @@
  * holds the stream as suspended by the remote: it goes on "playing", its tracks move on, and no
  * audio arrives. The panel sends that PLAY on the way back to Bluetooth only for a pause it
  * remembers placing (auto_paused_), and that memory is RAM, lost on a restart and dropped with a
- * lost link, while the satellite keeps the suspend. 13.10.2026, after two restarts of the panel
- * (a backup and a flash): Bluetooth selected, a Pixel 6 Pro saying it played with its tracks
+ * lost link, while the satellite keeps the suspend. Seen after two restarts of the panel (a
+ * backup and a flash): Bluetooth selected, a Pixel 6 Pro saying it played with its tracks
  * moving on, the stream suspended, and silence until the satellite was restarted by hand. The
  * pause that started it was not captured; this is the path in this code that ends there.
  *
@@ -27,7 +27,7 @@ namespace bt_stall {
 class Kick {
 public:
     /// Longer than a connecting phone takes to start its stream: a Pixel 6 Pro took 2.0 s
-    /// from "a2dp connected" to "stream started" on 13.10.2026.
+    /// from "a2dp connected" to "stream started".
     static constexpr uint32_t HOLD_MS = 5000;
 
     /// PAUSE or STOP went out because somebody asked for it.

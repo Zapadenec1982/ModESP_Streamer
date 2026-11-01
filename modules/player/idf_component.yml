@@ -2,11 +2,11 @@ dependencies:
   # Decoding for local files and, later, network streams. One "simple decoder" interface
   # covers MP3, FLAC, WAV and M4A, so the container is not the player's problem.
   #
-  # Licence, checked 2026-09-16 (docs/CONCEPT.md, "Licenses"): Espressif Modified MIT — use is
+  # Licence (docs/CONCEPT.md, "Licenses"): Espressif Modified MIT — use is
   # permitted exclusively with Espressif silicon, which is not a constraint here. The
   # third-party decoders inside are all permissive (Apache-2.0, BSD, Xiph BSD-like).
   #
   # PINNED BELOW 2.6 ON PURPOSE. From 2.6 the component refuses to build for ESP32-P4
-  # chip revisions under 3.0, and this panel's P4 is v1.3 (esptool chip_id, 16.09.2026).
+  # chip revisions under 3.0, and this panel's P4 is v1.3 (esptool chip_id).
   # Raising this ceiling needs different silicon, not a newer dependency.
   espressif/esp_audio_codec: ">=2.0.0,<2.6.0"

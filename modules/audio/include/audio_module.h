@@ -361,10 +361,10 @@ private:
     uint16_t out_mclk_mult_ = 0;
     uint32_t want_rate_ = 0;                ///< 0 = nothing pending
     uint32_t refused_rate_ = 0;             ///< logged once, not once a block
-    /// The highest rate the output clock is moved to (the customer, 15.10.2026). A 176.4 or
-    /// 192 kHz track plays at 88.2 or 96 kHz, halved by its own producer, as a rate the port
-    /// refused would be. What 192 kHz adds over 96 lies above 48 kHz, where the amplifier's
-    /// output filter and the speakers stop; the DSP at 192 kHz costs twice what it does at 96.
+    /// The highest rate the output clock is moved to. A 176.4 or 192 kHz track plays at 88.2 or
+    /// 96 kHz, halved by its own producer, as a rate the port refused would be. What 192 kHz
+    /// adds over 96 lies above 48 kHz, where the amplifier's output filter and the speakers
+    /// stop; the DSP at 192 kHz costs twice what it does at 96.
     static constexpr uint32_t PLAY_MAX_HZ = 96000;
     /// The clock this listening SESSION runs at; 0 until the first track of it has settled
     /// one. See the FILE/RADIO branch of the audio task: the clock is chosen once, when a

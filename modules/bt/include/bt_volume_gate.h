@@ -5,18 +5,17 @@
  * The satellite is the AVRCP absolute-volume target and forwards every level the phone sets
  * (VOLUME_STATE, source 1); the panel applies it. Two of those levels are not somebody turning
  * a knob, and taking them made the room jump — up to full scale — while the amplifier was being
- * listened to at a much lower level (customer report, 13.10.2026):
+ * listened to at a much lower level:
  *
  *  - the level a phone restores as it connects. It is whatever the phone last used with this
  *    device, sent unasked: a Windows host sent 0, 13 and 15 within 1.7 s of connecting and 0
- *    again at 5.4 s (bench 05.10.2026). For HOLD_MS after a connection none is taken;
+ *    again at 5.4 s. For HOLD_MS after a connection none is taken;
  *  - any level while Bluetooth is not the selected source. A phone left connected must not move
  *    the radio's volume — the rule AirPlay already keeps (airplay_module.cpp, mirror_events).
  *
  * A level the connection brings is answered with the panel's own, so the phone's slider starts at
  * what the room is playing at. One set while another source plays is left alone: answering every
- * press there threw the phone's slider back each time, and a Pixel's owner read that as volume
- * that lagged and crawled (customer, 13.10.2026; he chose that the other source keeps its volume).
+ * press there threw the phone's slider back each time, which reads as volume that lags and crawls.
  * The phone is told the room's level once instead, when Bluetooth is picked. Main task only.
  */
 #pragma once

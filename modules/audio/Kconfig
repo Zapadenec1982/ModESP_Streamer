@@ -8,7 +8,7 @@ menu "Audio core (modules/audio)"
             i2s_a din) for two things: the PCM1808 line input of the design (docs/CONCEPT.md),
             and, since link protocol 1.9, the Bluetooth link, which the panel clocks and
             receives through that same port. A wired data-in is therefore no proof that an
-            ADC is there, and the unit this firmware runs on has none (owner, 05.10.2026).
+            ADC is there, and the unit this firmware runs on has none.
             Off, AUX is not offered and a request for it is refused: offered, picking it
             switched the amplifier on to play a floating input. Turn it on for a unit that
             has the ADC.

@@ -205,10 +205,10 @@ uint32_t now_ms() { return (uint32_t)(esp_timer_get_time() / 1000); }
 /// Each call says how wide the key it feeds is, and the text is cut here to that width —
 /// on a character boundary, like every other string from the link — rather than in the store,
 /// which would log a warning for every long name. It used to be a byte count, and a Cyrillic
-/// title ended in half a letter: "…Слаане�" on the web (12.10.2026).
+/// title ended in half a letter: "…Слаане�" on the web.
 ///
 /// bt.title is marked `long` in the manifest (256 bytes), as airplay.title is: the 64-byte
-/// inline value cut an audiobook's chapter name short on the panel and the web (12.10.2026).
+/// inline value cut an audiobook's chapter name short on the panel and the web.
 /// What the satellite sends is the real limit now, 127 bytes. bt.artist/album and the rest
 /// stay at the inline width.
 /// One file-static buffer rather than three stack copies: only the module task runs this path

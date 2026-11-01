@@ -24,11 +24,11 @@ endif()
 option(MODESP_AUDIO_DIAGNOSTIC_FIXED_TRIM "Disable live P4 clock trimming for bench A/B" OFF)
 option(MODESP_AUDIO_DIAGNOSTIC_BT_DIRECT "Bench: bypass BT ASRC at equal rates, fixed P4 trim, at most 60 seconds" OFF)
 option(MODESP_AUDIO_DIAGNOSTIC_BT_FIXED_RATIO "Bench: BT ASRC ratio 1, fixed P4 trim, at most 60 seconds" OFF)
-# The Bluetooth path by default since link protocol 1.9 (customer decision 03.10.2026): the
-# panel clocks the link from the DAC's own I2S, so stream and output run on one clock and the
-# satellite's samples go to the DAC untouched -- no ASRC, no ring servo, no trim. OFF brings back
-# the resampling path, which only a satellite older than 1.9 (one that clocks the link itself)
-# needs; with ON such a satellite gets a rebuffer every few minutes instead.
+# The Bluetooth path by default since link protocol 1.9: the panel clocks the link from the
+# DAC's own I2S, so stream and output run on one clock and the satellite's samples go to the DAC
+# untouched -- no ASRC, no ring servo, no trim. OFF brings back the resampling path, which only
+# a satellite older than 1.9 (one that clocks the link itself) needs; with ON such a satellite
+# gets a rebuffer every few minutes instead.
 option(MODESP_AUDIO_BT_DIRECT_CONTINUOUS "Continuous BT direct PCM at equal rates, fixed P4 trim, automatic rebuffer" ON)
 if(MODESP_AUDIO_BT_DIRECT_CONTINUOUS AND (MODESP_AUDIO_DIAGNOSTIC_BT_DIRECT OR MODESP_AUDIO_DIAGNOSTIC_BT_FIXED_RATIO))
     message(FATAL_ERROR "Continuous Bluetooth PCM cannot use a bounded diagnostic path")

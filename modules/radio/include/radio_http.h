@@ -4,7 +4,7 @@
  *
  * Plain HTTP on purpose: the panel holds one TLS session at a time, and while the radio
  * plays it belongs to the station (docs/NETWORK.md, "Internet radio"). Radio Browser and Deezer both
- * answer on port 80 (checked 04–05.10.2026).
+ * answer on port 80.
  */
 
 #pragma once

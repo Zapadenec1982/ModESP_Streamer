@@ -4,9 +4,9 @@
  *
  * The player's side of the device, the way modules/airplay is AirPlay's: whether the producer
  * writes the ring (audio.source is 7), when the source switches to USB by itself — the computer
- * starts sending sound while the panel plays nothing, the customer's choice of 24.10.2026 — and
- * how the computer's volume slider moves the room (volume_follow.h). It publishes usb_audio.state,
- * .rate, .bits for the panel's faces and a diagnostic line for the bench.
+ * starts sending sound while the panel plays nothing — and how the computer's volume slider moves
+ * the room (volume_follow.h). It publishes usb_audio.state, .rate, .bits for the panel's faces
+ * and a diagnostic line for the bench.
  *
  * Not "usb": that name is ESP-IDF's own component, the one with the USB PHY driver.
  */

@@ -2,10 +2,10 @@
  * @file dlna_module.cpp
  * @brief DLNA/UPnP MediaRenderer — the control plane of a player somebody else drives.
  *
- * What this is for (customer, 18.09.2026): the panel should appear in Music Assistant, in
- * BubbleUPnP, in foobar and in Windows' "Cast to device" without a remote of its own. That
- * is what a MediaRenderer is — a device that advertises itself, accepts a URL, and answers
- * questions about what it is doing.
+ * What this is for: the panel should appear in Music Assistant, in BubbleUPnP, in foobar
+ * and in Windows' "Cast to device" without a remote of its own. That is what a
+ * MediaRenderer is — a device that advertises itself, accepts a URL, and answers questions
+ * about what it is doing.
  *
  * It is a CONTROL plane and nothing else. No sample passes through this file: a pushed URL
  * is handed to the network stream engine in modules/radio through `radio.play_url`, exactly
@@ -28,7 +28,7 @@
  * 3. GENA notifications are HTTP requests we make to the subscriber. They must never be
  *    sent from the main loop — that loop feeds the task watchdog, and a subscriber that has
  *    gone away without unsubscribing blocks until the connect times out. This is the same
- *    fault as the RSSI RPC that reset the board under stream load (commit a988482), so
+ *    fault as the RSSI RPC that resets the board under stream load (wifi_service.cpp), so
  *    notifications go out on this module's own task and nowhere else.
  */
 
@@ -132,7 +132,7 @@ enum class Notify : uint8_t { START, TRANSPORT_STATE, AV_TRANSPORT, RENDERING_CO
 /// a kilobyte of them. Doing that on the main task, whose remaining headroom nobody
 /// measures, is a stack overflow waiting for a quiet evening: a smashed return address
 /// lands the CPU at an address that resolves to nothing, with a stack that will not unwind
-/// — which is exactly what the panic of 18.09.2026 looked like.
+/// — which is exactly what this module's panic at boot looked like.
 constexpr uint32_t TASK_STACK = 6 * 1024;
 
 struct DlnaState {
@@ -177,8 +177,8 @@ struct DlnaState {
     /// its state twice a second, so for up to half a second after a push it still reads
     /// idle — the command is in its queue and the socket is not open yet. Reading that as
     /// "the track finished" is what made a pushed track report STOPPED while it was audibly
-    /// playing (bench 18.09.2026), and it made every Seek and Pause afterwards be refused as
-    /// somebody else's audio.
+    /// playing, and it made every Seek and Pause afterwards be refused as somebody else's
+    /// audio.
     bool started = false;
     /// Milliseconds since the push, while waiting for that first sign of life.
     uint32_t waited_ms = 0;
@@ -338,10 +338,10 @@ int renderer_request(esp_dlna_handle_t, const upnp_attr_t* attr, int attr_num,
 /// Called by HttpService in the window before the static `/\*` wildcard goes down.
 ///
 /// It takes the handle and nothing else. Starting UPnP here — during boot, on the main
-/// task, before there is a network — is what this module did on 18.09.2026, and a fault
-/// inside it cost the customer a device that would not start at all. Now the boot only
-/// hands over the server; the renderer comes up later, on its own, when there is a network
-/// to be discovered on, and puts the wildcard back on top itself.
+/// task, before there is a network — is what this module once did, and a fault inside it
+/// left a device that would not start at all. So the boot only hands over the server; the
+/// renderer comes up later, on its own, when there is a network to be discovered on, and
+/// puts the wildcard back on top itself.
 #include "dlna_soap.inc"
 #include "dlna_browser_http.inc"
 
@@ -360,10 +360,10 @@ size_t free_internal() {
 /// Bring the renderer up: the three services, then the wildcard back on top of them.
 ///
 /// Every step is logged with the heap it had to work with, and the log line comes BEFORE
-/// the call rather than after. The fault of 18.09.2026 was a jump to an address that
-/// resolves to nothing, with a stack that does not unwind, and the log stopped at the line
-/// before the whole sequence — which narrowed it to six calls and no further. Whatever the
-/// next boot does, it will say which one.
+/// the call rather than after. The panic at boot was a jump to an address that resolves to
+/// nothing, with a stack that does not unwind, and the log stopped at the line before the
+/// whole sequence — which narrowed it to six calls and no further. Whatever the next boot
+/// does, it will say which one.
 void start_renderer(void* ctx) {
     if (!d.server || d.routes_up || d.failed) return;
     if (!d.self) { d.failed = true; return; }
@@ -387,7 +387,7 @@ void start_renderer(void* ctx) {
     // The catch-all comes off first. It matches every GET, and httpd checks for duplicates
     // through the same match function, so with it on the server every route below is refused
     // with "already registered" — and the library, having had its routes turned down, walks
-    // into something it never set up. That is the panic of 18.09.2026, both times.
+    // into something it never set up. That is what the panic at boot was, both times.
     modesp::http_routes::wildcard(false);
 
     // And the ABI shim goes on for exactly the length of this call. The library hands
@@ -520,8 +520,8 @@ bool DlnaModule::on_init() {
 
     if (!dlna_client::init()) ESP_LOGE(TAG, "MediaServer browser allocation failed");
     // What PersistService restored, not `true`: this key is persisted, and writing the default
-    // over it here switched the renderer back on at every boot — the panel's DLNA switch
-    // (25.09.2026) turned out to hold only until the power went off.
+    // over it here would switch the renderer back on at every boot — the panel's DLNA switch
+    // would hold only until the power went off.
     state_set("dlna.enabled", read_bool("dlna.enabled", true));
     // The same word the renderer would answer a control point with right now, rather than a
     // friendlier one: this key and the SOAP response must never disagree.
@@ -545,7 +545,7 @@ bool DlnaModule::on_init() {
             d.run = false;
         } else {
             // 10 s rather than the 200 ms beat, because this task also runs the one-shot
-            // renderer start — the call that did not return on 20.09 and is already
+            // renderer start — the call that once did not return and is already
             // guarded by its own NVS flag. Tight enough to catch a wedge, loose enough
             // that a merely slow start is not reported as one.
             modesp::liveness::watch("dlna", &d.beat, 10000, this);

@@ -146,7 +146,7 @@ constexpr uint32_t BT_SERVO_MS = 250;
 // (esp32p4/rtc_clk.c) — so every step is a moment of analogue settling on the clock the DAC
 // locks its own PLL to. One of those is what a track-boundary retune costs, and the whole
 // reason the output clock is set once per source session (docs/AUDIO.md, "Output rate and
-// sessions") is that the customer's bench can hear it.
+// sessions") is that it can be heard.
 //
 // Two parts per million of hysteresis makes the difference between a loop that writes four
 // times a second forever and one that writes when something actually changed. The drift it
@@ -164,7 +164,7 @@ constexpr int32_t  BT_TRIM_HYST_PPM = 2;
 // eighty seconds of correction, which is where tracking stops being enough.
 constexpr float    I32_SCALE    = 2147483648.0f;
 // The amplifier's clean ceiling until someone calibrates it, in tenths of dBFS: −9.8 dBFS.
-// TPA3255 at the customer's 24 V PVDD (30.09.2026): each half-bridge swings at most ~0.95·PVDD/2
+// TPA3255 at this unit's 24 V PVDD: each half-bridge swings at most ~0.95·PVDD/2
 // = 11.4 V either side of mid-rail and its gain is 21.5 dB (SLASEA8A §7.5), so the PCM5102A's
 // 2.97 V peak (2.1 Vrms, SLAS859C §8.5) clips it 9.8 dB under the DAC's full scale. That holds
 // both for a DAC driving one input (INPUT_A, "input signal for half bridge A") and for the
@@ -340,7 +340,7 @@ void AudioModule::take_eq(const audio_core::EqConfig& cfg, audio_core::EqBand* b
 /// producer, and audio.eq_rev tells the web (and the page, through the store) that it moved.
 ///
 /// Kept at a moment that is not in the way. A LittleFS write stops both cores' caches and the
-/// speakers click (customer, 04.10.2026), so nothing is written while the DSP page is in front
+/// speakers click, so nothing is written while the DSP page is in front
 /// — it is written when the user leaves it, or in standby — nor while the web is still sending
 /// edits: EQ_WEB_QUIET_MS after the last one, or at once when the web page is left
 /// ({"keep":true}).
@@ -363,7 +363,7 @@ void AudioModule::own_eq() {
     if (!st.take_keep() && web != 0 && now - web < EQ_WEB_QUIET_MS) return;
 
     // Always to the store: an edit must survive the next full flash.
-    // Static: the main task had 468 bytes of stack to spare at its deepest (11.10.2026).
+    // Static: the main task had 468 bytes of stack to spare at its deepest.
     static char eq_path[160], custom_path[160];
     modesp::UserStore::write_path("eq.json", eq_path, sizeof(eq_path));
     modesp::UserStore::write_path("eq_custom.json", custom_path, sizeof(custom_path));
@@ -727,7 +727,7 @@ bool AudioModule::on_init() {
     last_amp_clip_ = read_int("audio.amp_clip_db10", AMP_CLIP_DEFAULT_DB10);
     set_amp_clip(last_amp_clip_);
     {
-        // Where the ceiling came from (audio.amp_src, 14.10.2026). Before that key, "write" marked
+        // Where the ceiling came from (audio.amp_src). Before that key, "write" marked
         // any ceiling calibrated, the untouched datasheet one included, and a ceiling set any other
         // way still said "datasheet". Only the number can be trusted: one that is not the
         // datasheet's was set by somebody, and nothing shows it was measured. audio.amp_cal stays
@@ -799,8 +799,8 @@ bool AudioModule::on_init() {
         if (is_ring_source(persisted) && audio_core::pcm_ring().capacity() == 0) {
             // Not "unavailable" — not offered YET: the ring's owner initialises after this
             // module. Keep the choice and settle it in the report loop once the ring exists.
-            // Falling back here brought every boot with the radio persisted up silent, and
-            // the same for AirPlay (24.09.2026).
+            // Falling back here would bring every boot with the radio persisted up silent,
+            // and the same for AirPlay.
             pending_source_ = persisted;
             ESP_LOGI(TAG, "source %s waits for the PCM ring", source_name(persisted));
         } else {
@@ -1909,27 +1909,27 @@ bool AudioModule::pull_bt_block(float* stereo, size_t frames) {
         const bool was_following = bt_clock_follow_;
         // And a fourth thing, decided by the listener rather than the hardware: whether
         // riding the clock is allowed at all (audio.bt_clock_follow). The warning at
-        // BT_TRIM_HYST_PPM came true on the bench on 23.09.2026: sporadic clicks, single or
-        // in pairs, with the Bluetooth source on, playing or not. A trim is not a divider
-        // write. rtc_clk_apll_coeff_set writes I2C_APLL_SDM_STOP and recalibrates the VCO
-        // (esp32p4 rtc_clk.c, clk_tree_ll.h), and the PCM5102A, locking its own PLL to
-        // BCK, meets a disturbed BCK as a clock error: "switch to an internal oscillator
-        // ... the outputs are hard muted to ground", then a restart (SLAS859C 11.2).
-        // Muting the data cannot hide that.
+        // BT_TRIM_HYST_PPM came true on the bench: sporadic clicks, single or in pairs,
+        // with the Bluetooth source on, playing or not. A trim is not a divider write.
+        // rtc_clk_apll_coeff_set writes I2C_APLL_SDM_STOP and recalibrates the VCO (esp32p4
+        // rtc_clk.c, clk_tree_ll.h), and the PCM5102A, locking its own PLL to BCK, meets a
+        // disturbed BCK as a clock error: "switch to an internal oscillator ... the outputs
+        // are hard muted to ground", then a restart (SLAS859C 11.2). Muting the data cannot
+        // hide that.
         //
         // Nor does the loop settle the way the window arithmetic above assumed. In
         // clock-following mode the reader's 240-frame reads and this task's 240-frame
         // blocks run at the same rate by construction, so the ring is sampled at a fixed
         // phase of its own sawtooth: the 250 ms mean does not average that away, it
         // freezes it, and when the phase drifts across a block edge the mean steps by up
-        // to a block, several ppm of command, well past the hysteresis. The captures of
-        // 22.09.2026 show the achieved trim walking -13, -15, -17, -24, -26, -27, -29 over
-        // four minutes of one stream and -55 to -68 in under a minute of another, at
-        // least one rewrite per step; with the satellite sending silence the loop ran
-        // just the same. Not every click is a trim, though: a 150 s capture the same day
-        // with the source NOT Bluetooth, servo idle, bus static, still clicked. So the
-        // setting is the A/B that says whether the trims are audible on this DAC, and
-        // the servo stays in the tree for a trim it cannot hear, if one exists.
+        // to a block, several ppm of command, well past the hysteresis. Bench captures show
+        // the achieved trim walking -13, -15, -17, -24, -26, -27, -29 over four minutes of
+        // one stream and -55 to -68 in under a minute of another, at least one rewrite per
+        // step; with the satellite sending silence the loop ran just the same. Not every
+        // click is a trim, though: a 150 s capture with the source NOT Bluetooth, servo
+        // idle, bus static, still clicked. So the setting is the A/B that says whether the
+        // trims are audible on this DAC, and the servo stays in the tree for a trim it
+        // cannot hear, if one exists.
 #if MODESP_AUDIO_BT_DIRECT_CONTINUOUS
         bt_clock_follow_ = false;
         bt_path_ = BT_CONTINUOUS_DIRECT;
@@ -2320,14 +2320,13 @@ void AudioModule::task_loop() {
                 // The clock is chosen ONCE, by the first track of the source session, and
                 // not touched again until the source changes.
                 //
-                // Following it per TRACK is what produced the click the customer's bench
-                // isolated on 21.09.2026: 48->48 was silent (microphone peak 97, the noise
-                // floor), 44.1->48 peaked at 1020 and 48->44.1 at 981. The mechanism is the
-                // DAC's, not this code's — a PCM5102A takes its internal PLL from the bit
-                // clock, and set_rate() stops that clock to retune it, so the PLL unlocks
-                // and relocks. That is an event in the analogue part of the converter, which
-                // is why muting the DATA path around it (XSMT, the clock-mute patch) did
-                // nothing measurable.
+                // Following it per TRACK is what produced the click isolated on the bench:
+                // 48->48 was silent (microphone peak 97, the noise floor), 44.1->48 peaked at
+                // 1020 and 48->44.1 at 981. The mechanism is the DAC's, not this code's — a
+                // PCM5102A takes its internal PLL from the bit clock, and set_rate() stops that
+                // clock to retune it, so the PLL unlocks and relocks. That is an event in the
+                // analogue part of the converter, which is why muting the DATA path around it
+                // (XSMT, the clock-mute patch) did nothing measurable.
                 //
                 // The benefit the per-track clock was bought for is kept: an album at one
                 // rate still plays bit-exact, and a Bluetooth session still runs natively at

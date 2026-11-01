@@ -207,7 +207,7 @@ struct PlayerTaskState {
     /// A seek asked for before the track's length is known, to be made once it is. The length
     /// comes from the decoder's first answer, so a SEEK sent right behind a PLAY — the track
     /// put back where it was lent — found none, was dropped, and the track restarted from
-    /// its first second (24.09.2026). −1 = none.
+    /// its first second. −1 = none.
     int32_t  pending_seek = -1;
     char     path[PATH_MAX_LEN] = "";
     char     fmt[32] = "";
@@ -318,10 +318,10 @@ uint8_t* read_blob(FILE* f, uint64_t off, uint32_t len) {
 /// One track's artwork search, handed from this task to a worker of its own.
 ///
 /// It used to run here, and a hardware decode is milliseconds - but a PNG or a progressive
-/// JPEG goes to stb_image at about 1.1 us a source pixel (bench, 05.10.2026), and this task
-/// waited for it with half a second of audio in the ring. A 1000 px progressive cover was an
-/// audible gap a moment into every track of its album, and the UI froze for as long, because
-/// the decoder runs at its caller's priority and this one's is 5.
+/// JPEG goes to stb_image at about 1.1 us a source pixel, and this task waited for it with
+/// half a second of audio in the ring. A 1000 px progressive cover was an audible gap a
+/// moment into every track of its album, and the UI froze for as long, because the decoder
+/// runs at its caller's priority and this one's is 5.
 struct CoverJob {
     uint8_t* jpg;                   ///< the picture inside the track, or null; the worker frees it
     uint32_t len;
@@ -1365,14 +1365,14 @@ void PlayerModule::on_update(uint32_t dt_ms) {
         playing_ = true;
         // Static, not a local: a CmdMsg carries a 257-byte path, this runs on the main task's
         // 8 KB stack, and each such local in a branch of on_update() is another 270 bytes of
-        // the margin the service page grades (it went red at 808 B on 25.09.2026). Only the
-        // main task runs this, and xQueueSend copies the message out before returning.
+        // the margin the service page grades (it went red at 808 B). Only the main task runs
+        // this, and xQueueSend copies the message out before returning.
         static CmdMsg m;
         m = CmdMsg{};
         m.type = Cmd::PLAY;
         // PLAY opens what it is given with fopen, so it needs the whole path; the remembered
         // track is relative to the card, which is what survives a rescan. Passing it as it
-        // was said "cannot open" and the card came back silent (24.09.2026).
+        // was said "cannot open" and the card came back silent.
         auto& q = player_core::playlist();
         const int at = q.find(yield_track_);
         if (at >= 0 && q.path_at(at, m.path, sizeof(m.path))) {
@@ -1385,8 +1385,8 @@ void PlayerModule::on_update(uint32_t dt_ms) {
         // Chosen with nothing lent out to give back — on the Source page, over MQTT, from the
         // web — and choosing the card is choosing to listen to it: the track the cursor is on,
         // from its start. Not at power-on: the source found on the first pass is not a choice,
-        // and turning the panel on still makes no noise (restored_, above). Before this, the
-        // card chosen on the Source page sat silent until a track was picked (24.09.2026).
+        // and turning the panel on still makes no noise (restored_, above). Without this, the
+        // card chosen on the Source page would sit silent until a track was picked.
         auto& q = player_core::playlist();
         static CmdMsg m;                          // static for the reason given above
         m = CmdMsg{};

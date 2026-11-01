@@ -120,8 +120,8 @@ constexpr size_t PCM_MAX = 256 * 1024;
 /// far past anything the cache holds.
 ///
 /// The absolute cost has since come down a long way — moving the phase arithmetic off
-/// soft-float doubles took a conversion from 55% of a core to 19% (bench 18.09.2026) — but
-/// the cache argument is about locality, not arithmetic, so the block size still matters.
+/// soft-float doubles took a conversion from 55% of a core to 19% — but the cache argument
+/// is about locality, not arithmetic, so the block size still matters.
 constexpr size_t CHUNK     = 1024;
 /// One read from the socket. Small enough to stay responsive to a stop, large enough that
 /// the TLS record overhead does not dominate.
@@ -196,7 +196,7 @@ struct RadioTaskState {
     /// (stopped, or playing a pushed URL). NOT `station`: on_update writes that the moment a
     /// tune is asked for, before the task has done anything, so "already on it" tested
     /// against `station` was always true and a tune while another station played was
-    /// dropped (24.09.2026).
+    /// dropped.
     std::atomic<int32_t> tuned{-1};
     std::atomic<uint8_t> state{ST_IDLE};
 
@@ -429,11 +429,11 @@ esp_audio_simple_dec_type_t type_from_content(const char* ct, const char* url) {
         if (strstr(ct, "flac"))                       return ESP_AUDIO_SIMPLE_DEC_TYPE_FLAC;
         if (strstr(ct, "ogg") || strstr(ct, "opus"))  return ESP_AUDIO_SIMPLE_DEC_TYPE_OGG;
         // WAV, which no radio station sends and a media server sends often. It was missing
-        // here until the first track was pushed over DLNA (bench 18.09.2026): the type fell
-        // through to the MP3 default, the MP3 decoder found nothing it recognised in a RIFF
-        // header, and the log read "connected … playing" the whole way through four seconds
-        // of silence. The ConnectionManager sink list advertises this type, so refusing to
-        // decode it was a promise broken in the quietest possible way.
+        // here until the first track was pushed over DLNA: the type fell through to the MP3
+        // default, the MP3 decoder found nothing it recognised in a RIFF header, and the log
+        // read "connected … playing" the whole way through four seconds of silence. The
+        // ConnectionManager sink list advertises this type, so refusing to decode it was a
+        // promise broken in the quietest possible way.
         if (strstr(ct, "wav") || strstr(ct, "wave"))  return ESP_AUDIO_SIMPLE_DEC_TYPE_WAV;
         if (strstr(ct, "mp4") || strstr(ct, "m4a"))   return ESP_AUDIO_SIMPLE_DEC_TYPE_M4A;
     }
@@ -861,12 +861,11 @@ Hop http_open_hop(const char* url, char* ct, size_t ct_sz, int64_t range_from,
 
 /// `redirects` bounds the Location chain; station directories hand out URLs that move.
 ///
-/// A loop, not recursion (04.10.2026). Each hop's frame holds the host, the path, the
-/// request and the Location — about 1.6 KB — and it used to call itself for every redirect.
-/// A CDN that answered with four of them (zeno.fm -> surfernetwork, http and https) took
-/// the 12 KB "radio" stack past its end inside the "opening" log line, and the panel
-/// rebooted on the stack guard. Now the
-/// stack holds one hop whatever the chain's length.
+/// A loop, not recursion. Each hop's frame holds the host, the path, the request and the
+/// Location — about 1.6 KB — and it used to call itself for every redirect. A CDN that
+/// answered with four of them (zeno.fm -> surfernetwork, http and https) took the 12 KB
+/// "radio" stack past its end inside the "opening" log line, and the panel rebooted on the
+/// stack guard. Now the stack holds one hop whatever the chain's length.
 bool http_open(const char* url, char* ct, size_t ct_sz, int redirects = 4,
                int64_t range_from = -1) {
     char next[PLAY_URL_LEN];
@@ -1083,11 +1082,11 @@ bool tune(const char* want_url) {
     s.wav = cfg.dec_type == ESP_AUDIO_SIMPLE_DEC_TYPE_WAV;
     // HE-AAC is off unless asked for (esp_aac_dec.h: aac_plus_enable defaults to false), and
     // without it an "AAC+" station plays its AAC-LC core only: half the sample rate, and mono
-    // where the stereo was carried as PS. That was one station in seven in Radio Browser on
-    // 04.10.2026. A station is ADTS; a track pushed over DLNA can be M4A, which has its own
-    // config with the same switch. The cost is small: the SBR path's deepest static call
-    // chain is about 1.5 KB of stack, under FLAC's 4 KB on this same task, and the decoder's
-    // state goes to PSRAM like the rest (malloc above 1 KB). The decoder copies the struct.
+    // where the stereo was carried as PS. That was one station in seven in Radio Browser. A
+    // station is ADTS; a track pushed over DLNA can be M4A, which has its own config with the
+    // same switch. The cost is small: the SBR path's deepest static call chain is about 1.5 KB
+    // of stack, under FLAC's 4 KB on this same task, and the decoder's state goes to PSRAM like
+    // the rest (malloc above 1 KB). The decoder copies the struct.
     esp_aac_dec_cfg_t aac = ESP_AAC_DEC_CONFIG_DEFAULT();
     esp_m4a_dec_cfg_t m4a = {};          // track_idx 0: the first audio track, as before
     aac.aac_plus_enable = m4a.aac_plus_enable = true;
@@ -1464,9 +1463,9 @@ void load_stations() {
 /// The default parks the Wi-Fi radio between beacons and lets the access point buffer what
 /// arrives in between, which on this co-processor link shows up as loss rather than
 /// latency — 50% of pings dropped while a stream ran, and TCP down to a few hundred bytes
-/// a second (bench 17.09.2026). Keeping it off ALL the time is the wrong trade, though: it
-/// costs the co-processor continuous work on the same core the card player decodes on, and
-/// the card player must not pay for a feature it is not using.
+/// a second. Keeping it off ALL the time is the wrong trade, though: it costs the
+/// co-processor continuous work on the same core the card player decodes on, and the card
+/// player must not pay for a feature it is not using.
 void set_modem_sleep(bool allow) {
     static int8_t applied = -1;
     const int8_t want = allow ? 1 : 0;
@@ -1844,11 +1843,11 @@ void free_buffers() {
 /// Everything the radio needs in order to play, made when it is asked to play.
 ///
 /// Nothing here exists while the card is the source, and that is the point. Measured on the
-/// bench (18.09.2026): with this module merely PRESENT and idle, the card player decoded at
-/// 0.6x real time with its ring at 6% and the audio task counting forty underruns a second;
-/// without it, 1.0x with the ring at 91%. Two sources are never wanted at once, so the one
-/// that is not selected should not be holding a filter bank, two task stacks and a
-/// megabyte of buffers, nor waking up eighty times a second to find there is nothing to do.
+/// bench: with this module merely PRESENT and idle, the card player decoded at 0.6x real
+/// time with its ring at 6% and the audio task counting forty underruns a second; without
+/// it, 1.0x with the ring at 91%. Two sources are never wanted at once, so the one that is
+/// not selected should not be holding a filter bank, two task stacks and a megabyte of
+/// buffers, nor waking up eighty times a second to find there is nothing to do.
 bool radio_up() {
     if (s.up) return true;
 
@@ -2263,8 +2262,8 @@ void RadioModule::on_update(uint32_t dt_ms) {
                 health_ms_ = 0;
 
                 // A station's server that cannot keep up is left for another of its addresses
-                // (stream_watch.h; the bench of 05.10.2026 had one ~200 ms away starve a 320k
-                // stream). Stations only: a pushed track is finished or resumed by its own rules.
+                // (stream_watch.h; on the bench one ~200 ms away starved a 320k stream).
+                // Stations only: a pushed track is finished or resumed by its own rules.
                 const uint32_t gen = s.track_generation.load(std::memory_order_acquire);
                 if (gen != starve_gen_) { starve_gen_ = gen; s_starve.reset(); }
                 if (!s.one_shot.load(std::memory_order_acquire) &&
@@ -2311,7 +2310,7 @@ void RadioModule::on_update(uint32_t dt_ms) {
     // "who owns the output" and stays 5 for both; the screen asks a different question and
     // needs a different answer, or a pushed track gets labelled as the radio. Everything
     // that arrives by being pushed — DLNA today, AirPlay or slimproto later — is "push",
-    // so none of them needs a source number of its own (customer, 18.09.2026).
+    // so none of them needs a source number of its own.
     const bool pushed = s.one_shot.load(std::memory_order_acquire);
     state_set("radio.mode", pushed ? "push" : "station");
     const uint32_t sr = s.src_rate ? s.src_rate : 0;

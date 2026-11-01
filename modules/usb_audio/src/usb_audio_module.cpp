@@ -60,7 +60,7 @@ bool UsbAudioModule::on_init() {
     // the next one, 125 us later, or that packet is lost. On core 0, next to LVGL and the PPA
     // compositor, the interrupt was held off 250-600 us several times in five minutes — ten
     // losses, ten audible breaks at 96 kHz; on core 1 the same run lost nothing, its longest
-    // gap 131 us (24.10.2026). usb_audio.core = 0 puts it back, for comparison.
+    // gap 131 us. usb_audio.core = 0 puts it back, for comparison.
     cfg.core     = read_int("usb_audio.core", 1) == 0 ? 0 : 1;
     if (!usb_uac::start(cfg)) {
         // Not fatal: the player plays everything else without it.

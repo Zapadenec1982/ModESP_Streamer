@@ -3,7 +3,7 @@
  * @brief When a live stream's server cannot keep up, and which of its addresses to try next.
  *
  * A station's host often has several addresses, and they are not equally near:
- * stream.nightride.fm hands out three, one of them ~200 ms away and two ~65 ms (05.10.2026).
+ * stream.nightride.fm hands out three, one of them ~200 ms away and two ~65 ms.
  * Through a TCP window of W bytes a connection carries at most W per round trip, so the far
  * one starved a 320 kbit/s stream at 28.7 KB/s with the network otherwise idle. The radio
  * then leaves that server: it reconnects, and asks for an address other than the one that
@@ -27,8 +27,8 @@ public:
     /// Not again sooner than this after leaving one: a station that starves everywhere is not
     /// helped by being torn down every ten seconds. Just over the 30 s TTL such hosts give
     /// their record, because stream.nightride.fm answers ONE address per query, from Google's
-    /// and Cloudflare's resolvers alike (05.10.2026): until the record expires, asking again
-    /// gives the same server, and only the next attempt can land elsewhere.
+    /// and Cloudflare's resolvers alike: until the record expires, asking again gives the same
+    /// server, and only the next attempt can land elsewhere.
     static constexpr uint32_t GAP_S = 35;
     /// Below this fill the buffer is running dry; above it a slow report is only a dip.
     static constexpr unsigned DRY_PCT = 10;

@@ -5,9 +5,9 @@
  * An iPhone playing an Apple Music radio station sends, about every 15 s, a record that carries
  * the station's name as the title with no artist and no album, with its own cover or none; about
  * 1.5 s later the track's record comes back. Taken as they came, the tile showed the station and
- * lost the track's cover for that second and a half, every 15 s — music unbroken (customer,
- * 13.10.2026; the panel's WS log of the session). Between those, the cover alone did the same: an
- * empty one, then the track's again 1.3–3 s later.
+ * lost the track's cover for that second and a half, every 15 s — music unbroken (the panel's WS
+ * log of such a session). Between those, the cover alone did the same: an empty one, then the
+ * track's again 1.3–3 s later.
  *
  * So two things wait up to WINDOW_US before they are believed:
  *  - a title-only record over a track that has an artist (an interlude), with any cover that

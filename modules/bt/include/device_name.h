@@ -1,7 +1,7 @@
 /**
  * @file device_name.h
  * @brief The one name the panel goes by: what phones list for Bluetooth, AirPlay and DLNA, and
- *        the drawer's title (the customer, 20.10.2026).
+ *        the drawer's title.
  *
  * «Ім'я» on the Bluetooth pages, the glass's and the web's, sets it: the satellite keeps the
  * Bluetooth half, and the panel keeps this copy in NVS for the services that start before the

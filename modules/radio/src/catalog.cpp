@@ -5,9 +5,9 @@
  *
  * Plain HTTP, never TLS. The panel holds one TLS session at a time, and while the radio
  * plays it belongs to the station (docs/NETWORK.md, "Internet radio"); what comes back here is a page
- * of metadata, not audio. Measured 04.10.2026: the service answers on port 80 with no
- * redirect, and it is down to one server, so the list of servers is asked for rather than
- * written down — two other ESP32 radios still point at mirrors that no longer exist.
+ * of metadata, not audio. Measured: the service answers on port 80 with no redirect, and it
+ * is down to one server, so the list of servers is asked for rather than written down — two
+ * other ESP32 radios still point at mirrors that no longer exist.
  *
  * The request side runs whatever the source is: browsing does not need the radio to be
  * playing, and choosing a row is what makes it the source.
@@ -44,7 +44,7 @@ namespace {
 const char* TAG = "Radio";   // the module's tag: it is on the INFO allowlist (log_policy.cpp)
 
 constexpr const char* BOOTSTRAP_HOST = "all.api.radio-browser.info";
-/// A 24-station page is ~27 KB (05.10.2026); room for twice that and a margin.
+/// A 24-station page is ~27 KB; room for twice that and a margin.
 constexpr size_t  BODY_MAX     = 64 * 1024;
 constexpr int     MAX_HOSTS    = 8;
 constexpr int     PATH_LEN     = 320;

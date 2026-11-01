@@ -14,8 +14,8 @@
  *
  * TLS: never for a cover, and for a logo only when the station's own stream is plain HTTP —
  * the panel holds one TLS session at a time, and while the radio plays it is the station's.
- * Most logos are HTTPS-only (10 of 13 among the top Ukrainian stations, 05.10.2026), so a
- * station streaming over HTTPS mostly shows none.
+ * Most logos are HTTPS-only (10 of 13 among the top Ukrainian stations), so a station
+ * streaming over HTTPS mostly shows none.
  */
 
 #include "radio_art_task.h"
@@ -43,7 +43,7 @@ namespace rc = radio_catalog;
 
 constexpr const char* SEARCH_HOST  = "api.deezer.com";
 constexpr const char* CATALOG_HOST = "all.api.radio-browser.info";
-constexpr size_t SEARCH_MAX = 48 * 1024;    // ten hits are ~22 KB (05.10.2026)
+constexpr size_t SEARCH_MAX = 48 * 1024;    // ten hits are ~22 KB
 constexpr size_t IMAGE_MAX  = 256 * 1024;   // a 500 px cover is tens of KB
 constexpr size_t LOGO_MAX   = 128 * 1024;   // favicons are small; a few are full-size art
 constexpr int    TITLE_LEN  = 256;
@@ -229,7 +229,7 @@ void art_task(void*) {
 /// 16 KB of stack since a PNG logo was decoded in this task by stb_image (cover_soft.c),
 /// whose inflate keeps its two Huffman tables on the stack (~4 KB) and builds the code
 /// lengths' table deeper down (~2.5 KB more). With 8 KB the first PNG logo on the bench —
-/// Hit FM's 120 px favicon, 05.10.2026 — ended in a stack protection fault and a reboot.
+/// Hit FM's 120 px favicon — ended in a stack protection fault and a reboot.
 /// That decode now runs on the cover component's own task (SOFT_STACK in
 /// components/cover/src/cover.cpp), so this is headroom rather than a requirement.
 constexpr uint32_t ART_STACK = 16 * 1024;
