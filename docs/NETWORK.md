@@ -114,7 +114,7 @@ password `wifi/ap_pass` of 8–63 characters → WPA2 (a longer stored one is cu
 with an ERROR in the log), otherwise open; channel `wifi/ap_chan` (1–13,
 default 1); up to 2 clients; address 192.168.4.1. With a saved network, the AP tries STA (APSTA,
 15 s per attempt): the first attempt after 30 s, then the interval doubles up to 5 min; an attempt
-is skipped when free heap is < 50 KB. A successful attempt switches to pure STA.
+is skipped when free internal RAM is < 50 KB. A successful attempt switches to pure STA.
 
 **Joining** from the panel and the web — `WiFiService::try_connect()`: the old pair stays in
 memory, the new one is written to NVS only after an address is obtained. A refusal by the network
@@ -123,10 +123,10 @@ threshold) ends the attempt at once; 25 s without an address or three failed ret
 comes back, and when there was none — the access point.
 
 **Scanning.** Active, 120–500 ms per channel, no hidden networks, up to 20 results (records in
-PSRAM); needs ≥ 50 000 B of free heap; in AP mode — APSTA for the duration of the scan. Scanning
-blocks its caller: for `GET /api/wifi/scan`, the HTTP server task. One scan at a time, and none
-during a join or an AP → STA attempt: such a request gets no list (`{"ok":false}` on the web, a
-failed scan on the panel), while a join or an attempt that comes during a scan waits for it.
+PSRAM); needs ≥ 50 000 B of free internal RAM; in AP mode — APSTA for the duration of the scan.
+Scanning blocks its caller: for `GET /api/wifi/scan`, the HTTP server task. One scan at a time,
+and none during a join or an AP → STA attempt: such a request gets no list (`{"ok":false}` on the
+web, a failed scan on the panel), while a join or an attempt that comes during a scan waits for it.
 
 **RSSI is not read.** `esp_wifi_sta_get_ap_info()` here is a synchronous RPC to the C6 with a 5 s
 timeout, while the main loop feeds a 5-second watchdog; besides, ESP-Hosted 3.0.7 returns rssi 0
@@ -317,8 +317,8 @@ Module routes (`http_routes`):
 `tests/host/test_ws_slots.cpp`).
 
 - A server message is a text JSON object `{key: value,…}` in the `/api/state` format. After the
-  handshake the client receives the whole state (needs ≥ 32 000 B of free heap), then every 1.5 s —
-  only the changed keys, if there are any.
+  handshake the client receives the whole state (needs ≥ 32 000 B of free internal RAM), then
+  every 1.5 s — only the changed keys, if there are any.
 - Keys that modules write without a change flag (diagnostics: CPU, heap, limiter, satellite
   counters) do not get into the deltas; the web page with diagnostics, while visible, polls
   `/api/state` every 2 s (`webui/src/lib/live.js`).

@@ -768,8 +768,12 @@ esp_err_t esp_wifi_scan_get_ap_records(uint16_t* n, wifi_ap_record_t* r) {
 }
 esp_err_t esp_wifi_clear_ap_list() { return ESP_OK; }
 esp_err_t esp_wifi_connect() { g_radio += "connect;"; return ESP_OK; }
-uint32_t esp_get_free_heap_size() { return 200000; }
-constexpr int MALLOC_CAP_SPIRAM = 1, MALLOC_CAP_8BIT = 2;
+constexpr int MALLOC_CAP_SPIRAM = 1, MALLOC_CAP_8BIT = 2, MALLOC_CAP_INTERNAL = 4;
+size_t g_internal_free = 120000;           // the whole heap counts 30 MB of free PSRAM on top
+uint32_t esp_get_free_heap_size() { return (30u << 20) + g_internal_free; }
+size_t heap_caps_get_free_size(int caps) {
+  return caps & MALLOC_CAP_INTERNAL ? g_internal_free : esp_get_free_heap_size();
+}
 void* heap_caps_calloc(size_t n, size_t size, int) { return calloc(n, size); }
 void heap_caps_free(void* p) { free(p); }
 #define pdMS_TO_TICKS(ms) (ms)
@@ -817,6 +821,11 @@ int main() {
   w.trying_ = true;
   g_radio.clear();
   if (w.get_scan_results(r, 20) != 1 || g_radio.find("AP;") != std::string::npos || w.scan_busy_) return 8;
+  w.trying_ = false;
+  // short of internal RAM, no scan, however much PSRAM the whole heap counts
+  g_internal_free = 40000;
+  g_radio.clear();
+  if (w.start_scan() || w.scan_busy_ || !g_radio.empty()) return 9;
   return 0;
 }
 """

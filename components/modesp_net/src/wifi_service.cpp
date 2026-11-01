@@ -312,11 +312,13 @@ void WiFiService::on_update(uint32_t dt_ms) {
             ap_sta_probe_timer_ = 0;
         }
         if (ap_sta_probe_timer_ == 0) {
-            if (esp_get_free_heap_size() >= AP_STA_PROBE_HEAP_MIN) {
+            // player-fork: internal RAM, as start_scan() measures it, not the whole heap.
+            const size_t free_internal = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+            if (free_internal >= AP_STA_PROBE_HEAP_MIN) {
                 attempt_ap_sta_probe();
             } else {
-                ESP_LOGW(TAG, "AP→STA probe skipped: low heap %lu",
-                         (unsigned long)esp_get_free_heap_size());
+                ESP_LOGW(TAG, "AP→STA probe skipped: low internal heap %lu",
+                         (unsigned long)free_internal);
                 ap_sta_probe_timer_ = ap_sta_probe_interval_;
             }
         }
@@ -488,11 +490,14 @@ bool WiFiService::start_scan() {
         return false;
     }
 
-    // Перевірка heap — APSTA + scan потребує ~30-40KB додатково
-    size_t free_heap = esp_get_free_heap_size();
-    ESP_LOGI(TAG, "Scan requested (heap: %u)", (unsigned)free_heap);
+    // APSTA + scan need ~30-40 KB more. player-fork: of internal RAM, the kind the Wi-Fi path
+    // allocates from and the kind that runs out. With CONFIG_SPIRAM_USE_MALLOC=y the whole heap
+    // also counts every free byte of PSRAM, tens of MB, and a check on it could never refuse.
+    size_t free_heap = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    ESP_LOGI(TAG, "Scan requested (internal heap: %u)", (unsigned)free_heap);
     if (free_heap < 50000) {
-        ESP_LOGW(TAG, "Cannot scan: low memory (%u bytes free, need 50000)", (unsigned)free_heap);
+        ESP_LOGW(TAG, "Cannot scan: low memory (%u bytes of internal heap free, need 50000)",
+                 (unsigned)free_heap);
         scan_busy_ = false;
         return false;
     }

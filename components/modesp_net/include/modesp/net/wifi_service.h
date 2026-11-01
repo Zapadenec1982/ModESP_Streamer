@@ -146,7 +146,7 @@ private:
     static constexpr uint32_t AP_STA_PROBE_INITIAL_MS  = 30000;   // 30s
     static constexpr uint32_t AP_STA_PROBE_MAX_MS      = 300000;  // 5 min
     static constexpr uint32_t AP_STA_PROBE_TIMEOUT_MS  = 15000;   // 15s
-    static constexpr uint32_t AP_STA_PROBE_HEAP_MIN    = 51200;   // 50KB
+    static constexpr uint32_t AP_STA_PROBE_HEAP_MIN    = 51200;   // 50KB of internal heap
 
     bool load_credentials();
     bool start_sta();

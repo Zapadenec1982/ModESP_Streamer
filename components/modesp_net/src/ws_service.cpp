@@ -416,9 +416,11 @@ void WsService::broadcast_state() {
 void WsService::send_full_state_to(int fd) {
     if (!server_ || !state_) return;
 
-    // Захист від OOM: ~6KB serialize buf + ~6KB AsyncSendCtx × 3 клієнти = ~18KB peak
-    if (esp_get_free_heap_size() < 32000) {
-        ESP_LOGW(TAG, "Heap < 32KB, skip initial state to fd=%d", fd);
+    // Out-of-memory guard, on internal RAM: the kind the send through lwIP and the Wi-Fi path
+    // allocates from, and the kind that runs out. With CONFIG_SPIRAM_USE_MALLOC=y the whole heap
+    // also counts every free byte of PSRAM, tens of MB, and a check on it could never refuse.
+    if (heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) < 32000) {
+        ESP_LOGW(TAG, "Internal heap < 32KB, skip initial state to fd=%d", fd);
         mark_lost(fd);
         return;
     }
@@ -542,9 +544,11 @@ void WsService::send_to_all(const char* data, size_t len) {
     for (size_t i = 0; i < MAX_WS_CLIENTS; i++) {
         if (fds[i] == -1) continue;
 
-        // Захист від OOM: delta payload ~200B + AsyncSendCtx
-        if (esp_get_free_heap_size() < 8000) {
-            ESP_LOGW(TAG, "Heap < 8KB, skip WS send fd=%d", fds[i]);
+        // Out-of-memory guard, on internal RAM as in send_full_state_to(): a delta of ~200 B
+        // and its AsyncSendCtx, small enough for malloc() to put there
+        // (CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL).
+        if (heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) < 8000) {
+            ESP_LOGW(TAG, "Internal heap < 8KB, skip WS send fd=%d", fds[i]);
             mark_lost(fds[i]);
             continue;
         }
