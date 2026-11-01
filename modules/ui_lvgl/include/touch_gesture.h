@@ -2,19 +2,20 @@
  * @file touch_gesture.h
  * @brief A finger that scrolls does not set anything — the glass's rules. No LVGL.
  *
- * The customer, 14.10.2026: scrolling caught the sliders and the equalizer, on the web and on
- * the glass alike. LVGL only decides that a press is a scroll after scroll_limit, and it sends
+ * Without these rules scrolling catches the sliders and the equalizer, on the web and on the
+ * glass alike. LVGL only decides that a press is a scroll after scroll_limit, and it sends
  * PRESSING to the pressed widget all the while; a slider that took the finger's x on PRESSED and
  * PRESSING had jumped and moved before the page began to move. The rules are the web's
  * (webui/src/lib/gesture.js):
  *
  *   - a slider: only a finger on its knob takes it — GRAB px either side of its centre, an EQ
- *     point's reach (the customer, 15.10.2026: a touch anywhere on the track still moved it, the
- *     knob jumping to the finger once it had gone SLOP px). The gesture is the slider's once that
- *     finger has gone SLOP px along, more along than across, and the knob then follows the finger
- *     from where it stood: it never jumps to it. It is the page's if the finger went up or down
+ *     point's reach (a touch anywhere on the track would move it, the knob jumping to the finger
+ *     once it had gone SLOP px). The gesture is the slider's once that finger has gone SLOP px
+ *     along, more along than across, and the knob then follows the finger from where it stood:
+ *     it never jumps to it. It is the page's if the finger went up or down
  *     first. A press, a tap or a finger off the knob changes nothing — a tap is how a finger
- *     stops a list that is still moving. The glass's rule only: the web keeps the 14.10 one;
+ *     stops a list that is still moving. The glass's rule only: on the web a finger anywhere on
+ *     the slider takes it once it has gone SLOP px along (lib/gesture.js);
  *   - an EQ point: only the point takes a finger. A tap picks its band; the point moves once
  *     held HOLD_MS or once the finger went SLOP px from where it landed;
  *   - «Скасувати»: a snackbar for UNDO_MS after a moved sound setting, from where it started.

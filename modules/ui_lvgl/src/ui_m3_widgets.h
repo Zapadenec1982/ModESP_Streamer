@@ -7,8 +7,7 @@
  * rebuilds the screens (as the palette switch always has), so no component keeps a colour.
  *
  * Geometry is in LOGICAL pixels (800x480 landscape), 8.54 px a millimetre. Whatever a finger
- * takes is at least 64 px (7.5 mm) each way — the glass for a finger, the customer, 20.10.2026
- * (48-px targets were 5.6 mm, under every guideline): the
+ * takes is at least 64 px (7.5 mm) each way (48 px would be 5.6 mm, under every guideline): the
  * slider's row, a chip, a list row, a dialog's buttons, the switch's reach. Nothing here animates by itself —
  * a morph is an lv_anim the caller starts on the object's radius, so a screen that must not
  * spend frames does not.
@@ -110,8 +109,7 @@ void switch_row(lv_obj_t* row, lv_obj_t* sw);
 
 // ── slider ─────────────────────────────────────────────────────────────────────────────────
 
-/// The one slider of the glass and the web (the customer, 16.10.2026: three styles on the glass
-/// and a fourth on the web were one too many): a SLIDER_RAIL px rail, the fill in primary from its
+/// The one slider of the glass and the web: a SLIDER_RAIL px rail, the fill in primary from its
 /// left end to a round SLIDER_KNOB px knob, the number to the right of the track; the icon at the
 /// left when there is one. Бас, Високі and the balance are the same with the zero in the middle
 /// (sound_sheet.cpp, screen_speakers.cpp); the web's is m3/Slider.svelte and m3/CenterSlider.svelte.

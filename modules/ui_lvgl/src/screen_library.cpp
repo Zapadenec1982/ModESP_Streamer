@@ -7,8 +7,8 @@
  * opens on the track the queue is on; a tap plays a track and goes back to the Player, which
  * is where the question the list was opened to answer gets its answer.
  *
- * It was a panel over the Player until 24.09.2026. As a page of its own it has the shell's
- * header — ← and a title — like every other list, instead of a close button of its own.
+ * As a page of its own it has the shell's header — ← and a title — like every other list,
+ * instead of a close button of its own.
  */
 
 #include "ui_common.h"

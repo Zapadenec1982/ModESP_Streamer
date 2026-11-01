@@ -216,8 +216,8 @@ esp_err_t handle_screenshot(httpd_req_t* req) {
     if (ppa_flush_double() && s.panel) {
         // With two frame buffers the one on the glass is the next frame's to compose into two
         // frames later, and sending the picture takes many more than two: read straight from
-        // it, a moving screen came out as two frames spliced (05.10.2026). So the glass is
-        // copied out first, under the LVGL lock, while no frame can be swapped in (~25 ms).
+        // it, a moving screen came out as two frames spliced. So the glass is copied out first,
+        // under the LVGL lock, while no frame can be swapped in (~25 ms).
         still = heap_caps_malloc(fb_bytes, MALLOC_CAP_SPIRAM);
         if (!still) return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "No memory");
         if (!lvgl_port_lock(1000)) {

@@ -1,18 +1,17 @@
 /**
  * @file ui_pick.cpp
- * @brief The list a choice is made from, over everything: the presets (the customer, 15.10.2026: a
- *        dropdown, not chips) and an equalizer band's type (16.10.2026: a list, not a button
- *        that steps through the six — each step changed the response on the way).
+ * @brief The list a choice is made from, over everything: the presets and an equalizer band's
+ *        type (a list, not a button that steps through the six — each step would change the
+ *        response on the way).
  *
  * A dialog as Налаштування's language is: the title with «Скасувати» beside it, the items as rows,
- * the current one filled, ticked and scrolled into sight. «Скасувати» sat under the list until
- * 25.10.2026, a strip of 100 px — a row and a half of the list (the customer: «зїдає корисну
- * площу»); in the title's row it costs nothing. The rows are a finger's 64 px (ui_m3_widgets.h,
- * 20.10.2026). A short list gets a card its size; a long one shows four rows and half of the
- * fifth, through its name — a list cut between two rows looked like all there is (the glass,
- * 16.10.2026: «Джаз» last, nothing under it) — and scrolls, from a row or between them. A row
- * chooses and closes it; «Скасувати» or a tap beside it close it with nothing chosen. The knob
- * stays the volume while it is up (ui_shell_encoder).
+ * the current one filled, ticked and scrolled into sight. Under the list «Скасувати» would take
+ * a strip of 100 px — a row and a half of the list; in the title's row it costs nothing. The
+ * rows are a finger's 64 px (ui_m3_widgets.h). A short list gets a card its size; a long one
+ * shows four rows and half of the fifth, through its name — a list cut between two rows looks
+ * like all there is — and scrolls, from a row or between them. A row chooses and closes it;
+ * «Скасувати» or a tap beside it close it with nothing chosen. The knob stays the volume while it
+ * is up (ui_shell_encoder).
  */
 
 #include "ui_common.h"
@@ -117,7 +116,7 @@ void ui_pick_show(const char* title, const char* const* items, int n, int curren
     if (on_row) {
         // The chosen row second from the top, the one above it whole: scrolled into view alone it
         // came to rest at the foot of the three and a half rows, and the top one was cut through
-        // its name (the glass, 20.10.2026). Held to the list's ends.
+        // its name. Held to the list's ends.
         const int32_t want = lv_obj_get_y(on_row) - (PICK_ROW_H + 2) - 3;
         const int32_t end  = lv_obj_get_scroll_bottom(pick.list);       // from the top: nothing scrolled yet
         lv_obj_scroll_to_y(pick.list, want < 0 ? 0 : want > end ? end : want, LV_ANIM_OFF);

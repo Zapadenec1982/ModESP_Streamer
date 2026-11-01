@@ -204,7 +204,7 @@ lv_obj_t* build(lv_obj_t* parent, UiCtx& c) {
     r = row(card, 1, R_SB_BRIGHT, UI_SYM_GRAPHIC_EQ, tr(S::sys_standby_bl_short), SLIDER_W + 10, false);
     slider(r, g.sb_bright, sb_bright_cb);
 
-    // − and + a finger's 64 px (20.10.2026: 48), the minutes between them
+    // − and + a finger's 64 px, the minutes between them
     r = row(card, 2, R_SLEEP, UI_SYM_MOON, tr(S::sys_sleep), 210, false);   // the minutes are its value
     g.sleep_dec = m3w::icon_button(r, RW - 204, 0, 64, UI_SYM_REMOVE, t.t.icon_m);
     g.sleep_inc = m3w::icon_button(r, RW - 70, 0, 64, UI_SYM_ADD, t.t.icon_m);

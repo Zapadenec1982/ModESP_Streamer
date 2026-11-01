@@ -8,7 +8,7 @@
  * buffer of its own with the PPA in blocking mode, then hands that buffer to the DPI driver,
  * which copies it into the frame buffer with DMA2D. Every pixel crossed PSRAM twice more than it
  * had to, and the LVGL task sat out the rotation of each block before it could draw the next:
- * ~21 ms of every ~88 ms frame of a scrolling list (/api/ui/scrollbench, 05.10.2026).
+ * ~21 ms of every ~88 ms frame of a scrolling list (/api/ui/scrollbench).
  *
  * Here the PPA writes each block at its own place in a DPI frame buffer (out.pic is the whole
  * panel, out.block_offset where the block lands), the call returns at once (NON_BLOCKING), and
@@ -34,7 +34,7 @@
  * written into the buffer being scanned, so nothing tears. The other buffer is then a frame
  * behind: before the next frame's first block, whatever the last frame wrote is copied across
  * by DMA2D (esp_async_fbcpy, esp_lcd's own frame-buffer copy: ~54 Mpx/s against the PPA's ~21,
- * /api/ui/scrollbench?blit=1, 05.10.2026).
+ * /api/ui/scrollbench?blit=1).
  *
  * A list that scrolls is shifted, not drawn again. LVGL repaints a scroller whole after every
  * scroll (lv_obj_scroll_by_raw: the children move, LV_EVENT_SCROLL, then lv_obj_invalidate), and

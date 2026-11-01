@@ -16,9 +16,9 @@
  *   Служби    AirPlay and DLNA: announcement switches; a tap on AirPlay's row chooses its mode,
  *             which is on its second line and applies live
  *
- * Every row is a finger's 64 px (the glass for a finger, 20.10.2026: they were 50, 5.9 mm), five
- * to a column so the page stays whole: Звук and Зв'язок on the left, Пристрій and Служби on the
- * right, and «Режим AirPlay» folded into AirPlay's row — eleven rows did not fit.
+ * Every row is a finger's 64 px, five to a column so the page stays whole: Звук and Зв'язок on
+ * the left, Пристрій and Служби on the right, and «Режим AirPlay» folded into AirPlay's row —
+ * eleven rows did not fit.
  *
  * Only rows backed by something real are here — a settings page whose switches do nothing is
  * worse than a shorter one. The two service switches existed (airplay.enabled, dlna.enabled) but
@@ -52,14 +52,14 @@ constexpr int32_t COL_GAP = 16;
 constexpr int32_t COL_W   = (uig::CONT_W - COL_GAP) / 2;      // 368
 constexpr int32_t COL2_X  = COL_W + COL_GAP;
 // Ten rows in two columns, five to each: a finger's 64 px a row and a 24 px caption keep the page
-// whole, without a scroll (the customer's choice, 15.10.2026, over a scrolling page).
+// whole, without a scroll.
 constexpr int32_t CAP_H   = 24;
 constexpr int32_t RH      = 64;
 constexpr int32_t INSET   = 2;                                // the rows' inset in their card
 constexpr int32_t RW      = COL_W - 2 * INSET;
 constexpr int32_t GAP     = 8;                                // between one group and the next
 // body_l's 25 px line, then label_s's 21, 2 apart, in the middle of the row: their boxes must not
-// cross, or GET /api/i18n/overflow names every row "overlap" (15.10.2026).
+// cross, or GET /api/i18n/overflow names every row "overlap".
 constexpr int32_t TITLE_Y = (RH - 25 - 2 - 21) / 2;
 constexpr int32_t SUB_Y   = TITLE_Y + 25 + 2;
 
@@ -99,8 +99,7 @@ void ap_mode_chosen(int mode) {
     if (g.ctx && mode != g.ctx->s.ap_mode) post(UiLvglModule::Req::AIRPLAY_MODE, mode);
 }
 /// «Режим AirPlay» as a list of the two, the one on ticked (ui_pick.cpp), from a tap on AirPlay's
-/// row — its switch announces it. A row of its own until 20.10.2026; before that a tap on it
-/// switched the protocol at once, with «змінити дотиком» under it to say so.
+/// row — its switch announces it.
 void ap_mode_pick() {
     if (!g.ctx || !(g.ctx->s.sources & (1 << AUDIO_SOURCE_AIRPLAY))) return;
     // a row per airplay.mode value, in its order: the row chosen is the mode

@@ -19,18 +19,18 @@
  * away rather than on this page.
  *
  * Volume is not on this page: the encoder is the volume, and the pop-up slider the shell
- * shows for it can also be called up with the loudspeaker button (customer, 24.09.2026).
+ * shows for it can also be called up with the loudspeaker button.
  *
  * Bluetooth with no phone is not a dead end: the line under «Телефон не підключено» says what a
  * phone will find — «видно як «MODEsp»» — or that new phones do not see the panel (the satellite's
  * radio or its visibility is off), and then the transport, which has nobody to command, gives way
  * to the one thing the panel can do about it: «Увімкнути видимість», which turns both on (an
- * action, not a state; the customer, 20.10.2026). The satellite cannot be asked to call a phone
- * (LINK_PROTOCOL.md), so there is no «connect».
+ * action, not a state). The satellite cannot be asked to call a phone (LINK_PROTOCOL.md), so
+ * there is no «connect».
  *
  * The knob's press is this page's play button, from any page (ui_now_play_pause): the knob has
- * one job everywhere — a turn is the volume, a press plays and pauses (customer, 18.10.2026).
- * For a day it rang this page's buttons in turn instead: a mode.
+ * one job everywhere — a turn is the volume, a press plays and pauses — rather than ringing this
+ * page's buttons in turn, which would be a mode.
  */
 
 #include "ui_common.h"
@@ -61,20 +61,18 @@ using modesp::gen::AUDIO_SOURCE_USB;
 constexpr int32_t COVER   = player_core::COVER_PX;           // 280: the tile the player decodes
 constexpr int32_t COL_X   = COVER + 24;
 constexpr int32_t COL_W   = uig::CONT_W - COL_X;             // 448
-// For a finger (the glass for a finger, 20.10.2026: the row's buttons were 40, the seek bar's reach
-// 28) within the cover's 280: the column ends where the cover does, the transport stands on that
-// line, and the spectrum under them keeps its 88 (an 88-px transport that ran the column past the
-// cover ate the spectrum and set the page crooked: the customer, 21.10.2026).
+// For a finger within the cover's 280: the column ends where the cover does, the transport stands
+// on that line, and the spectrum under them keeps its 88 (an 88-px transport that ran the column
+// past the cover ate the spectrum and set the page crooked).
 constexpr int32_t ROW_H   = 48;                              // the source line, «Звук» and the two buttons
 constexpr int32_t ROW_BTN = 48;                              // «Звук», the list and the volume as drawn;
 constexpr int32_t ROW_EXT = 8;                               // a finger takes 8 px more to the sides and below
 constexpr int32_t TITLE_Y = ROW_H;
-// The transport by the rules rather than by swings (the customer, 21.10.2026: 88, then bunched at
-// the left, then flung to the column's ends): one height, the glass's 64 (7.5 mm, every row and
-// button's); the main button set apart by its width and its fill, not its height — play 96, prev
-// and next 64; one gap, 24 px (~3 mm), near enough to read as one group and far enough apart for
-// a finger; the group centred under the progress bar, symmetric with it and its two times. On the
-// card shuffle and repeat stand at the bar's two ends, and the five are 24 apart across the 448.
+// The transport by the rules: one height, the glass's 64 (7.5 mm, every row and button's); the
+// main button set apart by its width and its fill, not its height — play 96, prev and next 64;
+// one gap, 24 px (~3 mm), near enough to read as one group and far enough apart for a finger; the
+// group centred under the progress bar, symmetric with it and its two times. On the card shuffle
+// and repeat stand at the bar's two ends, and the five are 24 apart across the 448.
 constexpr int32_t TRAN_H   = 64;
 constexpr int32_t TRAN_GAP = 24;
 constexpr int32_t PLAY_W   = 96;
@@ -398,9 +396,8 @@ lv_obj_t* build(lv_obj_t* parent, UiCtx& c) {
     // A 4-pixel bar is a fine thing to look at and an impossible thing to hit, so the touch
     // target is the whole box, twelve times its height, with the times in it. It was a taller box
     // centred on the bar and reaching out of this one, but LVGL looks for a target only inside the
-    // parent's box, so a finger above the bar found nothing: 28 px of 44 (20.10.2026). Where the
-    // bar seeks, a knob at the fill's end shows where a finger takes it: knob only, as the
-    // sliders (the customer, 16.10.2026: the seek was there, and nothing said where).
+    // parent's box, so a finger above the bar found nothing: 28 px of 44. Where the bar seeks, a
+    // knob at the fill's end shows where a finger takes it: knob only, as the sliders.
     n.prog_hit = uih::box(n.prog, 0, 0, COL_W, PROG_H);
     lv_obj_add_flag(n.prog_hit, LV_OBJ_FLAG_CLICKABLE);
     for (lv_event_code_t code : {LV_EVENT_PRESSED, LV_EVENT_PRESSING, LV_EVENT_RELEASED, LV_EVENT_PRESS_LOST})
@@ -449,7 +446,7 @@ lv_obj_t* build(lv_obj_t* parent, UiCtx& c) {
     // The page, not the content box in it: what build() returns is what the shell hides when
     // another page is chosen, and the page is the one that is opaque over the whole screen. Given
     // the box, the shell hid only that, and the cover's colour lay over every other page — the
-    // Sources and the Settings showed as empty (customer, 14.10.2026).
+    // Sources and the Settings showed as empty.
     return n.page;
 }
 

@@ -3,7 +3,7 @@
  * @brief The frame every page lives in: the header, the one menu (a modal drawer), the
  *        snackbar, the standby face — and page switching.
  *
- * The structure agreed on 24.09.2026: the Player is the
+ * The structure: the Player is the
  * home and owns the screen; nothing permanent stands beside a 48 px header. There is ONE
  * menu, the drawer — opened by ≡, by a press on the left edge or by holding the encoder —
  * with the three sections: Плеєр · Джерело · Налаштування (DSP is not one of them:
@@ -20,7 +20,7 @@
  * Volume is a moment, not a readout: a turn of the encoder brings up a slider for two
  * seconds, and the Player's loudspeaker button does the same.
  *
- * The knob has one job on every page (customer, 18.10.2026):
+ * The knob has one job on every page:
  * a turn is the volume, a press plays and pauses, a hold opens the drawer. It used to walk each
  * page's rows with a ring, and set the volume where a page did not take it — what a turn did
  * depended on the page and on whether a ring was up: a mode, where people err. What is on the
@@ -98,9 +98,9 @@ static_assert(PAGES[1].kind == Kind::SECTION && PAGES[2].kind == Kind::SECTION &
 
 // ── geometry ──
 constexpr int32_t D_RADIUS = m3::shape::XL;     ///< the drawer's right-hand corners
-/// Rows, their text and their icons well above the M3 drawer's (label_m, 24 px icons): the
-/// customer found the menu too small to read from where a stereo is looked at, and 24 px still
-/// small (11.10.2026). The rows are set in headline (32 px), the title stays at title_m.
+/// Rows, their text and their icons well above the M3 drawer's (label_m, 24 px icons): those
+/// are too small to read from where a stereo is looked at, and 24 px still small. The rows are
+/// set in headline (32 px), the title stays at title_m.
 constexpr int32_t D_ROW_H  = 72;
 constexpr int32_t D_ROW_Y0 = 84;
 constexpr int32_t D_PITCH  = D_ROW_H + 4;
@@ -215,8 +215,7 @@ void edge_cb(lv_event_t*) { set_drawer(true); }
 // ── drawer ─────────────────────────────────────────────────────────────────────────────────
 
 /// The web at the menu's foot: the panel's address and a QR code of the web's front page, from
-/// any page (the customer, 25.10.2026: «переносимо QR у меню ≡» — it stood on Колонки alone);
-/// nothing while the panel has no address.
+/// any page; nothing while the panel has no address.
 void paint_web() {
     if (!g.web || !g.ctx) return;
     const char* ip = g.ctx->s.wifi_ip;
@@ -332,9 +331,9 @@ void build_drawer(lv_obj_t* scr) {
 // ── the volume pop-up ──────────────────────────────────────────────────────────────────────
 //
 // A slider that appears when the volume is being changed and leaves two seconds after it
-// stops: a permanent one would be a readout of the thing the encoder already is (customer,
-// 24.09.2026). It follows the snapshot, so the encoder and the web page both move it, and
-// a finger on it posts the value it is dragged to.
+// stops: a permanent one would be a readout of the thing the encoder already is. It follows
+// the snapshot, so the encoder and the web page both move it, and a finger on it posts the
+// value it is dragged to.
 
 constexpr uint32_t VOL_MS = 2000;
 /// A level asked for reaches the snapshot within ~0.1 s (the next request drain, then the 20 Hz
@@ -455,7 +454,7 @@ void sb_click_cb(lv_event_t*) {
 // The face has two layouts. With music playing: the clock and the date at the top, one line
 // of what is playing under them, and the spectrum at the bottom. With nothing playing: the
 // clock and the date alone, centred. The line and the spectrum share one window, 80 % of the
-// screen's width (the customer's choice, 11.10.2026); a line wider than that scrolls.
+// screen's width; a line wider than that scrolls.
 constexpr int32_t SB_WIN_W  = uig::SCR_W * 80 / 100;                 // 640
 constexpr int32_t SB_WIN_X  = (uig::SCR_W - SB_WIN_W) / 2;
 constexpr int32_t SB_TOP    = 28;        ///< the clock row, music layout
@@ -465,7 +464,7 @@ constexpr int32_t SB_SPEC_BASE = uig::SCR_H - 24;
 constexpr int32_t SB_SPEC_H    = 180;
 /// 23 px a band and 12 of it bar: 28 bands come to 633 px, the nearest the pitch gets to the
 /// window without bars of two widths. Otherwise the Player's row exactly — no peak caps, which
-/// were tried and dropped so the spectrum looks the same wherever it is (customer, 11.10.2026).
+/// were tried and dropped so the spectrum looks the same wherever it is.
 constexpr uih::SpecStyle SB_SPEC = {23, 12};
 constexpr int32_t SB_SPEC_X = (uig::SCR_W - uih::spec_drawn_w(SB_SPEC)) / 2;
 static_assert(uih::spec_drawn_w(SB_SPEC) <= SB_WIN_W, "the spectrum fits the window");

@@ -2,12 +2,11 @@
  * @file screen_src.cpp
  * @brief "Джерело" — what to listen to: one card per source this build can play.
  *
- * One grid, the most listened to first (customer, 18.10.2026): Bluetooth, AirPlay and the radio
- * on the top row, the card, the media servers and USB under them. Each card only when its bit
- * is in audio.sources — bindings decide what exists, and a card for hardware that is not wired
- * is worse than a shorter page. Off, the tone generator and AUX have no card: the
- * first two are not something anyone listens to, AUX left the hardware (15.10.2026), and all
- * three stay reachable through the API.
+ * One grid, the most listened to first: Bluetooth, AirPlay and the radio on the top row, the
+ * card, the media servers and USB under them. Each card only when its bit is in audio.sources —
+ * bindings decide what exists, and a card for hardware that is not wired is worse than a
+ * shorter page. Off, the tone generator and AUX have no card: the first two are not something
+ * anyone listens to, AUX is not in the hardware, and all three stay reachable through the API.
  *
  * Each card says what it would give you right now — the phone, the station, how many tracks,
  * what is playing — so the page answers "what is there" without a tap. A tap is choosing to
@@ -48,8 +47,7 @@ constexpr CardDef card_of(UiSrc src) { return { src, ui_src_def(src).name, ui_sr
 /// plays DLNA, which rides the radio's ring — it exists when the radio does — but it is the way
 /// into the servers rather than a push, so it keeps their name and their icon where the Player
 /// says «DLNA».
-/// USB took AUX's place (the customer, 24.10.2026): the line input left the hardware on
-/// 15.10.2026 and its card was never shown since, and the grid is two rows of three.
+/// USB is where AUX was: the line input is not in the hardware, and the grid is two rows of three.
 constexpr CardDef CARDS[N_CARD] = {
     card_of(UiSrc::BT),
     card_of(UiSrc::AIRPLAY),
@@ -66,9 +64,9 @@ constexpr int32_t CW    = (uig::CONT_W - (COLS - 1) * GAP) / COLS;     // 242
 constexpr int32_t CH    = (uig::CONT_H - GAP) / 2;                      // 186
 static_assert(N_CARD <= 2 * COLS, "every card fits the two rows: the page does not scroll");
 /// Inside a card: the icon at the top, the name and two lines under it at the bottom. The
-/// text is a step above the design's (title_m / label_m): the customer found it too small to
-/// read from the sofa (11.10.2026), so the name is headline and the lines title_m, and the
-/// margins give back the few pixels that costs.
+/// text is a step above the design's (title_m / label_m), which is too small to read from the
+/// sofa, so the name is headline and the lines title_m, and the margins give back the few
+/// pixels that costs.
 constexpr int32_t IN    = 16;           ///< the card's top and bottom margin
 
 struct Page {

@@ -37,7 +37,7 @@ using i18n::tr;
 constexpr int32_t COL_GAP = 16;
 constexpr int32_t COL_W   = (uig::CONT_W - COL_GAP) / 2;      // 368
 constexpr int32_t COL2_X  = COL_W + COL_GAP;
-// Rows, chips and buttons a finger's 64 px (the glass for a finger, 20.10.2026: 56, 32 and 40-48).
+// Rows, chips and buttons a finger's 64 px.
 constexpr int32_t CAP_H   = 24;
 constexpr int32_t RH      = 64;
 constexpr int32_t INSET   = 2;

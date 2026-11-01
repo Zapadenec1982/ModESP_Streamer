@@ -2,9 +2,8 @@
  * @file ui_m3.h
  * @brief Material 3 design tokens — colour roles, shape, type — for the panel UI.
  *
- * The values are the customer's design package (artifact «Медіаплеєр P4», round 3,
- * «P4 Player M3», 24.09.2026), copied role for role. Three dark schemes; the light one the
- * mock also carries was declined.
+ * The values are the design package's (artifact «Медіаплеєр P4», round 3, «P4 Player M3»),
+ * copied role for role. Three dark schemes; the light one the mock also carries is not used.
  *
  * A screen never spells a colour or a font: it names a ROLE here. That is what makes the
  * scheme switch in Settings a table lookup rather than a hunt through the screens. ui_theme.h still exists for the screens that have
@@ -66,8 +65,8 @@ constexpr int32_t FULL = LV_RADIUS_CIRCLE;
 } // namespace shape
 
 /// Type roles. One face per role; the faces themselves come from tools/fonts/build_fonts.py.
-/// The scale is one step above the mock's: the customer could not read 12 or 14 px on the
-/// glass from where a stereo is looked at (24.09.2026), so nothing is smaller than 16.
+/// The scale is one step above the mock's: 12 or 14 px cannot be read on the glass from where
+/// a stereo is looked at, so nothing is smaller than 16.
 struct Type {
     const lv_font_t* label_s;    ///< 16 medium — captions, chip text, axis labels
     const lv_font_t* label_m;    ///< 18 medium — rail labels, list values, buttons

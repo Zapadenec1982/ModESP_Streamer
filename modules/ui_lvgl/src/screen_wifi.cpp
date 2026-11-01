@@ -33,7 +33,7 @@ using i18n::tr;
 
 // ── geometry, in the 752x384 content column ──
 constexpr int32_t PAGE_W       = uig::CONT_W;
-// «Забути», the rescan, the eye and «Підключити» a finger's 64 px (20.10.2026: 48 and 56)
+// «Забути», the rescan, the eye and «Підключити» a finger's 64 px
 constexpr int32_t CARD_H  = 72;
 constexpr int32_t BAR_Y   = CARD_H + 8;
 constexpr int32_t BAR_H   = 64;

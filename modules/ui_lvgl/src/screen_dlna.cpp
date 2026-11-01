@@ -28,7 +28,7 @@ namespace {
 using i18n::S;
 using i18n::tr;
 
-// ‹ › ⟳ a finger's 64 px, 8 apart (the glass for a finger, 20.10.2026: 48 px, 4 apart)
+// ‹ › ⟳ a finger's 64 px, 8 apart
 constexpr int32_t BAR_H  = 68;
 constexpr int32_t BTN    = 64;
 constexpr int32_t BTN_X3 = uig::CONT_W - BTN;              // refresh / cancel

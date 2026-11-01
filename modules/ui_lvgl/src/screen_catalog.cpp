@@ -46,8 +46,7 @@ enum Tab : int { TAB_FAV = 0, TAB_TOP = 1, TAB_COUNTRIES = 2, TAB_GENRES = 3, TA
 constexpr S TAB_NAMES[N_TABS] = {S::st_tab_fav, S::st_tab_top, S::st_tab_countries, S::st_tab_genres, S::st_tab_search};
 
 // ── geometry, in the 752x384 content column ──
-// The tabs, the pager and the chips are a finger's 64 px (the glass for a finger, 20.10.2026: 40,
-// 48 and 32 before).
+// The tabs, the pager and the chips are a finger's 64 px.
 constexpr int32_t TAB_W   = 112;
 constexpr int32_t TAB_H   = 64;
 constexpr int32_t TABS_W  = N_TABS * TAB_W;
@@ -515,7 +514,7 @@ void sheet_cancel_cb(lv_event_t*) { close_sheet(); }
 
 void build_sheet(lv_obj_t* root) {
     const auto& t = m3::theme();
-    constexpr int32_t W = 520, H = 332;      // buttons of 64 (20.10.2026); «Скасувати» under the presets
+    constexpr int32_t W = 520, H = 332;      // buttons of 64; «Скасувати» under the presets
     g.scrim = m3w::box(root, 0, 0, uig::CONT_W, uig::CONT_H);
     lv_obj_set_style_bg_color(g.scrim, m3::col(0x000000), 0);
     lv_obj_set_style_bg_opa(g.scrim, LV_OPA_50, 0);

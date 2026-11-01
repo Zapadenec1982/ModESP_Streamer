@@ -2,14 +2,12 @@
  * @file sound_sheet.cpp
  * @brief «Звук»: the sounds, Бас and Високі, the loudness and the way to the equalizer — as a side
  *        sheet over the Player and as Налаштування › Звук › Тембр
- *        (the row named for what it holds, the customer, 18.10.2026: every row
- *        of the group is sound).
+ *        (the row named for what it holds: every row of the group is sound).
  *
  * One set of controls in two hosts, as on the web (pages/sound/SoundControls.svelte): the sheet
  * comes in from the right, 384 px, over everything, and the page is a list page of its own with
- * the same (the customer, 16.10.2026: no «Скинути Бас і Високі» there). The presets are a field
- * that opens their list (the customer, 15.10.2026: a dropdown, not chips) — a dialog over
- * everything, the one that plays ticked, which the equalizer's page opens too
+ * the same (no «Скинути Бас і Високі» there). The presets are a field that opens their list — a
+ * dialog over everything, the one that plays ticked, which the equalizer's page opens too
  * (ui_sound_pick_show, over ui_pick.cpp's list). Everything here is touched; the knob stays the
  * volume over it (ui_shell_encoder).
  *
@@ -275,7 +273,7 @@ int32_t tone_name_w() {
 
 /// Бас or Високі in one row, as every slider of the panel: the name, a slider whose zero is in the
 /// middle, the number. The name's and the number's columns keep the track off the column's sides:
-/// a finger that scrolls the sheet has somewhere to go that sets nothing (the customer, 14.10.2026).
+/// a finger that scrolls the sheet has somewhere to go that sets nothing.
 lv_obj_t* tone_slider(Controls& c, const char* name, lv_obj_t*& val, int32_t name_w) {
     const auto& t = m3::theme();
     lv_obj_t* row = m3w::box(c.body, 0, 0, c.w, SLIDER_H);
@@ -323,8 +321,8 @@ void build_controls(Controls& c, lv_obj_t* parent, int32_t x, int32_t y, int32_t
 
     // The column scrolls, and it takes the finger itself: LVGL gives a press to the topmost clickable
     // object, so a finger on a note or a row's name went to the sheet behind the column, which does
-    // not scroll — the sheet could not be scrolled to the loudness's switch (the customer,
-    // 15.10.2026). It clips what scrolls out of it.
+    // not scroll — the sheet could not be scrolled to the loudness's switch. It clips what
+    // scrolls out of it.
     c.body = m3w::box(parent, x, y, w, h);
     lv_obj_add_flag(c.body, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_flag(c.body, LV_OBJ_FLAG_SCROLLABLE);
@@ -352,7 +350,7 @@ void build_controls(Controls& c, lv_obj_t* parent, int32_t x, int32_t y, int32_t
     c.bass_sl = tone_slider(c, tr(S::sound_bass), c.bass_val, name_w);
     c.treble_sl = tone_slider(c, tr(S::sound_treble), c.treble_val, name_w);
 
-    // the loudness: its name and the switch, no line under them (the customer, 16.10.2026)
+    // the loudness: its name and the switch, no line under them
     rule(c.body, w);
     c.loud_row = m3w::box(c.body, 0, 0, w, ROW_H);
     lv_obj_t* lt = m3w::text(c.loud_row, t.t.body_l, t.c.on_surface, tr(S::eq_loudness));

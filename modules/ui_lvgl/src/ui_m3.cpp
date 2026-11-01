@@ -2,12 +2,11 @@
  * @file ui_m3.cpp
  * @brief The four Material 3 schemes.
  *
- * Бурштин is copied from the `schemes` table of «P4 Player M3» (artifact export of
- * 24.09.2026) role for role, so a diff against the design is a straight comparison. Синя and
- * Зелена were moved by the customer on 25.09.2026 (darker; towards violet and olive) and are
- * generated from the colour they pointed at by tools/ui/m3_scheme.py, which run on the mock's
- * own seeds reproduces the mock's tables to within a few units; Червона, added the same day,
- * comes from it too. `error` is not in the design
+ * Бурштин is copied from the `schemes` table of «P4 Player M3» (the design's artifact export,
+ * round 3) role for role, so a diff against the design is a straight comparison. Синя and
+ * Зелена are darker than the design's (towards violet and olive) and are generated from a seed
+ * colour each by tools/ui/m3_scheme.py, which run on the mock's own seeds reproduces the mock's
+ * tables to within a few units; Червона comes from it too. `error` is not in the design
  * table — the mock never draws a fault — and is Material's standard dark error tone.
  *
  * The type roles point at the Roboto and Material Symbols faces that tools/fonts/build_fonts.py
@@ -54,8 +53,8 @@ const Theme THEMES[(int)Scheme::COUNT] = {
       0xEBE1D5, 0x352F28, ERROR_DARK},
      M3_TYPE},
 
-    // ── Синя — darker, more saturated and towards violet than the mock's #9ECAFF (the
-    //    customer's swatch, 25.09.2026). tools/ui/m3_scheme.py 7A82C0 ──
+    // ── Синя — darker, more saturated and towards violet than the mock's #9ECAFF.
+    //    tools/ui/m3_scheme.py 7A82C0 ──
     {"blue",
      {0x131319, 0x0E0E14, 0x1B1B20, 0x1F1F25, 0x29292F, 0x34343A,
       0xE2E2E9, 0xC5C5D4, 0x8F909E, 0x454652,
@@ -65,8 +64,8 @@ const Theme THEMES[(int)Scheme::COUNT] = {
       0xE2E2E9, 0x303036, ERROR_DARK},
      M3_TYPE},
 
-    // ── Зелена — darker and towards olive than the mock's #7DDBA5 (the customer's swatch,
-    //    25.09.2026). tools/ui/m3_scheme.py 9A9973 ──
+    // ── Зелена — darker and towards olive than the mock's #7DDBA5.
+    //    tools/ui/m3_scheme.py 9A9973 ──
     {"green",
      {0x14140C, 0x0F0F05, 0x1C1C16, 0x20201A, 0x2B2A24, 0x35352F,
       0xE3E3DB, 0xC8C7B8, 0x929183, 0x48473B,
@@ -76,7 +75,7 @@ const Theme THEMES[(int)Scheme::COUNT] = {
       0xE3E3DB, 0x31312B, ERROR_DARK},
      M3_TYPE},
 
-    // ── Червона — the customer's fourth, 25.09.2026: a cherry red, #771910. That is L* 27,
+    // ── Червона — the fourth: a cherry red, #771910. That is L* 27,
     //    too dark to be the primary itself (1.8:1 on the surface, and the icons, the slider
     //    and the EQ curve are drawn in it), so the primary is its hue and chroma at tone 52 —
     //    4.4:1, like the other two — and the seed's own depth is the primary container.

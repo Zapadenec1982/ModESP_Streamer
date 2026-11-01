@@ -24,8 +24,8 @@
 #include <new>
 
 // ── the 800x480 grid: a 48 px header, the content below it, nothing permanent beside ──
-// No rail: it took 88 px off every page for a menu that is wanted a few times a day
-// (decision of 24.09.2026). The one menu is the drawer, and it is modal.
+// No rail: it would take 88 px off every page for a menu that is wanted a few times a day.
+// The one menu is the drawer, and it is modal.
 namespace uig {
 constexpr int32_t SCR_W    = 800;
 constexpr int32_t SCR_H    = 480;
@@ -347,13 +347,12 @@ lv_obj_t* ui_station_tabs(lv_obj_t* parent, int on);
 /// The catalog page on tab 1 Топ, 2 Країни, 3 Жанри or 4 Пошук, each from its top.
 void ui_catalog_open(int tab);
 /// One encoder update: `delta` detents since the last call, `event` 0 none / 1 click / 2 hold.
-/// The knob has one job on every page, over every sheet and dialog (customer, 18.10.2026):
-/// a turn is the volume, a press plays and pauses, a hold
-/// opens the menu. What is on the glass is chosen by touch. Called from the LVGL refresh, which
-/// is the only place that may touch widgets.
+/// The knob has one job on every page, over every sheet and dialog: a turn is the volume, a
+/// press plays and pauses, a hold opens the menu. What is on the glass is chosen by touch.
+/// Called from the LVGL refresh, which is the only place that may touch widgets.
 void ui_shell_encoder(int32_t delta, uint8_t event, UiCtx& c);
 
-/// «Скасувати» after a finger moved a sound setting (touch_gesture.h; the customer, 14.10.2026):
+/// «Скасувати» after a finger moved a sound setting (touch_gesture.h):
 /// a snackbar over the pages for touch::UNDO_MS — `text`, «Бас: 0 › +3», and the button, which
 /// calls `undo(value, arg)` once. Another note replaces it; ui_shell_undo_drop(key) takes down
 /// the one `key` put up. The knob's change — the volume — has none.

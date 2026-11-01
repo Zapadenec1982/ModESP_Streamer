@@ -87,7 +87,7 @@ lv_obj_t* build(lv_obj_t* parent, UiCtx& c) {
     }
 
     // what the scheme that plays means — for stereo, that it needs no crossover: a state, not a
-    // lesson (the customer, 18.10.2026)
+    // lesson
     lv_obj_t* note = m3w::surface(root, RIGHT_X, 0, RIGHT_W, LV_SIZE_CONTENT, t.c.surface_low, m3::shape::L);
     lv_obj_set_style_pad_all(note, 24, 0);
     m3w::text(note, t.t.title_m, t.c.on_surface, tr(S::xover_stereo_title));

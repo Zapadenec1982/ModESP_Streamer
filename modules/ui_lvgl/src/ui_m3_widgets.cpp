@@ -868,7 +868,7 @@ Dialog dialog(lv_obj_t* parent, int32_t w, int32_t h) {
     lv_obj_set_style_bg_opa(d.scrim, LV_OPA_50, 0);
     lv_obj_add_flag(d.scrim, LV_OBJ_FLAG_CLICKABLE);          // swallow taps meant for below
     constexpr int32_t BW = 150, BH = 64;
-    h += BH - 48;                     // the buttons grew from 48 to 64 (20.10.2026); the text keeps its room
+    h += BH - 48;                     // callers size h for 48-px buttons; the text keeps its room
     d.card = surface(d.scrim, 0, 0, w, h, t.c.surface_container, m3::shape::XL);
     lv_obj_center(d.card);
     lv_obj_set_style_pad_all(d.card, 24, 0);

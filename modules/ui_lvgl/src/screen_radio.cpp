@@ -6,7 +6,7 @@
  * The station that is playing, what it says is playing and the transport are the Player's
  * radio face; this page is the choice of station, opened from the Player's list button. The
  * presets sit at the top and scroll away with the list. They live here and not on the Source
- * page, which chooses a source, not a station (24.09.2026).
+ * page, which chooses a source, not a station.
  *
  * A preset works the way a car radio's does: a tap tunes it, and a long press stores the
  * station that is playing in it. An empty preset says "Зберегти сюди" while the radio plays,
@@ -39,7 +39,7 @@ constexpr int32_t TABS_H    = 68;                            // the tab row (scr
 constexpr int     N_PRE     = radio_core::PRESETS;          // 6
 constexpr int32_t PRE_COLS  = 3;
 constexpr int32_t PRE_GAP   = 8;
-constexpr int32_t PRE_H     = 64;                            // a finger's (20.10.2026: 56)
+constexpr int32_t PRE_H     = 64;                            // a finger's
 constexpr int32_t PRE_X0    = 4;                             // in line with the list's rows
 constexpr int32_t PRE_W     = (uig::CONT_W - 2 * PRE_X0 - (PRE_COLS - 1) * PRE_GAP) / PRE_COLS;
 constexpr int32_t PRE_Y0    = 2;
@@ -103,9 +103,9 @@ void store(int slot) {
 ///
 /// The source first: the radio module only exists while it owns the output, and drops what
 /// is posted to it before then (radio_module.cpp, on_update) — a preset tapped while
-/// Bluetooth played did nothing until this line (24.09.2026). Then a new station is a tune,
-/// and the station already tuned needs a play, since writing the same number again changes
-/// nothing. The requests are drained in order, so the radio sees the source before the rest.
+/// Bluetooth played did nothing until this line. Then a new station is a tune, and the station
+/// already tuned needs a play, since writing the same number again changes nothing. The
+/// requests are drained in order, so the radio sees the source before the rest.
 void listen(int idx) {
     if (!g.ctx || idx < 0) return;
     const auto& s = g.ctx->s;

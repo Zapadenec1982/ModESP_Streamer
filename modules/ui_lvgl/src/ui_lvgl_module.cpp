@@ -104,8 +104,8 @@ void liveness_timer_cb(lv_timer_t*) { modesp::liveness::tick(s_lvgl_beat); }
 /// interrupt, which is not IRAM-safe here (CONFIG_DMA2D_ISR_IRAM_SAFE=n) and so never runs
 /// with the cache off, or from the drawing task itself. IDF also refuses a user context
 /// outside internal RAM, and the LVGL display object lives in PSRAM, so the display is
-/// handed over through this internal static instead (the first image, 04.10.2026, passed
-/// it as the context, failed registration and boot-looped on the task watchdog).
+/// handed over through this internal static instead (an image that passed it as the context
+/// failed registration and boot-looped on the task watchdog).
 lv_display_t* s_flush_disp = nullptr;
 
 IRAM_ATTR bool dpi_flush_done_cb(esp_lcd_panel_handle_t, esp_lcd_dpi_panel_event_data_t*, void*) {
@@ -228,9 +228,9 @@ bool UiLvglModule::start_lvgl() {
     // Core 0 at the main loop's own priority (1), time-sliced with it. On core 1 the UI drew
     // under the audio task (22), the satellite reader (23) and AirPlay's three, and a
     // scrolling list ran at 1.5-4 frames/s; on core 0 the same list ran 3.5-5.5x faster
-    // (/api/ui/scrollbench, 05.10.2026). Priority 3 there was faster still, but above the
-    // main loop it held the 100 Hz loop off for up to ~90 ms a frame; at 1 the longest gap
-    // was ~45 ms, what it already was with the UI on the other core.
+    // (/api/ui/scrollbench). Priority 3 there was faster still, but above the main loop it held
+    // the 100 Hz loop off for up to ~90 ms a frame; at 1 the longest gap was ~45 ms, what it
+    // already was with the UI on the other core.
     port_cfg.task_priority    = 1;
     port_cfg.task_stack       = 16 * 1024;
     port_cfg.task_affinity    = 0;
@@ -260,8 +260,7 @@ bool UiLvglModule::start_lvgl() {
     // Rotated, with the PPA at hand: the PPA turns each block straight into the frame buffer
     // while LVGL draws the next (ppa_flush.cpp). LVGL keeps drawing RGB888: XRGB8888, which the
     // PPA would pack to RGB888 on the way, was measured slower here — 80 against 76 ms a frame of
-    // a scrolling list (05.10.2026), the extra byte a pixel costing PSRAM more than LVGL's 32-bit
-    // paths save.
+    // a scrolling list, the extra byte a pixel costing PSRAM more than LVGL's 32-bit paths save.
     const bool direct = geo.rotation != 0 && geo.color_bits == 24 &&
                         ppa_flush_prepare(panel_->panel(), geo.h_res, geo.v_res);
     // esp_lvgl_port refuses DMA-capable draw buffers for anything but RGB565 ("not aligned
@@ -286,7 +285,7 @@ bool UiLvglModule::start_lvgl() {
     // is a completion nobody hears: LVGL then waits in while(disp->flushing) for ever, holding
     // its lock, and this init blocks behind it before the task watchdog is armed to panic.
     // Pinned to the other core the gap was microseconds; a task free to run on this one made
-    // it certain (05.10.2026, the boot hung in wait_for_flushing).
+    // it certain (the boot hung in wait_for_flushing).
     if (!lvgl_port_lock(0)) return false;
     s_ui.disp = lvgl_port_add_disp_dsi(&disp_cfg, &dsi_cfg);
     if (!s_ui.disp) {
@@ -883,7 +882,7 @@ void UiLvglModule::mirror_state() {
 ///
 /// Every read happens BEFORE portENTER_CRITICAL, for the reason spelled out at the end of
 /// mirror_state(): read_int/read_float take a FreeRTOS mutex, and taking one with interrupts
-/// disabled is a crash rather than a delay (fixed in 44d4cbc; do not undo it here).
+/// disabled is a crash rather than a delay; keep every read outside it.
 void UiLvglModule::mirror_diag() {
     // read_number and not read_int, for every number below.
     //
@@ -1307,9 +1306,9 @@ void UiLvglModule::rebuild_look() {
 /// Hearing it and keeping it are no longer this module's: the audio module, the owner, hands
 /// the bands to the audio core as soon as the store moves and writes eq.json at a moment that
 /// is not in the way — not while this page is in front (ui.screen says so), because every
-/// LittleFS write stops both cores' caches and the speakers click (customer, 04.10.2026). The
-/// web edits the same document, so the page takes the store's version back when it moved
-/// (screen_eq.cpp, pull_from_store).
+/// LittleFS write stops both cores' caches and the speakers click. The web edits the same
+/// document, so the page takes the store's version back when it moved (screen_eq.cpp,
+/// pull_from_store).
 ///
 /// The document is copied out under the LVGL lock into static room: it is over a kilobyte,
 /// and this runs on the main task.
@@ -1326,7 +1325,7 @@ void UiLvglModule::persist_eq() {
 }
 
 /// Sleep dims the panel rather than switching it off: the backlight driver is PWM and a
-/// zero duty is indistinguishable from a dead panel when the customer looks at it. The
+/// zero duty is indistinguishable from a dead panel to anyone looking at it. The
 /// user's brightness setting is left alone — apply_backlight() picks the level either way.
 void UiLvglModule::set_standby(bool on) {
     if (standby_ == on) return;

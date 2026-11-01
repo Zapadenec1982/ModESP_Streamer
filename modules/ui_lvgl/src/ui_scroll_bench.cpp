@@ -189,9 +189,9 @@ void disp_cb(lv_event_t* e) {
         // resumes it (lv_refr.c), so a list that is not moving yet would stop the run before it
         // began. An invalidation is not enough on its own: lv_inv_area drops an area that one
         // already pending contains without resuming anything, and the host's own first paint is
-        // such an area - runs stalled for the whole of their time that way (05.10). So the timer
-        // is resumed outright. The list itself is not invalidated: the scroll below repaints
-        // what it has to, and with two frame buffers that is only the strip that came into view.
+        // such an area - runs stalled for the whole of their time that way. So the timer is
+        // resumed outright. The list itself is not invalidated: the scroll below repaints what
+        // it has to, and with two frame buffers that is only the strip that came into view.
         s_refr_starts.fetch_add(1, std::memory_order_relaxed);
         if (lv_timer_t* rt = lv_display_get_refr_timer(lv_display_get_default())) lv_timer_resume(rt);
         if (now < s_st.t_start) { s_st.last_step = now; return; }   // still settling
@@ -593,8 +593,8 @@ esp_err_t handle_bench(httpd_req_t* req) {
     uint32_t lines_used = 0;
     bool internal = false;
     if (ibuf > 0) {
-        // Not under 8 rows: ibuf=4 reset the panel by watchdog on 05.10 — LVGL waiting on a
-        // flush that never finished, cause not found — while PSRAM buffers of 4 rows ran.
+        // Not under 8 rows: ibuf=4 reset the panel by watchdog — LVGL waiting on a flush that
+        // never finished, cause not found — while PSRAM buffers of 4 rows ran.
         lines_used = ibuf >= 8 ? use_internal(ibuf) : 0;
         internal = lines_used > 0;
         if (!internal) {

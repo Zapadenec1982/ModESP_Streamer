@@ -161,7 +161,7 @@ bool solid(const lv_obj_t* s) {
     if (!lv_obj_has_flag(s, LV_OBJ_FLAG_CLICKABLE)) return false;
     // An invisible touch target — nothing drawn and nothing in it, as the Player's seek box
     // around its 4-px bar — lies under the text on purpose: a finger finds it, not an eye. It
-    // was the "0:00" overlap the walk of 17.10 reported in en, de and pl.
+    // was the "0:00" overlap the walk reported in en, de and pl.
     return lv_obj_get_style_bg_opa(s, LV_PART_MAIN) > LV_OPA_TRANSP ||
            lv_obj_get_style_border_width(s, LV_PART_MAIN) > 0 ||
            lv_obj_get_child_count(s) > 0;

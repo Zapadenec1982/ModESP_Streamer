@@ -21,11 +21,11 @@ namespace search_kb {
 namespace {
 
 // Two pages: the panel's language's letters first, and the other alphabet a key away —
-// Ukrainian for English, German and Polish, Latin for Ukrainian (decision 3, 12.10.2026). Station
-// names come in both, whatever the panel speaks. The page key shows the other page's code, and
-// the codes stay as they are; the space bar and the search key are words of the panel's language.
-// The maps hold placeholders for those three, and each keyboard keeps its own copies with them
-// put in (State, in LVGL's heap — PSRAM).
+// Ukrainian for English, German and Polish, Latin for Ukrainian. Station names come in both,
+// whatever the panel speaks. The page key shows the other page's code, and the codes stay as they
+// are; the space bar and the search key are words of the panel's language. The maps hold
+// placeholders for those three, and each keyboard keeps its own copies with them put in (State,
+// in LVGL's heap — PSRAM).
 enum Layout : uint8_t { L_UK, L_EN, L_DE, L_PL, L_COUNT };
 constexpr const char* CODE[L_COUNT] = {"УК", "EN", "DE", "PL"};
 constexpr const char* KEY_SPACE  = "\x01";        // placeholders: never a key's own text
