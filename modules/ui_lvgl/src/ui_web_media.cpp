@@ -39,12 +39,7 @@ namespace {
 
 std::atomic<int> s_cover_tile{-1};
 
-esp_err_t send_json(httpd_req_t* req, const char* status, const char* body) {
-    httpd_resp_set_status(req, status);
-    httpd_resp_set_type(req, "application/json");
-    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-    return httpd_resp_send(req, body, HTTPD_RESP_USE_STRLEN);
-}
+using modesp::http_routes::send_json;
 
 /// `key` from the request's query as a number, or −1 when absent or not a number.
 long query_num(const char* query, const char* key) {

@@ -524,12 +524,7 @@ void blit_probe(char* out, size_t n) {
     (void)par_dma;
 }
 
-esp_err_t send_json(httpd_req_t* req, const char* status, const char* body) {
-    httpd_resp_set_status(req, status);
-    httpd_resp_set_type(req, "application/json");
-    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-    return httpd_resp_sendstr(req, body);
-}
+using modesp::http_routes::send_json;
 
 /// ?ms=6000 (1000..20000), ?v=1200 px/s (100..4000), ?screen=<id> to switch the page under the
 /// list first — "set" is a quiet one, so the page's own refresh does not add to the frames.

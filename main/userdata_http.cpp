@@ -54,12 +54,7 @@ struct Buf {
     Buf& operator=(const Buf&) = delete;
 };
 
-esp_err_t send_json(httpd_req_t* req, const char* status, const char* body) {
-    httpd_resp_set_status(req, status);
-    httpd_resp_set_type(req, "application/json");
-    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-    return httpd_resp_send(req, body, HTTPD_RESP_USE_STRLEN);
-}
+using modesp::http_routes::send_json;
 
 /// The whole of `path`, NUL-terminated, into `out` (made here). False when there is no such
 /// file or it is larger than safe_file copies.

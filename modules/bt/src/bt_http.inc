@@ -16,12 +16,7 @@
 /// ASCII they take ~1.5 KB.
 constexpr size_t BT_HTTP_MAX = 4096;
 
-esp_err_t bt_send(httpd_req_t* req, const char* status, const char* body) {
-    httpd_resp_set_status(req, status);
-    httpd_resp_set_type(req, "application/json");
-    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-    return httpd_resp_send(req, body, HTTPD_RESP_USE_STRLEN);
-}
+using modesp::http_routes::send_json;
 
 /// GET /api/bt (bt_web.h)
 esp_err_t bt_get(httpd_req_t* req) {
@@ -32,9 +27,9 @@ esp_err_t bt_get(httpd_req_t* req) {
     bt_settings::Pairing pairing;
     bt_settings::pairing(pairing);
     if (!bt_web::json(view, pairing, bt_settings::confirmer(), json, sizeof(json))) {
-        return bt_send(req, "500 Internal Server Error", "{\"error\":\"too_large\"}");
+        return send_json(req, "500 Internal Server Error", "{\"error\":\"too_large\"}");
     }
-    return bt_send(req, "200 OK", json);
+    return send_json(req, "200 OK", json);
 }
 
 /// POST /api/bt ← the switches, a name, a phone to forget, a disconnect, a refresh, or a
@@ -43,33 +38,33 @@ esp_err_t bt_post(httpd_req_t* req) {
     if (!modesp::http_routes::authorized(req)) return ESP_OK;
     static char body[512];
     if (req->content_len <= 0 || (size_t)req->content_len >= sizeof(body)) {
-        return bt_send(req, "413 Content Too Large", "{\"error\":\"size\"}");
+        return send_json(req, "413 Content Too Large", "{\"error\":\"size\"}");
     }
     if (!modesp::http_routes::read_body(req, body)) return ESP_FAIL;
     const size_t got = req->content_len;
 
     static bt_web::Edit e;
-    if (!bt_web::parse(body, got, e)) return bt_send(req, "400 Bad Request", "{\"error\":\"bad_request\"}");
+    if (!bt_web::parse(body, got, e)) return send_json(req, "400 Bad Request", "{\"error\":\"bad_request\"}");
 
     // What the satellite is: the same gates the panel's page draws its rows by.
     static bt_settings::View view;
     bt_settings::snapshot(view);
-    if (!view.linked) return bt_send(req, "409 Conflict", "{\"error\":\"no_satellite\"}");
+    if (!view.linked) return send_json(req, "409 Conflict", "{\"error\":\"no_satellite\"}");
     if (e.needs_settings() && !view.settings) {
-        return bt_send(req, "409 Conflict", "{\"error\":\"old_satellite\"}");
+        return send_json(req, "409 Conflict", "{\"error\":\"old_satellite\"}");
     }
 
     if (e.pair) {
         bt_settings::Pairing p;
         bt_settings::pairing(p);
         if (p.kind == sat::PAIR_PASSKEY) {
-            return bt_send(req, "409 Conflict", "{\"error\":\"passkey\"}");   // the phone decides that one
+            return send_json(req, "409 Conflict", "{\"error\":\"passkey\"}");   // the phone decides that one
         }
         if (!bt_settings::request_pair_reply(e.seq, e.accept, bt_settings::Source::WEB)) {
             bt_settings::pairing(p);
             char reply[64];
             snprintf(reply, sizeof(reply), "{\"error\":\"answered\",\"by\":%u}", (unsigned)p.by);
-            return bt_send(req, "409 Conflict", reply);
+            return send_json(req, "409 Conflict", reply);
         }
     }
     // BT_CONFIG_SET carries the whole state, a rename too: what was not given stays as the
@@ -78,7 +73,7 @@ esp_err_t bt_post(httpd_req_t* req) {
     bt_settings::Config c;
     bt_settings::config(c);
     if ((e.any_switch() || e.rename) && !c.known) {
-        return bt_send(req, "409 Conflict", "{\"error\":\"not_known_yet\"}");
+        return send_json(req, "409 Conflict", "{\"error\":\"not_known_yet\"}");
     }
     if (e.any_switch()) {
         bt_settings::request_config(e.radio >= 0 ? e.radio != 0 : c.radio,
@@ -87,12 +82,12 @@ esp_err_t bt_post(httpd_req_t* req) {
                                     (uint8_t)((e.codecs >= 0 ? e.codecs : c.codecs_enabled) | 1u));
     }
     if (e.rename && !bt_settings::request_name(e.name)) {
-        return bt_send(req, "400 Bad Request", "{\"error\":\"name\"}");
+        return send_json(req, "400 Bad Request", "{\"error\":\"name\"}");
     }
     if (e.forget) bt_settings::request_forget(e.forget_all ? nullptr : e.forget_addr);
     if (e.disconnect) bt_settings::request_disconnect();
     if (e.refresh) bt_settings::request_refresh();
-    return bt_send(req, "200 OK", "{\"ok\":true}");
+    return send_json(req, "200 OK", "{\"ok\":true}");
 }
 
 /// Called by HttpService in the window before the static wildcard (modesp/net/http_routes.h).

@@ -98,12 +98,7 @@ bool apply_station_edit(int32_t& station) {
 /// envelope.
 constexpr size_t STATIONS_HTTP_MAX = STATIONS_JSON_MAX + 64;
 
-esp_err_t send_json(httpd_req_t* req, const char* status, const char* body) {
-    httpd_resp_set_status(req, status);
-    httpd_resp_set_type(req, "application/json");
-    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-    return httpd_resp_send(req, body, HTTPD_RESP_USE_STRLEN);
-}
+using modesp::http_routes::send_json;
 
 /// GET /api/stations → {"rev":N,"list":{"stations":[...],"presets":[...]}}
 esp_err_t stations_get(httpd_req_t* req) {

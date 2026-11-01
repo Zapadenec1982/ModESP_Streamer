@@ -124,12 +124,7 @@ void disp_cb(lv_event_t* e) {
     }
 }
 
-esp_err_t send_json(httpd_req_t* req, const char* status, const char* body) {
-    httpd_resp_set_status(req, status);
-    httpd_resp_set_type(req, "application/json");
-    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-    return httpd_resp_send(req, body, HTTPD_RESP_USE_STRLEN);
-}
+using modesp::http_routes::send_json;
 
 esp_err_t handle_frames(httpd_req_t* req) {
 #if !CONFIG_UI_SCREENSHOT_OPEN
