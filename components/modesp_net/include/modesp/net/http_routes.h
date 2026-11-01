@@ -53,6 +53,11 @@ inline void set_wildcard_ctl(WildcardCtl fn, void* ctx) {
 
 /// false takes the catch-all off the server, true puts it back on the end. Does nothing
 /// when nothing set it — then there is no catch-all in the way either.
+///
+/// Between the two the server answers nothing: its task is held still, between two requests,
+/// because httpd changes its handler table with no lock against its own lookups (see
+/// HttpService::unregister_static_handler()). Keep the window to the registrations, and call it
+/// from a task of your own — from a route handler, false would wait for itself.
 inline void wildcard(bool on) { if (wildcard_fn()) wildcard_fn()(wildcard_ctx(), on); }
 
 /// The server's login check, for routes that live outside HttpService. main.cpp sets it with

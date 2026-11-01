@@ -30,6 +30,7 @@
 #include "mbedtls/base64.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/semphr.h"
 #include "esp_heap_caps.h"
 
 #include "state_meta.h"
@@ -2276,7 +2277,29 @@ void HttpService::register_api_handlers() {
              (int)(sizeof(endpoints) / sizeof(endpoints[0])));
 }
 
+// player-fork: httpd keeps its routes in a plain array that its own task walks for every request,
+// with no lock. httpd_register_uri_handler() puts a slot in the array before filling it in, and
+// httpd_unregister_uri_handler() frees one and shifts the rest down, so routes changed from
+// another task while the server runs (http_routes::wildcard(): the DLNA renderer coming up) could
+// hand a lookup a half-built or a freed slot, and every page asked for in between got a 404. The
+// server's task is held still for the length of the change instead: a work item parks it between
+// two requests until register_static_handler() puts the wildcard back, and a request that comes
+// meanwhile waits for the routes to be whole.
+static SemaphoreHandle_t s_parked = nullptr;   // given by the server's task once it holds still
+static SemaphoreHandle_t s_resume = nullptr;   // given when the routes are whole again
+static bool s_held = false;                    // the pair below runs on its one caller's task
+
+static void hold_server(void*) {
+    xSemaphoreGive(s_parked);
+    xSemaphoreTake(s_resume, portMAX_DELAY);
+}
+
 void HttpService::unregister_static_handler() {
+    if (!s_parked) s_parked = xSemaphoreCreateBinary();
+    if (!s_resume) s_resume = xSemaphoreCreateBinary();
+    s_held = s_parked && s_resume && httpd_queue_work(server_, hold_server, nullptr) == ESP_OK &&
+             xSemaphoreTake(s_parked, portMAX_DELAY) == pdTRUE;
+    if (!s_held) ESP_LOGW(TAG, "Server not held still: its routes change while it serves");
     httpd_unregister_uri_handler(server_, "/*", HTTP_GET);
     ESP_LOGI(TAG, "Static file handler removed (a late subsystem is registering routes)");
 }
@@ -2289,6 +2312,10 @@ void HttpService::register_static_handler() {
     static_handler.user_ctx       = this;
     static_handler.is_websocket   = false;
     esp_err_t err = httpd_register_uri_handler(server_, &static_handler);
+    if (s_held) {                  // player-fork: the routes are whole again; the server goes on
+        s_held = false;
+        xSemaphoreGive(s_resume);
+    }
     if (err != ESP_OK) {
         // Without the wildcard every page is a 404 while the API still answers. It went
         // unnoticed once (W4, 12.10.2026: the handler table was full when DLNA put it back).

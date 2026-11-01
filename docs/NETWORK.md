@@ -219,8 +219,11 @@ rejected as `already registered`. Hence the order:
 3. last — `/*`.
 
 A subsystem that registers later (the DLNA renderer once the network is up) removes the wildcard
-(`http_routes::wildcard(false)`) and puts it back. If `/*` did not fit in the handler table, no
-page opens, but the API answers; log `HTTP: Static file handler NOT registered`.
+(`http_routes::wildcard(false)`) and puts it back. In between, the server's task is held between two
+requests: httpd changes its handler table with no lock against its own lookups, so a request that
+comes meanwhile waits for the routes to be whole rather than getting a 404 or a half-built slot.
+If `/*` did not fit in the handler table, no page opens, but the API answers; log
+`HTTP: Static file handler NOT registered`.
 
 ### Authentication
 

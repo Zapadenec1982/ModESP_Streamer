@@ -554,3 +554,119 @@ int main() {
 """
     build_and_run(tmp_path, harness,
                   [ROOT / "components/jsmn", ROOT / "components/modesp_net/include"])
+
+
+def test_late_routes_wait_for_a_held_server(tmp_path):
+    source = (ROOT / "components/modesp_net/src/http_service.cpp").read_text(encoding="utf-8")
+    code = "\n".join(extract(source, signature) for signature in (
+        "static SemaphoreHandle_t s_parked",
+        "void HttpService::unregister_static_handler(",
+        "void HttpService::register_static_handler(",
+    ))
+    harness = r"""
+#include <chrono>
+#include <condition_variable>
+#include <cstring>
+#include <deque>
+#include <functional>
+#include <mutex>
+#include <string>
+#include <thread>
+#include <vector>
+using esp_err_t = int;
+constexpr int ESP_OK = 0;
+#define ESP_LOGI(...) ((void)0)
+#define ESP_LOGW(...) ((void)0)
+#define ESP_LOGE(...) ((void)0)
+const char* esp_err_to_name(esp_err_t) { return "error"; }
+// FreeRTOS binary semaphores
+struct Sem { std::mutex m; std::condition_variable cv; bool given = false; };
+using SemaphoreHandle_t = Sem*;
+constexpr int pdTRUE = 1;
+constexpr unsigned portMAX_DELAY = 0xffffffffu;
+SemaphoreHandle_t xSemaphoreCreateBinary() { return new Sem; }
+int xSemaphoreGive(SemaphoreHandle_t s) {
+  std::lock_guard<std::mutex> l(s->m); s->given = true; s->cv.notify_all(); return pdTRUE;
+}
+int xSemaphoreTake(SemaphoreHandle_t s, unsigned) {
+  std::unique_lock<std::mutex> l(s->m); s->cv.wait(l, [&] { return s->given; }); s->given = false;
+  return pdTRUE;
+}
+// httpd: one task runs queued work and requests in order, between requests, as httpd's does
+enum httpd_method_t { HTTP_GET = 1 };
+struct httpd_req_t {};
+struct httpd_uri_t {
+  const char* uri; httpd_method_t method; esp_err_t (*handler)(httpd_req_t*); void* user_ctx;
+  bool is_websocket;
+};
+using httpd_handle_t = void*;
+std::mutex q_mutex, table_mutex;
+std::condition_variable q_cv;
+std::deque<std::function<void()>> queue_;
+std::vector<std::string> table = {"/api/state", "/*"};
+std::vector<std::string> served;
+void post(std::function<void()> f) {
+  std::lock_guard<std::mutex> l(q_mutex); queue_.push_back(std::move(f)); q_cv.notify_all();
+}
+esp_err_t httpd_queue_work(httpd_handle_t, void (*fn)(void*), void* arg) {
+  post([=] { fn(arg); }); return ESP_OK;
+}
+esp_err_t httpd_unregister_uri_handler(httpd_handle_t, const char* uri, httpd_method_t) {
+  std::lock_guard<std::mutex> l(table_mutex);
+  for (auto it = table.begin(); it != table.end(); ++it) if (*it == uri) { table.erase(it); break; }
+  return ESP_OK;
+}
+esp_err_t httpd_register_uri_handler(httpd_handle_t, const httpd_uri_t* u) {
+  std::lock_guard<std::mutex> l(table_mutex); table.push_back(u->uri); return ESP_OK;
+}
+void page_request() {                      // a page: the server looks for the wildcard
+  post([] {
+    std::lock_guard<std::mutex> l(table_mutex);
+    bool found = false;
+    for (const auto& r : table) found = found || r == "/*";
+    served.push_back(found ? "200" : "404");
+  });
+}
+namespace modesp {
+struct HttpService {
+  httpd_handle_t server_ = nullptr;
+  static esp_err_t handle_static(httpd_req_t*) { return ESP_OK; }
+  void unregister_static_handler();
+  void register_static_handler();
+};
+""" + code + "\n}\n" + r"""
+int main() {
+  bool stop = false;
+  std::thread server([&] {
+    for (;;) {
+      std::function<void()> f;
+      {
+        std::unique_lock<std::mutex> l(q_mutex);
+        q_cv.wait(l, [] { return !queue_.empty(); });
+        f = std::move(queue_.front());
+        queue_.pop_front();
+      }
+      f();
+      if (stop) return;
+    }
+  });
+  modesp::HttpService http;
+  http.unregister_static_handler();           // the wildcard comes off: the server holds still
+  page_request();
+  std::this_thread::sleep_for(std::chrono::milliseconds(200));
+  bool waited;
+  { std::lock_guard<std::mutex> l(table_mutex); waited = served.empty(); }
+  httpd_uri_t late{"/rootDesc.xml", HTTP_GET, nullptr, nullptr, false};
+  httpd_register_uri_handler(nullptr, &late);
+  http.register_static_handler();              // back on: the server goes on, and finds it
+  for (int i = 0; i < 200; i++) {
+    { std::lock_guard<std::mutex> l(table_mutex); if (!served.empty()) break; }
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+  post([&] { stop = true; });
+  server.join();
+  if (!waited) return 1;                       // it was served while the wildcard was off
+  return served == std::vector<std::string>{"200"} ? 0 : 2;
+}
+"""
+    build_and_run(tmp_path, harness, [])

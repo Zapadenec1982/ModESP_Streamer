@@ -67,6 +67,9 @@ public:
 
     /// Take the wildcard off the server. Nothing else can register a GET path while it is
     /// on, because httpd's duplicate check runs through the same wildcard match function.
+    /// player-fork: it also holds the server's task still, between two requests, until
+    /// register_static_handler() puts the wildcard back — httpd changes its handler table with
+    /// no lock against its own lookups. So never from a route handler: it would wait for itself.
     void unregister_static_handler();
 
 private:
