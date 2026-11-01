@@ -59,6 +59,11 @@ public:
     /// player-fork: a saved network exists (the AP fallback may be up regardless).
     bool has_credentials() const { return ssid_[0] != '\0'; }
 
+    /// player-fork: the access point's password (NVS wifi/ap_pass) as start_ap() uses it. WPA2
+    /// takes 8..63 bytes, so `out` gets at most 63, and fewer than 8 mean an open access point.
+    /// Returns the length stored: more than 63 means `out` holds the first 63 of it.
+    static size_t read_ap_password(char (&out)[64]);
+
     // Scan
     static constexpr size_t MAX_SCAN_RESULTS = 20;
     struct ScanResult {

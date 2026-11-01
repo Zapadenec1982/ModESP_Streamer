@@ -847,9 +847,14 @@ esp_err_t HttpService::handle_post_wifi(httpd_req_t* req) {
         httpd_resp_sendstr(req, "{\"ok\":true,\"forget\":true}");
         return ESP_OK;
     }
+    // player-fork: what a wifi_config_t holds — an SSID of 32 bytes, a password of up to 64 (64
+    // is a raw hex PSK) — for a save as for a join. A save took any length: an SSID over 32 bytes
+    // then failed to load at boot, which brought the access point up, and a longer password read
+    // back empty.
+    const bool fits = ssid && ssid[0] && strlen(ssid) < sizeof(self->wifi_join_ssid_) &&
+                      (!pass || strlen(pass) < sizeof(self->wifi_join_pass_));
     if (self->wifi_ && join) {
-        if (!ssid || !ssid[0] || strlen(ssid) >= sizeof(self->wifi_join_ssid_) ||
-            (pass && strlen(pass) >= sizeof(self->wifi_join_pass_))) {
+        if (!fits) {
             httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "ssid 1..32, password up to 64");
             return ESP_FAIL;
         }
@@ -873,6 +878,10 @@ esp_err_t HttpService::handle_post_wifi(httpd_req_t* req) {
 
     if (!ssid || !self->wifi_) {
         httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Missing ssid");
+        return ESP_FAIL;
+    }
+    if (!fits) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "ssid 1..32, password up to 64");
         return ESP_FAIL;
     }
 
@@ -980,10 +989,11 @@ esp_err_t HttpService::handle_get_wifi_ap(httpd_req_t* req) {
     }
 
     // Перевірити чи є збережений пароль (не повертаємо сам пароль)
-    char ap_pass[65] = {};
-    if (nvs_helper::read_str("wifi", "ap_pass", ap_pass, sizeof(ap_pass))) {
-        has_password = (strlen(ap_pass) >= 8);
-    }
+    // player-fork: read as start_ap() reads it, so a password too long for the old 65 bytes is
+    // reported as set — the access point is WPA2 with it.
+    char ap_pass[64];
+    WiFiService::read_ap_password(ap_pass);
+    has_password = (strlen(ap_pass) >= 8);
 
     char buf[256];
     char escaped_ssid[net::json_escaped_capacity(sizeof(ap_ssid) - 1)];
@@ -1046,15 +1056,18 @@ esp_err_t HttpService::handle_post_wifi_ap(httpd_req_t* req) {
         else if (strcmp(key, "channel") == 0) channel = atoi(val);
     }
 
-    if (!ssid || strlen(ssid) == 0) {
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Missing or empty ssid");
+    // player-fork: an SSID the access point can carry (32 bytes), and a WPA2 passphrase of 8..63
+    // or none. A longer password was stored and answered ok, start_ap() could not read it back,
+    // and the access point came up open while its owner believed it was WPA2.
+    if (!ssid || strlen(ssid) == 0 || strlen(ssid) > 32) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "SSID must be 1-32 bytes");
         return ESP_FAIL;
     }
 
-    // Пароль: або порожній (open), або >= 8 символів (WPA2)
-    if (password && strlen(password) > 0 && strlen(password) < 8) {
+    // Пароль: або порожній (open), або 8..63 символи (WPA2)
+    if (password && strlen(password) > 0 && (strlen(password) < 8 || strlen(password) > 63)) {
         httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST,
-                            "Password must be empty (open) or at least 8 chars");
+                            "Password must be empty (open) or 8-63 characters");
         return ESP_FAIL;
     }
 

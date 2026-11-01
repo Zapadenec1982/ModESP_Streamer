@@ -107,7 +107,8 @@ DLNA-рендерер і браузер медіасерверів, прийма
 - Сумарно 10 хв без з'єднання — `esp_restart()`; година стабільного з'єднання скидає лічильник.
 
 **Точка доступу.** SSID `ModESP-XXXX` (два останні байти базової MAC) або `wifi/ap_ssid`; пароль
-`wifi/ap_pass` ≥ 8 символів → WPA2, інакше відкрита; канал `wifi/ap_chan` (1–13, типово 1); до
+`wifi/ap_pass` з 8–63 символів → WPA2 (довший збережений обрізається до перших 63, з ERROR
+у лозі), інакше відкрита; канал `wifi/ap_chan` (1–13, типово 1); до
 2 клієнтів; адреса 192.168.4.1. Зі збереженою мережею AP пробує STA (APSTA, 15 с на спробу): перша
 спроба через 30 с, далі інтервал подвоюється до 5 хв; спроба пропускається при вільній купі
 < 50 КБ. Вдала спроба переводить у чистий STA.
@@ -250,9 +251,9 @@ HTTP Basic, realm `ModESP`. NVS-простір `auth`: `user`, `pass`, `enabled`
 | `POST /api/settings` | `{ключ: значення,…}`: лише відомі writable-ключі з `generated/state_meta.h`, кожен зі значенням свого типу з маніфесту (рядок, число, `true`/`false`) — решта відхиляється, а запит отримує `400`, коли з нього не взято нічого; число поза діапазоном маніфесту обрізається з WARN у лозі; command-ключ (`"command": true`) іде в чергу модуля-власника, не в сховище. Тіло ≤ 511 Б, до 15 пар |
 | `GET /api/ui` | `ui.json` |
 | `GET /api/board`, `GET`/`POST /api/bindings`, `GET`/`POST /api/devices`, `GET /api/modules` | конфігурація плати й модулів ModESP |
-| `POST /api/wifi` | `{"ssid","password"}` — лише зберегти (діє після перезапуску); з `"join":true` — `try_connect()` (SSID 1–32 байти, пароль ≤ 64; `409 {"error":"busy"}` під час іншої спроби); `{"forget":true}` — забути мережу, точка доступу. Тіло ≤ 255 Б |
+| `POST /api/wifi` | `{"ssid","password"}`, SSID 1–32 байти, пароль ≤ 64 (інакше `400`) — лише зберегти (діє після перезапуску); з `"join":true` — `try_connect()` (`409 {"error":"busy"}` під час іншої спроби); `{"forget":true}` — забути мережу, точка доступу. Тіло ≤ 255 Б |
 | `GET /api/wifi/scan` | `{"ok","networks":[{"ssid","rssi","auth"}]}` |
-| `GET`/`POST /api/wifi/ap` | `{"ssid","channel","password_set"}` / `{"ssid","password","channel"}`: пароль порожній або ≥ 8; діє після перезапуску |
+| `GET`/`POST /api/wifi/ap` | `{"ssid","channel","password_set"}` / `{"ssid","password","channel"}`: SSID 1–32 байти, пароль порожній або 8–63; діє після перезапуску |
 | `GET`/`POST /api/time` | `{"time","date","ntp_enabled","timezone","synced","unix"}` / `{"mode":"ntp"\|"manual","time":<unix>,"timezone"}` |
 | `GET`/`POST /api/auth` | `{"enabled","username"}` / див. «Автентифікація» |
 | `GET`/`POST /api/loglevel` | рівні логів: `{"tag","level"}`, `level` — `none`, `error`, `warn` або `info`, не вище стелі збірки (INFO); не зберігається |

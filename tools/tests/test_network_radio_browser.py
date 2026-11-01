@@ -274,7 +274,7 @@ int main() {
 
 
 # The framework's HTTP handlers, compiled as they are against a stub server and a stub store.
-HTTP_STUBS = r"""
+HTTPD_STUBS = r"""
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -305,6 +305,9 @@ int httpd_resp_sendstr(httpd_req_t* req, const char* s) { req->resp = s; return 
 int httpd_resp_send(httpd_req_t* req, const char* s, long n) {
   req->resp.assign(s, n < 0 ? strlen(s) : (size_t)n); return ESP_OK;
 }
+"""
+
+SETTINGS_STUBS = r"""
 namespace etl { template <class T, class V> auto get_if(V* v) { return std::get_if<T>(v); } }
 namespace modesp {
 namespace gen {
@@ -361,7 +364,7 @@ def test_settings_take_a_value_of_the_keys_type_unescaped(tmp_path):
         "esp_err_t HttpService::handle_post_settings(",
         "esp_err_t HttpService::handle_get_backup(",
     ))
-    harness = HTTP_STUBS + handlers + "\n}\n" + r"""
+    harness = HTTPD_STUBS + SETTINGS_STUBS + handlers + "\n}\n" + r"""
 using namespace modesp;
 static httpd_req_t post(HttpService& svc, const char* body) {
   httpd_req_t req;
@@ -448,3 +451,106 @@ int main() {
 }
 """
     build_and_run(tmp_path, harness, [ROOT / "components/modesp_net/include"])
+
+
+WIFI_STUBS = r"""
+#include <atomic>
+#define ESP_LOGE(...) ((void)0)
+int httpd_resp_set_status(httpd_req_t* req, const char* status) { req->status = atoi(status); return ESP_OK; }
+namespace modesp {
+std::map<std::string, std::string> g_nvs;     // "namespace/key" -> value
+namespace nvs_helper {
+// as nvs_get_str: a value that does not fit max_len with its NUL fails and leaves `out` as it was
+bool read_str(const char* ns, const char* key, char* out, size_t max_len) {
+  auto it = g_nvs.find(std::string(ns) + "/" + key);
+  if (it == g_nvs.end() || it->second.size() + 1 > max_len) return false;
+  memcpy(out, it->second.c_str(), it->second.size() + 1);
+  return true;
+}
+bool write_str(const char* ns, const char* key, const char* value) {
+  g_nvs[std::string(ns) + "/" + key] = value; return true;
+}
+bool read_i32(const char*, const char*, int32_t&) { return false; }
+bool write_i32(const char*, const char*, int32_t) { return true; }
+}  // namespace nvs_helper
+inline const uint8_t* device_mac() { static const uint8_t mac[6] = {0, 1, 2, 3, 0xab, 0xcd}; return mac; }
+struct WiFiService {
+  static size_t read_ap_password(char (&out)[64]);
+  bool is_trying() const { return false; }
+  bool save_credentials(const char* ssid, const char* pass) {
+    return nvs_helper::write_str("wifi", "ssid", ssid) && nvs_helper::write_str("wifi", "pass", pass);
+  }
+};
+struct HttpService {
+  WiFiService* wifi_ = nullptr;
+  char wifi_join_ssid_[33] = {};
+  char wifi_join_pass_[65] = {};
+  std::atomic<bool> wifi_join_{false};
+  std::atomic<bool> wifi_forget_{false};
+  static bool check_auth(httpd_req_t*) { return true; }
+  static void set_cors_headers(httpd_req_t*) {}
+  static esp_err_t handle_post_wifi(httpd_req_t*);
+  static esp_err_t handle_get_wifi_ap(httpd_req_t*);
+  static esp_err_t handle_post_wifi_ap(httpd_req_t*);
+};
+"""
+
+
+def test_wifi_credentials_held_to_what_the_radio_takes(tmp_path):
+    http = (ROOT / "components/modesp_net/src/http_service.cpp").read_text(encoding="utf-8")
+    wifi = (ROOT / "components/modesp_net/src/wifi_service.cpp").read_text(encoding="utf-8")
+    handlers = "\n".join([extract(wifi, "size_t WiFiService::read_ap_password(")] + [
+        extract(http, signature) for signature in (
+            "esp_err_t HttpService::handle_post_wifi(",
+            "esp_err_t HttpService::handle_get_wifi_ap(",
+            "esp_err_t HttpService::handle_post_wifi_ap(",
+        )])
+    harness = HTTPD_STUBS + WIFI_STUBS + handlers + "\n}\n" + r"""
+using namespace modesp;
+static int call(esp_err_t (*handler)(httpd_req_t*), HttpService& svc, const std::string& body) {
+  httpd_req_t req;
+  req.user_ctx = &svc;
+  req.body = body;
+  handler(&req);
+  return req.status;
+}
+static std::string json_body(const std::string& ssid, const std::string& pass, const char* extra = "") {
+  return "{\"ssid\":\"" + ssid + "\",\"password\":\"" + pass + "\"" + extra + "}";
+}
+int main() {
+  WiFiService wifi;
+  HttpService svc;
+  svc.wifi_ = &wifi;
+  const std::string s32(32, 's'), s33(33, 's'), p63(63, 'p'), p64(64, 'a'), p65(65, 'a');
+  // the access point: an SSID of up to 32 bytes, a WPA2 passphrase of 8..63 or none
+  if (call(HttpService::handle_post_wifi_ap, svc, json_body("ap", p64)) != 400) return 1;
+  if (call(HttpService::handle_post_wifi_ap, svc, json_body(s33, "")) != 400) return 2;
+  if (call(HttpService::handle_post_wifi_ap, svc, json_body("ap", "short")) != 400) return 3;
+  if (g_nvs.count("wifi/ap_pass")) return 4;
+  if (call(HttpService::handle_post_wifi_ap, svc, json_body(s32, p63)) != 200 ||
+      g_nvs["wifi/ap_pass"] != p63) return 5;
+  // a network to save, as to join: an SSID of up to 32 bytes, a password of up to 64
+  if (call(HttpService::handle_post_wifi, svc, json_body(s33, "secret12")) != 400) return 6;
+  if (call(HttpService::handle_post_wifi, svc, json_body("net", p65)) != 400) return 7;
+  if (call(HttpService::handle_post_wifi, svc, json_body(s33, "secret12", ",\"join\":true")) != 400) return 8;
+  if (g_nvs.count("wifi/ssid")) return 9;
+  if (call(HttpService::handle_post_wifi, svc, json_body(s32, p64)) != 200 ||
+      g_nvs["wifi/ssid"] != s32 || g_nvs["wifi/pass"] != p64) return 10;
+  // a password stored longer than WPA2 takes is read, cut to 63, and reported as set
+  g_nvs["wifi/ap_pass"] = std::string(70, 'x');
+  char pass[64];
+  if (WiFiService::read_ap_password(pass) != 70 || std::string(pass) != std::string(63, 'x')) return 11;
+  httpd_req_t req;
+  req.user_ctx = &svc;
+  HttpService::handle_get_wifi_ap(&req);
+  if (req.resp.find("\"password_set\":true") == std::string::npos) return 12;
+  g_nvs["wifi/ap_pass"] = "";
+  req = httpd_req_t{};
+  req.user_ctx = &svc;
+  HttpService::handle_get_wifi_ap(&req);
+  if (req.resp.find("\"password_set\":false") == std::string::npos) return 13;
+  return 0;
+}
+"""
+    build_and_run(tmp_path, harness,
+                  [ROOT / "components/jsmn", ROOT / "components/modesp_net/include"])

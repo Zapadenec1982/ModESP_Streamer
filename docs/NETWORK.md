@@ -110,7 +110,8 @@ without it — access point.
   counter.
 
 **Access point.** SSID `ModESP-XXXX` (the last two bytes of the base MAC) or `wifi/ap_ssid`;
-password `wifi/ap_pass` ≥ 8 characters → WPA2, otherwise open; channel `wifi/ap_chan` (1–13,
+password `wifi/ap_pass` of 8–63 characters → WPA2 (a longer stored one is cut to its first 63,
+with an ERROR in the log), otherwise open; channel `wifi/ap_chan` (1–13,
 default 1); up to 2 clients; address 192.168.4.1. With a saved network, the AP tries STA (APSTA,
 15 s per attempt): the first attempt after 30 s, then the interval doubles up to 5 min; an attempt
 is skipped when free heap is < 50 KB. A successful attempt switches to pure STA.
@@ -256,9 +257,9 @@ Framework routes (`http_service.cpp`):
 | `POST /api/settings` | `{key: value,…}`: only known writable keys from `generated/state_meta.h`, each with a value of its manifest type (a string, a number, `true`/`false`) — anything else is refused, and the request gets `400` when nothing in it was taken; a number outside the manifest's range is clamped with a WARN in the log; a command key (`"command": true`) goes to the owning module's queue, not to the store. Body ≤ 511 B, up to 15 pairs |
 | `GET /api/ui` | `ui.json` |
 | `GET /api/board`, `GET`/`POST /api/bindings`, `GET`/`POST /api/devices`, `GET /api/modules` | ModESP board and module configuration |
-| `POST /api/wifi` | `{"ssid","password"}` — save only (takes effect after a restart); with `"join":true` — `try_connect()` (SSID 1–32 bytes, password ≤ 64; `409 {"error":"busy"}` during another attempt); `{"forget":true}` — forget the network, access point. Body ≤ 255 B |
+| `POST /api/wifi` | `{"ssid","password"}`, SSID 1–32 bytes, password ≤ 64 (otherwise `400`) — save only (takes effect after a restart); with `"join":true` — `try_connect()` (`409 {"error":"busy"}` during another attempt); `{"forget":true}` — forget the network, access point. Body ≤ 255 B |
 | `GET /api/wifi/scan` | `{"ok","networks":[{"ssid","rssi","auth"}]}` |
-| `GET`/`POST /api/wifi/ap` | `{"ssid","channel","password_set"}` / `{"ssid","password","channel"}`: password empty or ≥ 8; takes effect after a restart |
+| `GET`/`POST /api/wifi/ap` | `{"ssid","channel","password_set"}` / `{"ssid","password","channel"}`: SSID 1–32 bytes, password empty or 8–63; takes effect after a restart |
 | `GET`/`POST /api/time` | `{"time","date","ntp_enabled","timezone","synced","unix"}` / `{"mode":"ntp"\|"manual","time":<unix>,"timezone"}` |
 | `GET`/`POST /api/auth` | `{"enabled","username"}` / see "Authentication" |
 | `GET`/`POST /api/loglevel` | log levels: `{"tag","level"}`, `level` — `none`, `error`, `warn` or `info`, not above the build's ceiling (INFO); not persisted |

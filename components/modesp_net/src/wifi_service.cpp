@@ -649,7 +649,7 @@ bool WiFiService::start_ap() {
     char ap_ssid[33];
     snprintf(ap_ssid, sizeof(ap_ssid), "ModESP-%02X%02X", mac[4], mac[5]);
 
-    char ap_pass[65] = {};
+    char ap_pass[64];
     int32_t ap_channel = 1;
 
     // Читаємо кастомну конфігурацію AP з NVS (якщо є)
@@ -659,7 +659,11 @@ bool WiFiService::start_ap() {
         strncpy(ap_ssid, custom_ssid, sizeof(ap_ssid) - 1);
         ap_ssid[sizeof(ap_ssid) - 1] = '\0';
     }
-    nvs_helper::read_str("wifi", "ap_pass", ap_pass, sizeof(ap_pass));
+    const size_t stored_pass = read_ap_password(ap_pass);
+    if (stored_pass > strlen(ap_pass)) {
+        ESP_LOGE(TAG, "AP password is %u bytes and WPA2 takes 63: the AP uses its first 63 - "
+                      "set it again", (unsigned)stored_pass);
+    }
     nvs_helper::read_i32("wifi", "ap_chan", ap_channel);
     if (ap_channel < 1 || ap_channel > 13) ap_channel = 1;
 
@@ -714,6 +718,19 @@ bool WiFiService::start_ap() {
     // Запускаємо mDNS в AP mode (клієнти AP можуть використовувати .local)
     start_mdns();
     return true;
+}
+
+size_t WiFiService::read_ap_password(char (&out)[64]) {
+    // player-fork: with room for anything POST /api/wifi/ap could ever store (its body is 256
+    // bytes). Read into 65, a longer password did not read at all and was taken for none: the
+    // access point came up open while its owner believed it was WPA2. A stored password is
+    // never taken for none now; one longer than WPA2 takes is cut to it, and start_ap() says so.
+    char stored[256] = {};
+    out[0] = '\0';
+    if (!nvs_helper::read_str("wifi", "ap_pass", stored, sizeof(stored))) return 0;
+    strncpy(out, stored, sizeof(out) - 1);
+    out[sizeof(out) - 1] = '\0';
+    return strlen(stored);
 }
 
 // ── AP→STA Probe ─────────────────────────────────────────────────
