@@ -544,7 +544,9 @@ document), stations (`/api/stations`, generation, 409; `radio.list_rev`), Blueto
 (`/api/bt`; `bt.cfg_rev`), the DLNA browser (a snapshot with a revision).
 
 **401** opens the login (except for a background image request, `apiBlob(…, {ask: false})`); the
-credentials are Basic, in the tab's `sessionStorage`, encoded from UTF-8 (`lib/api.js`).
+credentials are Basic, in the tab's `sessionStorage`, encoded from UTF-8 (`lib/api.js`). While the
+panel's login is locked (`429` for 30 s after five wrong attempts), the login says so rather than
+"wrong username or password" and does not keep credentials the panel could not check.
 
 **Errors**: the snackbar states them in words, in the page's language (`toastError` in
 `stores/toast.js` → `humanError` in `lib/errors.js`; an `Error` from `lib/api.js` keeps the raw

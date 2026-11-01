@@ -44,6 +44,8 @@ function authHeaders() {
   return creds ? { 'Authorization': `Basic ${creds}` } : {};
 }
 
+/** A refused GET's Error carries the HTTP status: the login tells the panel's lockout (429) from
+ *  a wrong password by it. */
 export async function apiGet(url) {
   const r = await fetch(BASE + url, { headers: authHeaders() });
   if (r.status === 401) {
@@ -52,7 +54,7 @@ export async function apiGet(url) {
   }
   if (!r.ok) {
     const text = await r.text().catch(() => '');
-    throw new Error(text || `GET ${url}: ${r.status}`);
+    throw Object.assign(new Error(text || `GET ${url}: ${r.status}`), { status: r.status });
   }
   return r.json();
 }

@@ -53,6 +53,37 @@ console.log('WebUI GET/POST auth and expired credentials passed');
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def test_a_lockout_is_told_from_a_wrong_password():
+    """Five wrong logins lock the panel's login for 30 s and every request gets 429 (NETWORK.md,
+    "Authentication"). The sign-in read any failure as "wrong username or password"; the Error now
+    carries the status, so it can say the panel is locked instead."""
+    node = shutil.which("node")
+    assert node, "Node.js is required for the WebUI API regression"
+    api = (Path(__file__).resolve().parents[2] / "webui/src/lib/api.js").read_text(encoding="utf-8")
+    api = api.replace(
+        "import { writable } from 'svelte/store';",
+        "const writable = value => ({ value, set(next) { this.value = next; } });",
+    )
+    script = (
+        api
+        + """
+globalThis.sessionStorage = { getItem: () => undefined, setItem: () => {}, removeItem: () => {} };
+globalThis.fetch = async () => ({ ok: false, status: 429,
+                                  text: async () => 'Too many failed attempts. Try again later.' });
+function check(value, message) { if (!value) throw Error(message); }
+let err = null;
+try { await apiGet('/api/state'); } catch (e) { err = e; }
+check(err, 'a 429 was taken');
+check(err.status === 429, `status: ${err.status}`);
+check(err.message === 'Too many failed attempts. Try again later.', `the panel's text: ${err.message}`);
+check(needsLogin.value === false, 'a lockout is not a request to sign in');
+console.log('WebUI lockout passed');
+"""
+    )
+    result = subprocess.run([node, "--input-type=module", "-e", script], capture_output=True, text=True)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_credentials_are_base64_of_utf8():
     """A Cyrillic password: the panel stores it as UTF-8, so Basic auth must carry those bytes.
     btoa() on the UTF-16 string threw, and the browser could never sign in with it again."""

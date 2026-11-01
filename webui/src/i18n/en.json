@@ -163,6 +163,7 @@
   "auth.pass": "Password",
   "auth.login": "Sign in",
   "auth.error": "Wrong username or password",
+  "auth.locked": "Too many failed attempts — try again in half a minute",
   "btn.action": "Run",
   "btn.save": "Save",
   "btn.error": "Error",

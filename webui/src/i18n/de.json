@@ -163,6 +163,7 @@
   "auth.pass": "Passwort",
   "auth.login": "Anmelden",
   "auth.error": "Benutzer oder Passwort falsch",
+  "auth.locked": "Zu viele Fehlversuche — in einer halben Minute noch einmal versuchen",
   "btn.action": "Ausführen",
   "btn.save": "Speichern",
   "btn.error": "Fehler",
