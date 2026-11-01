@@ -1230,6 +1230,17 @@ esp_err_t HttpService::handle_get_backup(httpd_req_t* req) {
     return ESP_OK;
 }
 
+// player-fork: how many tokens one value occupies, everything nested inside it included. jsmn
+// lays them out depth-first: each token takes the place of one child still owed and owes its own
+// in turn, and the value ends when nothing is owed. A loop, as span() in
+// components/radio_catalog/src/json_util.h, not recursion: the depth is the body's to choose.
+static int json_span(const jsmntok_t* tok, int count, int i) {
+    if (i >= count) return 1;
+    int j = i + 1;
+    for (int pending = tok[i].size; pending > 0 && j < count; ++j) pending += tok[j].size - 1;
+    return j - i;
+}
+
 esp_err_t HttpService::handle_post_restore(httpd_req_t* req) {
     if (!check_auth(req)) return ESP_OK;
     auto* self = static_cast<HttpService*>(req->user_ctx);
@@ -1253,18 +1264,19 @@ esp_err_t HttpService::handle_post_restore(httpd_req_t* req) {
     }
 
     // Знаходимо "keys" об'єкт
+    // player-fork: stepping over each value whole (json_span). A skip of size * 2 tokens fitted
+    // only an object of plain values: past an array of three it went six tokens on, and "keys"
+    // after it was never found. A key's value is its one child: a key jsmn let close with no
+    // value, as in {"a":}, owns no token after it.
     int keys_tok = -1;
-    for (int i = 1; i + 1 < r; i += 2) {
-        if (tokens[i].type != JSMN_STRING) continue;
+    for (int i = 1, next = 1; i < r; i = next) {
+        const bool has_value = tokens[i].size == 1 && i + 1 < r;
+        next = has_value ? i + 1 + json_span(tokens, r, i + 1) : i + 1;
+        if (!has_value || tokens[i].type != JSMN_STRING) continue;
         int klen = tokens[i].end - tokens[i].start;
         if (klen == 4 && strncmp(buf + tokens[i].start, "keys", 4) == 0) {
             keys_tok = i + 1;
             break;
-        }
-        // Пропускаємо значення (може бути вкладений об'єкт)
-        if (tokens[i + 1].type == JSMN_OBJECT || tokens[i + 1].type == JSMN_ARRAY) {
-            int skip = tokens[i + 1].size * 2;
-            i += skip;
         }
     }
 
@@ -1278,9 +1290,20 @@ esp_err_t HttpService::handle_post_restore(httpd_req_t* req) {
     int key_count = tokens[keys_tok].size;
 
     // Ітеруємо пари ключ:значення всередині "keys"
+    // player-fork: each value stepped over whole, as above. Two tokens per key fitted only plain
+    // values: past an object or an array the walk read keys out of it (a backup with
+    // "x":["audio.volume",5] restored the volume to 5) and never reached the keys after it. Such a
+    // value is skipped with its key (value_fits() takes no object or array); a key with no value
+    // is skipped alone.
     int j = keys_tok + 1;
-    for (int k = 0; k < key_count && j + 1 < r; k++, j += 2) {
+    for (int k = 0, next = j; k < key_count && j < r; k++, j = next) {
+        const bool has_value = tokens[j].size == 1 && j + 1 < r;
+        next = has_value ? j + 1 + json_span(tokens, r, j + 1) : j + 1;
         if (tokens[j].type != JSMN_STRING) continue;
+        if (!has_value) {
+            skipped++;
+            continue;
+        }
 
         buf[tokens[j].end] = '\0';
         buf[tokens[j + 1].end] = '\0';

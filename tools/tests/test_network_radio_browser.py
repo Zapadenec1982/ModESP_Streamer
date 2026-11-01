@@ -425,6 +425,7 @@ def test_restore_takes_a_value_of_the_keys_type(tmp_path):
     source = (ROOT / "components/modesp_net/src/http_service.cpp").read_text(encoding="utf-8")
     handlers = "\n".join(extract(source, signature) for signature in (
         "static bool value_fits(",
+        "static int json_span(",
         "esp_err_t HttpService::handle_post_restore(",
     ))
     harness = HTTPD_STUBS + SETTINGS_STUBS + r"""
@@ -460,6 +461,19 @@ int main() {
   if (r.status != 200 || r.resp != R"({"ok":true,"restored":2,"skipped":1})") return 3;
   if (std::get<int32_t>(*st.get("audio.volume")) != 30 || std::get<int32_t>(*st.get("ui.backlight")) != 80 ||
       !std::get<bool>(*st.get("audio.mute")) || ps.flushes != 2) return 4;
+  // an object or an array is stepped over whole: no key is read out of it, the keys after it are
+  r = restore(svc, R"({"modesp_backup":1,"keys":{"x":["audio.volume",5],"ui.backlight":{"audio.mute":false},)"
+                   R"("audio.mute":true,"audio.volume":40}})");
+  if (r.status != 200 || r.resp != R"({"ok":true,"restored":2,"skipped":2})") return 5;
+  if (std::get<int32_t>(*st.get("audio.volume")) != 40 || !std::get<bool>(*st.get("audio.mute")) ||
+      std::get<int32_t>(*st.get("ui.backlight")) != 80) return 6;
+  // and so is one before "keys", which is still found after it
+  r = restore(svc, R"({"notes":[1,2,3],"modesp_backup":1,"keys":{"audio.volume":45}})");
+  if (r.status != 200 || std::get<int32_t>(*st.get("audio.volume")) != 45) return 7;
+  // a key that jsmn let close with no value owns no token after it
+  r = restore(svc, R"({"modesp_backup":1,"keys":{"audio.mute":,"audio.volume":50}})");
+  if (r.resp != R"({"ok":true,"restored":1,"skipped":1})" || std::get<int32_t>(*st.get("audio.volume")) != 50)
+    return 8;
   return 0;
 }
 """
