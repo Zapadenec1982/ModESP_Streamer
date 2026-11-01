@@ -177,7 +177,8 @@ BT-супутник ── I2S, GPIO31 ──► BT-кільце ─────
 ### microSD
 
 Слот SDMMC 0, 4 біти, 20 МГц: CLK 43, CMD 44, D0–D3 39–42, без card-detect. Піни — типові IOMUX
-слота 0 (`soc/sdmmc_pins.h`), і публічний проєкт buccaneer-jak для JC4880P443C монтує картку на цій
+слота 0 (`soc/sdmmc_pins.h`), і публічний проєкт
+buccaneer-jak/JC4880P443C-P4-to-C6-RS232-communication-and-SD-Card-connection монтує картку на цій
 самій панелі через `SD_MMC.begin()` без `setPins()`, тобто на цих типових пінах, у 4 бітах (§8б). 4 біти,
 а не 1: в 1-бітному режимі D3 лишається неналаштованим, а D3 ще й тримає SD-картку в режимі SD, тож
 якщо D3 ніхто не тримає, картка не відповідає ніколи. IO слота живиться від LDO P4, канал 4, 3,3 В. На P4 один
@@ -415,7 +416,7 @@ PSRAM:
 | Проєкт | Що взято | Де в дереві |
 |---|---|---|
 | csvke/esp32_p4_jc4880p433c_bsp (Apache-2.0) | константи DSI і таблиця ініціалізації ST7701S цієї панелі | `drivers/dsi_st7701` |
-| buccaneer-jak, проєкт JC4880P443C | піни microSD (типові для слота 0) і ширина 4 біти, §3а | `board.json`, `sd_0` |
+| buccaneer-jak/JC4880P443C-P4-to-C6-RS232-communication-and-SD-Card-connection | піни microSD (типові для слота 0) і ширина 4 біти, §3а | `board.json`, `sd_0` |
 | `esp_hosted`, приклад `examples/ota/coprocessor_ota/mcu_host` | оновлення C6 з P4 по SDIO | `tools/c6_updater` |
 | TinyUSB `examples/device/uac2_speaker_fb`; `espressif/usb_device_uac` — TinyUSB без `esp_tinyusb` | UAC2 з feedback-endpoint | `components/usb_uac` |
 | ESP-ADF, приклад DLNA (`release/v2.x`) | три сервіси DLNA-рендерера | `components/esp_dlna` (README) |
