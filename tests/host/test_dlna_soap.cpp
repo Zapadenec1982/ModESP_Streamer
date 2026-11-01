@@ -49,6 +49,15 @@ int httpd_resp_send(httpd_req_t *r, const char *s, int n) {
     r->response.assign(s, n < 0 ? strlen(s) : n);
     return 0;
 }
+// The server's body reader (modesp/net/http_routes.h), a seam like the rest.
+namespace modesp::http_routes {
+bool read_body(httpd_req_t *r, char *out, bool) {
+    if (httpd_req_recv(r, out, r->content_len) != (int)r->content_len)
+        return false;
+    out[r->content_len] = 0;
+    return true;
+}
+} // namespace modesp::http_routes
 constexpr const char *TS_STOPPED = "STOPPED", *TS_PLAYING = "PLAYING",
                      *TS_PAUSED = "PAUSED_PLAYBACK";
 struct FakeState {

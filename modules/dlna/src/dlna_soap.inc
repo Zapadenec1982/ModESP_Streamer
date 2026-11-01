@@ -35,14 +35,9 @@ esp_err_t avt_soap(httpd_req_t *req) {
         return soap_fault(req, 501, "Out of memory");
     if (req->content_len <= 0 || req->content_len >= INPUT)
         return soap_fault(req, 402, "Invalid Args");
-    size_t n = 0;
-    while (n < req->content_len) {
-        int got = httpd_req_recv(req, b.in + n, req->content_len - n);
-        if (got <= 0)
-            return soap_fault(req, 402, "Incomplete request");
-        n += got;
-    }
-    b.in[n] = 0;
+    if (!modesp::http_routes::read_body(req, b.in, false))
+        return soap_fault(req, 402, "Incomplete request");
+    const size_t n = req->content_len;
     char header[160]{};
     if (httpd_req_get_hdr_value_str(req, "SOAPAction", header, sizeof(header)) != ESP_OK)
         return soap_fault(req, 401, "Invalid Action");

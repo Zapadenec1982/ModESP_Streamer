@@ -45,15 +45,8 @@ esp_err_t bt_post(httpd_req_t* req) {
     if (req->content_len <= 0 || (size_t)req->content_len >= sizeof(body)) {
         return bt_send(req, "413 Content Too Large", "{\"error\":\"size\"}");
     }
-    size_t got = 0;
-    int timeouts = 0;
-    while (got < (size_t)req->content_len) {
-        const int r = httpd_req_recv(req, body + got, req->content_len - got);
-        if (r == HTTPD_SOCK_ERR_TIMEOUT && ++timeouts < 3) continue;
-        if (r <= 0) return ESP_FAIL;
-        got += (size_t)r;
-    }
-    body[got] = '\0';
+    if (!modesp::http_routes::read_body(req, body)) return ESP_FAIL;
+    const size_t got = req->content_len;
 
     static bt_web::Edit e;
     if (!bt_web::parse(body, got, e)) return bt_send(req, "400 Bad Request", "{\"error\":\"bad_request\"}");
