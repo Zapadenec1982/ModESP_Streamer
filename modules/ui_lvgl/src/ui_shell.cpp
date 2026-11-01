@@ -6,7 +6,7 @@
  * The structure agreed on 24.09.2026: the Player is the
  * home and owns the screen; nothing permanent stands beside a 48 px header. There is ONE
  * menu, the drawer — opened by ≡, by a press on the left edge or by holding the encoder —
- * with the three sections: Плеєр · Джерело · Налаштування (DSP left it in S1:
+ * with the three sections: Плеєр · Джерело · Налаштування (DSP is not one of them:
  * the equalizer is a list under Налаштування › Звук, for
  * those who want it, and the daily sound goes to the Player). Nothing else is in it: the rail
  * the design package drew was dropped (88 px off every page for something wanted a few times
@@ -14,8 +14,8 @@
  * timer, and switching the output off is not a touch interface's job. Lists (stations, DLNA,
  * the service readout) are reached from a page and their ← goes back to it.
  *
- * Pages are built once and shown/hidden, as before. In U1 the pages are still the old
- * screens; U2–U5 replace them one by one and the shell does not change for it.
+ * Pages are built once and shown/hidden, and a page can be redrawn without the shell changing
+ * for it.
  *
  * Volume is a moment, not a readout: a turn of the encoder brings up a slider for two
  * seconds, and the Player's loudspeaker button does the same.

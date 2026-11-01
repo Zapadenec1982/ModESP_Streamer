@@ -1,8 +1,8 @@
 /**
  * @file screen_eq.cpp
  * @brief The equalizer — the sounds' field, the response curve with draggable band handles and
- *        the band panel (S7: the limiter's meter is Service's).
- *        The sounds were chips from S7; since 15.10.2026 (the customer) they are a field that
+ *        the band panel (the limiter's meter is Service's).
+ *        The sounds were chips at first; since 15.10.2026 (the customer) they are a field that
  *        opens their list, as on the «Звук» sheet (sound_sheet.cpp ui_sound_pick_show).
  *
  * The curve is computed with audio_core::eq_magnitude_db(), the same function the audio core

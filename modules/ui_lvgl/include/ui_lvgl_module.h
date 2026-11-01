@@ -211,7 +211,7 @@ public:
         WIFI_FORGET,  ///< forget the stored network: the access point comes up
         STANDBY_BL,   ///< value = 5..100: the standby face's backlight while music plays
         LANG,         ///< value = ui.lang: 0 Українська, 1 English, 2 Deutsch, 3 Polski
-        BASS,         ///< value = audio.bass_db, −6…+6 (the «Звук» sheet, S3)
+        BASS,         ///< value = audio.bass_db, −6…+6 (the «Звук» sheet)
         TREBLE,       ///< value = audio.treble_db, −6…+6
         LOUDNESS,     ///< value = audio.loudness, 0…100 (0 = off); −1 = on at audio.loud_back
         BALANCE,      ///< value = audio.balance_db10, −60…+60 in steps of 5 (Колонки)

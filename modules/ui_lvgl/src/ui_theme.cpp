@@ -6,7 +6,7 @@
  * palettes in step by hand, this maps each old token onto the M3 role it now means
  * (ui_m3.h), so switching the scheme in Settings — or, later, from the cover — recolours the
  * old screens and the new ones from the same table. The mapping is the transition; when the
- * last old screen goes (plan U6), so does this file.
+ * last old screen goes, so does this file.
  *
  * Depth is gone on purpose: glow and card shadows are LV_OPA_TRANSP. Material's depth is
  * tonal — a raised thing is a lighter surface, not a lit one.

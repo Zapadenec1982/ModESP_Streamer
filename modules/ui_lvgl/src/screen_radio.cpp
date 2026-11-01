@@ -15,7 +15,7 @@
  *
  * Tuning is choosing to listen, so it lands on the Player.
  *
- * The page is the Улюблені tab of the stations (stage 20б): the tab row above it leads to the
+ * The page is the Улюблені tab of the stations: the tab row above it leads to the
  * catalog's Топ · Країни · Жанри · Пошук (screen_catalog.cpp). A station from the catalog that is
  * playing goes into an empty preset the same way, through the catalog's asks.
  */

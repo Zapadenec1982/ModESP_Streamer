@@ -2,7 +2,7 @@
  * @file ui_frame_meter.cpp
  * @brief GET /api/ui/frames — how long the glass takes to draw a frame of what it shows.
  *
- * S5: the Player's frame with the spectrum must cost no more
+ * What it checks: the Player's frame with the spectrum must cost no more
  * with the cover's gradient behind it than without. Nothing here is scripted, unlike the scroll
  * bench (ui_scroll_bench.cpp, development panels only): the meter times the frames the screen
  * draws by itself, for `ms` (1–20 s, 5 s if not said), and changes nothing that persists.

@@ -81,7 +81,7 @@ lv_obj_t* pill(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, const char* tx
 
 lv_obj_t* glow(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, int32_t h, int32_t radius) {
     // Material has no glow. The helper stays for the screens that still place one, and
-    // draws nothing; it leaves with them (plan U6).
+    // draws nothing; it leaves with them.
     lv_obj_t* o = box(parent, x, y, w, h);
     lv_obj_set_style_radius(o, radius, 0);
     return o;

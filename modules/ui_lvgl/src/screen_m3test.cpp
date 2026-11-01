@@ -2,10 +2,10 @@
  * @file screen_m3test.cpp
  * @brief "M3" — every component of ui_m3_widgets.h on one page, for the bench.
  *
- * Plan U0's definition of done: a screenshot of this page against the design package,
- * component by component, before any real screen is drawn with them. It is a development
- * page — CONFIG_UI_M3_TEST_SCREEN puts it in the menu in place of the service screen, and
- * a shipping build never has it. The rail and the header around it are the shell's own.
+ * What it is for: a screenshot of this page, held against the design package component by
+ * component. It is a development page — CONFIG_UI_M3_TEST_SCREEN puts it in the menu in place
+ * of the service screen, and a shipping build never has it. The rail and the header around it
+ * are the shell's own.
  *
  * Nothing here is wired to state. The slider moves when dragged and the chips toggle when
  * tapped, because a component that cannot be touched cannot be judged as a touch target.

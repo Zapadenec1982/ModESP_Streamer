@@ -10,10 +10,8 @@
  * comes from it too. `error` is not in the design
  * table — the mock never draws a fault — and is Material's standard dark error tone.
  *
- * TYPE IS PROVISIONAL. Until tools/fonts/build_fonts.py produces the Roboto and Material
- * Symbols faces (plan U0, second half), every role points at the nearest Montserrat / Tabler
- * face that exists today, and the filled icon variants are the outlined ones. The roles are
- * final; only the table behind them changes when the fonts land.
+ * The type roles point at the Roboto and Material Symbols faces that tools/fonts/build_fonts.py
+ * produces (fonts/ui_fonts.h).
  */
 
 #include "ui_m3.h"

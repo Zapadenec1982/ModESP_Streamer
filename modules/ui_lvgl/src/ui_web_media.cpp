@@ -10,7 +10,7 @@
  *   - the cover is the tile screen_now.cpp draws, chosen by the same cover_now() and named by
  *     ui.cover. The tile is all this firmware keeps of a picture, so that is what is sent —
  *     scaled to a thumbnail, as a BMP like GET /api/screenshot. Keeping each source's original
- *     JPEG as well (the plan's first idea) would hold up to five more pictures in PSRAM for a
+ *     JPEG as well would hold up to five more pictures in PSRAM for a
  *     56-pixel square.
  *
  * Bodies live in PSRAM for the length of a call, never on the 8 KB httpd stack: the internal

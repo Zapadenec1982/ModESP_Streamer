@@ -36,7 +36,7 @@ constexpr int32_t CONT_X   = PAD;                      // 24
 constexpr int32_t CONT_Y   = HEAD_Y + HEAD_H + 10;     // 74 — content top
 constexpr int32_t CONT_W   = SCR_W - 2 * PAD;          // 752
 constexpr int32_t CONT_H   = SCR_H - CONT_Y - 22;      // 384
-/// The modal navigation drawer: 340 since S1 (14.10.2026) — «Налаштування» in the rows' headline
+/// The modal navigation drawer: 340 — «Налаштування» in the rows' headline
 /// face is 223 px, and at 300 a row left it 212 (tools/i18n/font_metrics.py).
 constexpr int32_t DRAWER_W = 340;
 constexpr int32_t EDGE_W   = 18;    ///< invisible left-edge strip that opens the drawer
@@ -190,7 +190,7 @@ void set_text(lv_obj_t* lbl, char* cache, size_t cache_sz, const char* txt);
 // Once that list overflows LVGL gives up on areas and repaints the WHOLE 800x480 screen, 25
 // times a second, on core 1 — the same core the audio task and the Bluetooth resampler sit
 // on. That is why the row visibly stalls in Bluetooth and not on the card, where the decoder
-// is pinned to core 0 (diagnosis of 21.09.2026, plan item 13.5).
+// is pinned to core 0.
 //
 // Drawn as one object it is one invalidation of 560x218 instead of a full screen: a third of
 // the pixels, none of the object-tree walking, and the same picture. It helps in every mode.

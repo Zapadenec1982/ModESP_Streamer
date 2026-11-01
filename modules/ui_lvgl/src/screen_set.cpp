@@ -1,15 +1,14 @@
 /**
  * @file screen_set.cpp
- * @brief «Налаштування» (until S1 «Система») — the few things set once, the state of the links,
+ * @brief «Налаштування» — the few things set once, the state of the links,
  *        and the ways into the equalizer, the screen and the service readout.
  *
- * Four groups, each a card of rows (plan §2, U5; Зв'язок and Служби split 25.09.2026; Звук and the
- * screen's own page from S1, 14.10.2026):
+ * Four groups, each a card of rows:
  *
  *   Звук      Тембр → its page (the sounds, Бас, Високі, the loudness and the equalizer:
- *             sound_sheet.cpp; the equalizer itself until S3), what plays on its second line;
+ *             sound_sheet.cpp), what plays on its second line;
  *             Колонки → its page (screen_speakers.cpp: the state and the balance), what has been
- *             done about them on its second line; Кросовер → its page (screen_xover.cpp, S8), the
+ *             done about them on its second line; Кросовер → its page (screen_xover.cpp), the
  *             scheme that plays on its second line — the web's order
  *   Зв'язок   Wi-Fi (network · address) and Bluetooth (phone · codec), each → its page
  *   Пристрій  Екран → its page (brightness, standby, scheme: screen_display.cpp); Мова → a dialog
@@ -232,7 +231,7 @@ lv_obj_t* build(lv_obj_t* parent, UiCtx& c) {
     const esp_app_desc_t* app = esp_app_get_description();
     char buf[96];
     // "0.1.0 · IDF 5.5.5 · C6 3.0.7": the long form ("IDF v5.5.5 · C6 esp_hosted 3.0.7") was
-    // cut in every language, Ukrainian too (U8.7, 276 px in a 250 px row).
+    // cut in every language, Ukrainian too (276 px in a 250 px row).
     const char* idf = app->idf_ver[0] == 'v' ? app->idf_ver + 1 : app->idf_ver;
     snprintf(buf, sizeof(buf), "%s · IDF %s · C6 3.0.7", app->version, idf);
     lv_label_set_text(g.sub[R_SVC], buf);

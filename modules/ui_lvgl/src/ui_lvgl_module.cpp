@@ -892,7 +892,7 @@ void UiLvglModule::mirror_diag() {
     // not the generator, not a host test, not the compiler. read_int is
     // etl::get_if<int32_t>, which on a variant holding a float hands back the default
     // silently and for ever. That is exactly how the CPU figure came to read zero on every
-    // build that ever shipped (plan item 12.4), and the keys that mismatch there at least had
+    // build that ever shipped, and the keys that mismatch there at least had
     // a manifest saying `float`. These have nothing. read_number takes either.
     const int32_t loop_max_ms   = read_number("system.main_loop_max_ms", 0);
     const int32_t stack_min     = read_number("system.main_stack_min", 0);

@@ -7,8 +7,7 @@
  * mock also carries was declined.
  *
  * A screen never spells a colour or a font: it names a ROLE here. That is what makes the
- * scheme switch in Settings — and, in U6, a scheme derived from the cover — a table lookup
- * rather than a hunt through the screens. ui_theme.h still exists for the screens that have
+ * scheme switch in Settings a table lookup rather than a hunt through the screens. ui_theme.h still exists for the screens that have
  * not been redrawn yet; it is filled FROM these roles (ui_theme.cpp), so the whole panel
  * takes the new colours at once and the old struct disappears with the last old screen.
  */

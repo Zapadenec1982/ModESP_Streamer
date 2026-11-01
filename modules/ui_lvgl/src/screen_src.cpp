@@ -5,7 +5,7 @@
  * One grid, the most listened to first (customer, 18.10.2026): Bluetooth, AirPlay and the radio
  * on the top row, the card, the media servers and USB under them. Each card only when its bit
  * is in audio.sources — bindings decide what exists, and a card for hardware that is not wired
- * is worse than a shorter page (plan §1.4). Off, the tone generator and AUX have no card: the
+ * is worse than a shorter page. Off, the tone generator and AUX have no card: the
  * first two are not something anyone listens to, AUX left the hardware (15.10.2026), and all
  * three stay reachable through the API.
  *
@@ -18,7 +18,7 @@
  * that plays.
  *
  * The presets are not here: a preset chooses a station, not a source — they are on the
- * Stations page (plan decision 7.11).
+ * Stations page.
  */
 
 #include "ui_common.h"

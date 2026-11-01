@@ -173,7 +173,7 @@ void toast_hide() {
 // Station names come in every script there is; the panel's faces carry Latin-1, Ukrainian
 // Cyrillic and some punctuation (tools/fonts/build_fonts.py). A letter with a diacritic the
 // face lacks becomes its base letter — "Złote" reads "Zlote" — and anything else is left
-// out. A name with nothing readable left is replaced by the stream's host (PLAN §6, fonts).
+// out. A name with nothing readable left is replaced by the stream's host.
 
 /// U+0100..U+017F to their base letters.
 constexpr char LATIN_EXT_A[] =
