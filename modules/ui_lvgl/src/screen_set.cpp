@@ -182,12 +182,11 @@ void opens(lv_obj_t* r, RowId id, lv_event_cb_t cb) {
     sub_width(id, 40);
 }
 
-/// A row that is a switch; returns the switch. `whole_row`: a tap anywhere on the row toggles it;
-/// otherwise the switch takes its own 84×64 and the row is the caller's.
-lv_obj_t* toggle(lv_obj_t* r, RowId id, lv_event_cb_t cb, bool whole_row = true) {
+/// A switch at a row's end; returns it. Only the switch, its own 84×64, toggles: the row is the
+/// caller's, or nothing.
+lv_obj_t* toggle(lv_obj_t* r, RowId id, lv_event_cb_t cb) {
     lv_obj_t* sw = m3w::switch_m3(r, RW - 52 - 14, (RH - 32) / 2, false);
     lv_obj_add_event_cb(sw, cb, LV_EVENT_VALUE_CHANGED, nullptr);
-    if (whole_row) m3w::switch_row(r, sw);
     sub_width(id, 70);
     return sw;
 }
@@ -250,7 +249,7 @@ lv_obj_t* build(lv_obj_t* parent, UiCtx& c) {
     // ── Служби ──
     lv_obj_t* svcs = group(root, COL2_X, Y2, tr(S::sys_services), 2);
     r = row(svcs, 0, R_AIRPLAY, UI_SYM_AIRPLAY, tr(S::src_airplay));
-    g.ap_sw = toggle(r, R_AIRPLAY, ap_cb, false);
+    g.ap_sw = toggle(r, R_AIRPLAY, ap_cb);
     lv_obj_add_flag(r, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(r, ap_mode_cb, LV_EVENT_CLICKED, nullptr);
     r = row(svcs, 1, R_DLNA, UI_SYM_CAST, tr(S::src_dlna));

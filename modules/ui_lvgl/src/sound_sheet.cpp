@@ -356,7 +356,6 @@ void build_controls(Controls& c, lv_obj_t* parent, int32_t x, int32_t y, int32_t
     lv_obj_t* lt = m3w::text(c.loud_row, t.t.body_l, t.c.on_surface, tr(S::eq_loudness));
     lv_obj_align(lt, LV_ALIGN_LEFT_MID, 0, 0);
     c.loud_sw = m3w::switch_m3(c.loud_row, w - 52, (ROW_H - 32) / 2, false);
-    m3w::switch_row(c.loud_row, c.loud_sw);
     lv_obj_add_event_cb(c.loud_sw, loud_cb, LV_EVENT_VALUE_CHANGED, &c);
     rule(c.body, w);
 
@@ -384,7 +383,6 @@ void sched_build(Controls& c) {
     lv_obj_t* st = m3w::text(r, t.t.body_l, t.c.on_surface, tr(S::sound_lev_sched));
     lv_obj_align(st, LV_ALIGN_LEFT_MID, 0, 0);
     c.sched_sw = m3w::switch_m3(r, w - 52, (ROW_H - 32) / 2, false);
-    m3w::switch_row(r, c.sched_sw);
     lv_obj_add_event_cb(c.sched_sw, sched_cb, LV_EVENT_VALUE_CHANGED, &c);
     const S names[2] = {S::sound_lev_from, S::sound_lev_to};
     for (int k = 0; k < 2; k++) {

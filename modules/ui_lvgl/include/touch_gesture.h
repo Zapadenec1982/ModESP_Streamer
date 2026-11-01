@@ -18,7 +18,7 @@
  *     the slider takes it once it has gone SLOP px along (lib/gesture.js);
  *   - an EQ point: only the point takes a finger. A tap picks its band; the point moves once
  *     held HOLD_MS or once the finger went SLOP px from where it landed;
- *   - a switch, and a row that is one: only a tap toggles it. A finger that went SLOP px from
+ *   - a switch: only a tap on the switch itself toggles it, never one on its row. A finger that went SLOP px from
  *     where it landed, at any moment of the press, was scrolling or missed, and changes nothing
  *     when it lifts — LVGL toggles on any release over the switch, a page that does not scroll
  *     included;

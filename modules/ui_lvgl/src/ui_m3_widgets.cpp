@@ -219,7 +219,7 @@ int32_t chip_width(const Chip& c) {
 
 // ── switch ─────────────────────────────────────────────────────────────────────────────────
 
-// A switch, or the row that is one, toggles on a tap only (touch_gesture.h): a finger that
+// A switch toggles on a tap on it only (touch_gesture.h): a finger that
 // scrolled, or tried to scroll a page that does not, lifts over it and changes nothing. One
 // finger on the glass, so one press to follow.
 static touch::Tap s_switch_press;
@@ -239,17 +239,6 @@ static void switch_tap_cb(lv_event_t* e) {
     if (lv_obj_has_state(sw, LV_STATE_CHECKED)) lv_obj_remove_state(sw, LV_STATE_CHECKED);
     else                                         lv_obj_add_state(sw, LV_STATE_CHECKED);
     lv_obj_send_event(sw, LV_EVENT_VALUE_CHANGED, nullptr);
-}
-
-static void on_tap(lv_obj_t* o, lv_obj_t* sw) {
-    lv_obj_add_event_cb(o, switch_tap_cb, LV_EVENT_PRESSED, sw);
-    lv_obj_add_event_cb(o, switch_tap_cb, LV_EVENT_PRESSING, sw);
-    lv_obj_add_event_cb(o, switch_tap_cb, LV_EVENT_CLICKED, sw);
-}
-
-void switch_row(lv_obj_t* row, lv_obj_t* sw) {
-    lv_obj_add_flag(row, LV_OBJ_FLAG_CLICKABLE);
-    on_tap(row, sw);
 }
 
 lv_obj_t* switch_m3(lv_obj_t* parent, int32_t x, int32_t y, bool on) {
@@ -283,7 +272,9 @@ lv_obj_t* switch_m3(lv_obj_t* parent, int32_t x, int32_t y, bool on) {
     lv_obj_set_ext_click_area(sw, 16);            // a 32-px switch takes a 64-px finger
     // LVGL would toggle it on any release over it; it toggles on a tap (switch_tap_cb)
     lv_obj_remove_flag(sw, LV_OBJ_FLAG_CHECKABLE);
-    on_tap(sw, sw);
+    lv_obj_add_event_cb(sw, switch_tap_cb, LV_EVENT_PRESSED, sw);
+    lv_obj_add_event_cb(sw, switch_tap_cb, LV_EVENT_PRESSING, sw);
+    lv_obj_add_event_cb(sw, switch_tap_cb, LV_EVENT_CLICKED, sw);
     return sw;
 }
 

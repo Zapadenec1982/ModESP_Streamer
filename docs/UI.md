@@ -297,8 +297,8 @@ also has, at its foot, "Volume leveling": "On a schedule" (`audio.lev_sched`) an
 the two times with − and + (a quarter hour a press, a held button keeps stepping; `audio.lev_from`,
 `audio.lev_to`), as on the web. The equalizer (`screen_eq.cpp`) draws the frequency response with
 the same function, `audio_core::eq_magnitude_db()`, that the audio core computes the biquads with;
-the band points are dragged with a finger. At the top: the PEQ switch captioned "On" (the row takes
-a finger anywhere), the preset field and, while "Custom" plays, "Reset “Custom”". Edits go to a local
+the band points are dragged with a finger. At the top: the PEQ switch captioned "On", the preset
+field and, while "Custom" plays, "Reset “Custom”". Edits go to a local
 copy of the document, the main loop puts it into `audio_core::eq_store()`, and the `audio` module
 does not write `eq.json` while `ui.screen` = `eq` (a LittleFS write stops the cache of both cores).
 An edit from the web reaches the page through the same document ([AUDIO.md](AUDIO.md)).
@@ -361,8 +361,8 @@ touch writes `ui.touch_x/y` and `ui.touch_down` and resets the idle timer. The f
   gesture after 8 px along (more than across), and the slider moves from where it is rather than
   jumping to the finger; a press, a tap or a finger beside the slider changes nothing;
 - an EQ point: a tap selects the band; the point moves after a 300 ms hold or 8 px of movement;
-- a switch, and a row that is one, toggles only on a tap: a finger that went 8 px from where it
-  landed changes nothing when it lifts, on a page that scrolls and on one that does not;
+- a switch toggles only on a tap on the switch itself (its 52×32 and 16 px around), never on its
+  row; a finger that went 8 px from where it landed changes nothing when it lifts;
 - scrolling a page never sets anything.
 
 **Modality.** A dialog or a keyboard is marked modal (`m3w::mark_modal`); a UI rebuild from outside

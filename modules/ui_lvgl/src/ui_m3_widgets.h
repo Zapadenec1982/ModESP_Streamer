@@ -99,13 +99,10 @@ int32_t chip_width(const Chip& c);
 // ── switch ─────────────────────────────────────────────────────────────────────────────────
 
 /// 52x32, the M3 shape: off = outlined track with a small knob, on = primary track with a
-/// large on_primary knob carrying a check. Built on lv_switch, so LVGL owns the state and
-/// LV_EVENT_VALUE_CHANGED fires as usual.
+/// large on_primary knob carrying a check. Built on lv_switch; a tap on it — its 52×32 and 16 px
+/// around, 84×64 where its parent has the room — toggles it and fires LV_EVENT_VALUE_CHANGED. The
+/// row it sits in does not: a finger toggles the switch itself.
 lv_obj_t* switch_m3(lv_obj_t* parent, int32_t x, int32_t y, bool on);
-/// A row with a switch on it toggles from a tap anywhere on the row, as a list row does — the
-/// switch's own 52×32 was the only place that took a finger. The switch's VALUE_CHANGED fires.
-/// A switch alone reaches 16 px past its track: 84×64, where its parent has the room.
-void switch_row(lv_obj_t* row, lv_obj_t* sw);
 
 // ── slider ─────────────────────────────────────────────────────────────────────────────────
 

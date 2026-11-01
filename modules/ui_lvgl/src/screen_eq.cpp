@@ -740,7 +740,6 @@ lv_obj_t* build(lv_obj_t* parent, UiCtx& c) {
     lv_obj_set_pos(peq_lbl, 6 + 52 + 12, (TOP_H - lv_font_get_line_height(t.t.label_m)) / 2);
     lv_obj_set_width(peq_lbl, PEQ_W - (6 + 52 + 12));
     lv_label_set_long_mode(peq_lbl, LV_LABEL_LONG_DOT);
-    m3w::switch_row(peq_row, g.peq);
 
     g.sounds = ui_sound_field(root, FIELD_W, FIELD_H, &g.sound_val);
     lv_obj_set_pos(g.sounds, FIELD_X, (TOP_H - FIELD_H) / 2);
@@ -810,13 +809,12 @@ lv_obj_t* build(lv_obj_t* parent, UiCtx& c) {
     m3w::Button next = m3w::icon_button(g.band_box, BAND_W - NAV_BTN, 0, NAV_BTN, UI_SYM_CHEVRON, t.t.icon_m);
     lv_obj_add_event_cb(next.obj, band_next_cb, LV_EVENT_CLICKED, nullptr);
 
-    // the band's switch and its word, one row a finger takes anywhere: the word alone was 23 px
+    // the band's switch and its word; only the switch takes a finger
     lv_obj_t* sw_row = m3w::box(root, BSW_X, B1_Y, BSW_W, B1_H);
     g.band_sw = m3w::switch_m3(sw_row, 8, (B1_H - 32) / 2, true);
     lv_obj_add_event_cb(g.band_sw, band_sw_cb, LV_EVENT_VALUE_CHANGED, nullptr);
     lv_obj_t* sw_lbl = m3w::text(sw_row, t.t.label_m, t.c.on_surface, tr(S::eq_band_on));
     lv_obj_set_pos(sw_lbl, 8 + 52 + 12, (B1_H - lv_font_get_line_height(t.t.label_m)) / 2);
-    m3w::switch_row(sw_row, g.band_sw);
 
     lv_obj_t* type_cap = m3w::text(root, t.t.label_s, t.c.on_surface_var, tr(S::eq_type));
     lv_obj_set_pos(type_cap, uig::CONT_W - TYPE_W - 44, B1_Y + (B1_H - lv_font_get_line_height(t.t.label_s)) / 2);

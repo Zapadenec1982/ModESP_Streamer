@@ -151,7 +151,6 @@ lv_obj_t* row(lv_obj_t* card, int i, RowId id, const char* sym, const char* titl
 lv_obj_t* toggle(lv_obj_t* r, lv_event_cb_t cb) {
     lv_obj_t* sw = m3w::switch_m3(r, RW - 52 - 14, (RH - 32) / 2, false);
     lv_obj_add_event_cb(sw, cb, LV_EVENT_VALUE_CHANGED, nullptr);
-    m3w::switch_row(r, sw);
     return sw;
 }
 
