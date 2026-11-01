@@ -185,6 +185,7 @@ set(TEST_SOURCES
     "${CMAKE_SOURCE_DIR}/test_vlist_window.cpp"      # modules/ui_lvgl/include/vlist_window.h
     "${CMAKE_SOURCE_DIR}/test_touch_gesture.cpp"     # modules/ui_lvgl/include/touch_gesture.h — a finger that scrolls sets nothing
     "${CMAKE_SOURCE_DIR}/test_idle_home.cpp"         # modules/ui_lvgl/include/idle_home.h — back to the Player after a minute alone
+    "${CMAKE_SOURCE_DIR}/test_station_badge.cpp"     # modules/ui_lvgl/include/station_badge.h — a station's stand-in for a logo
     "${CMAKE_SOURCE_DIR}/test_ppa_geometry.cpp"      # modules/ui_lvgl/include/ppa_geometry.h
     "${CMAKE_SOURCE_DIR}/test_web_media.cpp"         # modules/ui_lvgl/include/web_media.h — /api/library, /api/cover
     "${CMAKE_SOURCE_DIR}/test_net_probe_stats.cpp"   # components/net_probe/include/net_probe/probe_stats.h

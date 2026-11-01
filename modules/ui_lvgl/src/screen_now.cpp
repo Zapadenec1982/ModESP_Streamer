@@ -41,6 +41,7 @@
 #include "playlist.h"
 #include "cover.h"
 #include "bt_settings.h"
+#include "station_badge.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -91,6 +92,10 @@ constexpr uint32_t SEEK_HOLD_MS = 2000;   ///< the longest the bar waits at a se
 constexpr int32_t SPEC_X    = (uig::CONT_W - uih::SPEC_ROW_W) / 2;
 constexpr int32_t SPEC_BASE = uig::CONT_H;
 constexpr int32_t SPEC_H    = SPEC_BASE - COVER - 16;          // 88
+// a station with no picture: its stand-in on the tile (station_badge.h), a disc with the label
+// in the biggest face that keeps 20 px clear of the edge at each end
+constexpr int32_t PH_DISC = 200;
+constexpr int32_t PH_TEXT = PH_DISC - 40;
 
 struct Now {
     lv_obj_t* page     = nullptr;   ///< the whole screen: the cover's colour behind everything
@@ -109,6 +114,10 @@ struct Now {
     uint32_t  cover_gen   = 0xFFFFFFFF;
     int       cover_source = -1;
     int       cover_tile   = -1;   ///< which CoverSource the image came from: gens are per tile
+    bool      has_pic      = false; ///< the tile shows a picture
+    lv_obj_t* ph       = nullptr;   ///< a station's stand-in for a picture: the disc…
+    lv_obj_t* ph_lbl   = nullptr;   ///< …and its label
+    char      ph_name[64] = "\x01"; ///< the name it was made from; no name looks like this
     // the row over the block: where it plays from, «Звук», the moon, the list and the volume
     lv_obj_t*   from     = nullptr;
     lv_obj_t*   from_src = nullptr;
@@ -319,6 +328,11 @@ lv_obj_t* build(lv_obj_t* parent, UiCtx& c) {
     uih::show(n.cover_im, false);
     n.tile_ic = m3w::icon(n.tile, t.t.icon_xl, t.c.outline, UI_SYM_MUSIC);
     lv_obj_center(n.tile_ic);
+    n.ph = m3w::surface(n.tile, (COVER - PH_DISC) / 2, (COVER - PH_DISC) / 2, PH_DISC, PH_DISC,
+                        station_badge::PALETTE[0], m3::shape::FULL);
+    n.ph_lbl = m3w::text(n.ph, t.t.display, station_badge::INK, "");
+    lv_obj_center(n.ph_lbl);
+    uih::show(n.ph, false);
 
     lv_obj_t* col = uih::box(root, COL_X, 0, COL_W, COL_H);
 
@@ -513,6 +527,19 @@ void set_fmt(const char* fmt) {
     place_meta();
 }
 
+/// A station's stand-in on the tile (station_badge.h): its colour, and its label in the biggest
+/// face that fits across the disc — the display face fits most, the headline any five characters.
+void set_placeholder(const char* name) {
+    if (strncmp(n.ph_name, name, sizeof(n.ph_name) - 1) == 0) return;
+    snprintf(n.ph_name, sizeof(n.ph_name), "%s", name);
+    const auto& t = m3::theme();
+    const station_badge::Badge b = station_badge::make(name);
+    lv_obj_set_style_bg_color(n.ph, m3::col(b.rgb), 0);
+    const bool big = lv_text_get_width(b.label, (uint32_t)strlen(b.label), t.t.display, 0) <= PH_TEXT;
+    lv_obj_set_style_text_font(n.ph_lbl, big ? t.t.display : t.t.headline, 0);
+    lv_label_set_text(n.ph_lbl, b.label);
+}
+
 /// The page's colour: the cover's (cover_backdrop), or the plain surface when there is no
 /// picture. The gradient itself is set once, in build().
 void set_backdrop(uint32_t rgb) {
@@ -651,7 +678,8 @@ void refresh(lv_obj_t*, UiCtx& c) {
             n.cover_source = s.source;
             n.cover_tile = (int)tile;
             n.cover_gen = cv.gen;
-            if (cv.px && cv.w > 0) {
+            n.has_pic = cv.px && cv.w > 0;
+            if (n.has_pic) {
                 n.cover_which ^= 1;
                 lv_image_dsc_t& d = n.cover_dsc[n.cover_which];
                 d = lv_image_dsc_t{};
@@ -664,14 +692,14 @@ void refresh(lv_obj_t*, UiCtx& c) {
                 d.data_size     = (uint32_t)cv.w * (uint32_t)cv.h * 2;
                 lv_image_set_src(n.cover_im, &d);
                 lv_obj_set_pos(n.cover_im, (COVER - cv.w) / 2, (COVER - cv.h) / 2);
-                uih::show(n.cover_im, true);
-                uih::show(n.tile_ic, false);
-            } else {
-                uih::show(n.cover_im, false);
-                uih::show(n.tile_ic, true);
             }
+            uih::show(n.cover_im, n.has_pic);
             set_backdrop(cv.px ? player_core::cover_backdrop(cv.rgb) : 0);
         }
+        // No picture: a station shows its stand-in, every other source the glyph.
+        const bool ph = face == PlayerFace::RADIO && !n.has_pic;
+        uih::show(n.ph, ph);
+        uih::show(n.tile_ic, !n.has_pic && !ph);
     }
 
     // the phone it plays from, beside «BLUETOOTH»; no other source names its sender
@@ -691,6 +719,7 @@ void refresh(lv_obj_t*, UiCtx& c) {
         set_title(title);
         set_sub(sub);
         set_fmt(s.radio_fmt);
+        set_placeholder(s.radio_name[0] ? s.radio_name : tr(S::src_radio));
         // The buffer line: full and moving while the station plays, flat and still when not.
         if (playing) n.phase += 0.3f;
         const float fill = s.radio_buffer > 0 ? (float)s.radio_buffer / 100.0f : (playing ? 1.0f : 0.0f);

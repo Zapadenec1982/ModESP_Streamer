@@ -454,9 +454,9 @@ choosing the result — `components/radio_catalog/include/radio_art.h`, test
 - **Station logo.** The `favicon` of the catalog row or from `/json/stations/byuuid?uuids=<uuid>`;
   first over HTTP (for an `https://` address too), over HTTPS only when the station itself plays
   over HTTP; ≤ 128 KB, JPEG or PNG.
-- Tile `CoverSource::Radio`: the track cover, without it — the logo, without that — nothing. A track
-  pushed through DLNA shows the control point's cover (`CoverSource::Network`), without it — the
-  Radio tile.
+- Tile `CoverSource::Radio`: the track cover, without it — the logo, without that — nothing, and the
+  panel draws the station's stand-in ([UI.md](UI.md), "Panel pages"). A track pushed through DLNA
+  shows the control point's cover (`CoverSource::Network`), without it — the Radio tile.
 
 ### External URLs: position, seek, next track
 

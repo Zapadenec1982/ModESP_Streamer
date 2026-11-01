@@ -216,11 +216,18 @@ Two more `ui.screen` values: `boot` until the screen is built (and for good with
 **Player** (`screen_now.cpp`). One layout for every source: the cover tile on the left, the track
 block on the right, the spectrum strip at the bottom; above the block, where the sound comes from
 (source and device) and the "Sound" button; the background is the cover colour (`ui.cover_rgb`)
-fading into the surface. What does not apply to the source is greyed out, not hidden. The title
-takes up to two lines; a one-line title sits right above the line under it (the artist), the free
-space goes above the title. The codec badge and the USB line are in the language's units and decimal
-separator (`i18n::badge`): "44.1 kHz 128 kbit/s", "LDAC 96 kHz"; two channels are not written, a
-whole number goes without ".0". Transport:
+fading into the surface. Without a picture the tile shows a glyph (the source's on the empty face,
+a note otherwise); a station shows its stand-in instead (`include/station_badge.h`, test
+`tests/host/test_station_badge.cpp`): a 200 px disc in a colour taken from the station's name
+(FNV-1a of its bytes over a fixed palette of eight muted hues that white reads on) with a label —
+the name's first word that says something (leading numbers and frequencies and the word "radio"
+skipped) when it has at most five characters, otherwise the initials of its words, at most three:
+"KISS" for "106.5 Kiss FM", "DK" for "Deutschlandfunk Kultur"; capitals, Latin and Cyrillic.
+What does not apply to the source is greyed out, not hidden. The title takes up to two lines; a
+one-line title sits right above the line under it (the artist), the free space goes above the
+title. The codec badge and the USB line are in the language's units and decimal separator
+(`i18n::badge`): "44.1 kHz 128 kbit/s", "LDAC 96 kHz"; two channels are not written, a whole number
+goes without ".0". Transport:
 
 - radio — `radio.cmd` (1 play, 2 stop, 3 next, 4 previous);
 - card — `player.cmd`; "Play" with no track open starts the track at the queue cursor;
