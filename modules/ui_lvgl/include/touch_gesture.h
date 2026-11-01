@@ -18,6 +18,10 @@
  *     the slider takes it once it has gone SLOP px along (lib/gesture.js);
  *   - an EQ point: only the point takes a finger. A tap picks its band; the point moves once
  *     held HOLD_MS or once the finger went SLOP px from where it landed;
+ *   - a switch, and a row that is one: only a tap toggles it. A finger that went SLOP px from
+ *     where it landed, at any moment of the press, was scrolling or missed, and changes nothing
+ *     when it lifts — LVGL toggles on any release over the switch, a page that does not scroll
+ *     included;
  *   - «Скасувати»: a snackbar for UNDO_MS after a moved sound setting, from where it started.
  *
  * Split out of the widgets so the rules are pinned on the host (tests/host/test_touch_gesture.cpp).
@@ -48,6 +52,20 @@ inline Intent intent(int32_t dx, int32_t dy, int32_t slop = SLOP) {
     if (ay >= slop) return Intent::SCROLL;
     return Intent::PRESS;
 }
+
+/// One press on a switch: a tap until the finger has once gone `slop` px from where it landed.
+class Tap {
+public:
+    void down(int32_t x, int32_t y) { x0_ = x; y0_ = y; moved_ = false; }
+    void move(int32_t x, int32_t y, int32_t slop = SLOP) {
+        if (intent(x - x0_, y - y0_, slop) != Intent::PRESS) moved_ = true;
+    }
+    bool tap() const { return !moved_; }
+
+private:
+    int32_t x0_ = 0, y0_ = 0;
+    bool    moved_ = false;
+};
 
 /// One press on a slider, from down to end. move() keeps the first answer that is not PRESS.
 class Slide {

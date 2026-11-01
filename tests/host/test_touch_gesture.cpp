@@ -127,3 +127,17 @@ TEST_CASE("touch: «Скасувати» says where a setting started") {
     u.clear();
     CHECK(u.note(4, 13500) == 4);                          // taken back: a new start
 }
+
+TEST_CASE("touch: a switch toggles on a tap, never after a finger that moved") {
+    touch::Tap t;
+    t.down(100, 200);
+    t.move(103, 205);
+    CHECK(t.tap());                                       // a finger is never quite still
+    t.move(100, 212);
+    t.move(100, 201);
+    CHECK_FALSE(t.tap());                                 // went 12 px and came back: a scroll
+    t.down(300, 50);
+    CHECK(t.tap());                                       // a new press starts clean
+    t.move(309, 50);
+    CHECK_FALSE(t.tap());                                 // along is no tap either
+}

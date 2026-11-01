@@ -361,6 +361,8 @@ touch writes `ui.touch_x/y` and `ui.touch_down` and resets the idle timer. The f
   gesture after 8 px along (more than across), and the slider moves from where it is rather than
   jumping to the finger; a press, a tap or a finger beside the slider changes nothing;
 - an EQ point: a tap selects the band; the point moves after a 300 ms hold or 8 px of movement;
+- a switch, and a row that is one, toggles only on a tap: a finger that went 8 px from where it
+  landed changes nothing when it lifts, on a page that scrolls and on one that does not;
 - scrolling a page never sets anything.
 
 **Modality.** A dialog or a keyboard is marked modal (`m3w::mark_modal`); a UI rebuild from outside
