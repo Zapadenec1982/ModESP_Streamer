@@ -2,7 +2,7 @@
 webui/src/lib/eqfile.js, lib/eqband.js and lib/syscurve.js.
 
 Import and export in the text Equalizer APO and REW use, up to
-10 bands, held to the panel's limits. The DoD: import -> export gives the same bands. Also what the
+10 bands, held to the panel's limits. What must hold: import -> export gives the same bands. Also what the
 other dialects look like when they come in (AutoEQ, REW's Generic export, APO's own forms), what
 is counted and not read, and the page's add / delete / reset on a set.
 """

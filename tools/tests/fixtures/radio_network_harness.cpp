@@ -254,7 +254,7 @@ int main(){
  start_station(1);
  if(tunes!=1 || s.tuned.load()!=1) return 1; // requested station is not the tuned station
  // Chosen with no network: the ring is the radio's and a push's one_shot is gone before the
- // wait, since the reconnect path only tunes; only the connect waits (deep review 2026-10-31).
+ // wait, since the reconnect path only tunes; only the connect waits.
  s.net_up.store(false);s.one_shot.store(true);s.retry=3;s.tr=1;paused=true;claims=0;tunes=0;
  s.state.store(ST_PLAYING);
  start_station(0);
@@ -307,7 +307,7 @@ int main(){
  connects=0;
  if(http_open("http://h0/a",nullptr,0) || connects!=1) return 52; // nowhere to go
  // A Location longer than a station URL but within a pushed one is followed whole; a longer
- // one is refused rather than cut into a URL that fails as a 403 (deep review 2026-10-12, RP-5).
+ // one is refused rather than cut into a URL that fails as a 403.
  const std::string signed_path="/s?zt="+std::string(230,'t');
  responses={redirect(("http://h1"+signed_path).c_str()),ok};
  connects=0;

@@ -2,7 +2,7 @@
 """Aligning a subwoofer with the speakers from one
 microphone at the listening place — a model of the method, not a measurement.
 
-The plan's prototype questions, and how this answers them:
+The questions a prototype has to answer, and how this answers them:
   1. a timing reference between the speakers' sound and the sub's in ONE recording, so that the
      phone's latency and the two clocks cancel (as REW's acoustic timing reference does);
   2. a test with a known offset — accuracy, not only repeatability;

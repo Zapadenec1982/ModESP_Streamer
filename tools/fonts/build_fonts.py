@@ -172,7 +172,7 @@ ICONS = {
     "MEMORY":       "memory",
     "CPU":          "developer_board",
     "LINK":         "link",
-    "SPLIT":        "call_split",        # Кросовер: the outputs split the sound (S8)
+    "SPLIT":        "call_split",        # Кросовер: the outputs split the sound
     # networks: the Wi-Fi page's signal, the lock on a protected network
     "WIFI_1":       "network_wifi_1_bar",
     "WIFI_2":       "network_wifi_2_bar",

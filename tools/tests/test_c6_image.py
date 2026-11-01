@@ -1,5 +1,5 @@
 """
-test_c6_image.py — the C6 co-processor image checker (tools/c6_image.py, plan item 11.3).
+test_c6_image.py — the C6 co-processor image checker (tools/c6_image.py).
 
 Why this is worth testing on the host rather than on the bench: the arithmetic is the part
 that goes wrong, and it goes wrong silently. tools/c6_updater's own parse_image_header()

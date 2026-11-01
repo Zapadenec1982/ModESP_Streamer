@@ -8,7 +8,7 @@ other is a file that is silently not saved, or one that is migrated and never wr
 
 Both mistakes were already in the tree when this test was written:
 
-  * "last_dir" was in the tool and in the plan, and nothing has ever written it. The player
+  * "last_dir" was in the tool, and nothing has ever written it. The player
     writes /data/last_track through a constant still called LAST_DIR_PATH.
   * "devices.json" is written by POST /api/devices and was in neither list, so a backup left
     every subscribed remote device behind.

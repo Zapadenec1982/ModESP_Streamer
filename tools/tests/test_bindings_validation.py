@@ -44,7 +44,7 @@ def _drivers():
         "addr_sensor":   {"driver": "addr_sensor", "category": "sensor",
                           "hardware_type": "onewire_bus",
                           "requires_address": True, "multiple_per_bus": True},
-        # item 8.9: the two module-bound families that are neither sensor nor actuator
+        # the two module-bound families that are neither sensor nor actuator
         "sdmmc_card":    {"driver": "sdmmc_card", "category": "storage",
                           "hardware_type": "sdmmc_slot",
                           "requires_address": False, "multiple_per_bus": False},
@@ -85,7 +85,7 @@ def _uart_board():
 
 
 def _player_board():
-    """The shape boards/p4_player has after item 8.9: a card slot and a satellite UART."""
+    """The shape boards/p4_player has: a card slot and a satellite UART."""
     return {
         "board": "p4_player",
         "sdmmc_slots": [{"id": "sd_0"}],
@@ -218,14 +218,14 @@ class TestInvariants:
         assert any("missing required field" in e for e in errors)
 
     def test_i_driver_is_not_required(self):
-        # Item 8.8: a row with no 'driver' is a plain hardware ASSIGNMENT, and legal.
+        # A row with no 'driver' is a plain hardware ASSIGNMENT, and legal.
         # DriverManager creates nothing for it; the module uses the HAL resource directly.
         b = _b([{"hardware": "ow_1", "role": "air_temp", "module": "equipment"}])
         errors, _ = _run(_dev_board(), b)
         assert errors == []
 
 
-# -- item 8.9: storage and link drivers bind like any other ------------
+# -- storage and link drivers bind like any other ----------------------
 
 class TestModuleBoundFamilies:
     def test_card_and_link_bind(self):

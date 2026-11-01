@@ -5,7 +5,8 @@ The Wi-Fi on this panel lives on a C6 that only the P4 can reach. Its firmware i
 into the P4's `slave_fw` partition and pushed over SDIO by tools/c6_updater. If a bad image
 gets that far and is activated, the C6 comes up with no working firmware, ESP-Hosted never
 connects, and the panel has no network — which is also the only way to fix it remotely. The
-recovery is a soldering-iron job on JP1 (docs/C6_UPDATE.md §5).
+recovery is a soldering-iron job on JP1 (docs/C6_UPDATE.md, "Recovery: flashing the C6
+directly over UART (JP1)").
 
 So the image is checked twice, and this is the first of the two:
 
@@ -33,7 +34,8 @@ The layout, from esptool's own writer (`ESP32FirmwareImage.save` / `append_check
                                                             the hash.
 
 `record` writes tools/c6_updater/known_good.json — the fingerprint of the image the panel is
-known to work with (plan item 11.3, "a known-good C6 image alongside the repo"). The image
+known to work with (docs/C6_UPDATE.md, "Image verification — twice, before it reaches the
+C6"). The image
 itself is ~1.1 MB and does not belong in git; the fingerprint does, so "is this the file we
 verified?" has an answer that does not depend on anyone's memory.
 

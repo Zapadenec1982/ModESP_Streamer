@@ -23,11 +23,11 @@ import gen_panel_strings as gen     # noqa: E402
 UI = ROOT / "modules" / "ui_lvgl"
 CYRILLIC = re.compile(r"[Ѐ-ӿ]")
 
-# Files of modules/ui_lvgl that still spell their text out. Empty since U8.3: every screen reads the
+# Files of modules/ui_lvgl that still spell their text out. Empty: every screen reads the
 # catalog. The list stays for a file that may need it again, and the test below fails both ways: a
 # file not on it with Cyrillic in a string, and a file on it with none left.
 PENDING = set()
-# Never translated: bench screens, behind their own Kconfig switches (§2 of the plan), and the
+# Never translated: bench screens, behind their own Kconfig switches, and the
 # languages' own names (i18n::lang_name), each spelled in its own language.
 NOT_TRANSLATED = {"src/screen_m3test.cpp", "src/ui_scroll_bench.cpp", "src/i18n.cpp"}
 # A keyboard's caps: its letters and its layout's code ("УК") are what they are in any language.
@@ -54,7 +54,7 @@ def test_generated_files_are_fresh(cats):
 
 
 def test_the_panel_uses_the_catalog(model):
-    # The tables are not empty by accident: the shell is on the catalog since U8.1, System since U8.2.
+    # The tables are not empty by accident: the shell and System are on the catalog.
     assert "nav.player" in model["S"] and "pair.numeric" in model["S"] and "page.language" in model["S"]
 
 
@@ -68,7 +68,7 @@ def test_every_panel_string_has_glyphs(cats, model):
 
 
 def test_country_and_genre_names_have_glyphs():
-    # Names from data, not the catalog (U8.4): CLDR's countries in four columns and the genre file's
+    # Names from data, not the catalog: CLDR's countries in four columns and the genre file's
     # names. A letter the faces lack would be a box in the station list.
     countries = (ROOT / "components/radio_catalog/src/countries.inc").read_text(encoding="utf-8")
     names = [n for row in re.findall(r'^\{"\w\w", \{(.*)\}\},$', countries, re.M)
@@ -115,7 +115,7 @@ def test_every_eq_preset_has_a_name():
 
 
 def test_modules_publish_messages_not_text():
-    # U8.5: what these modules put in state or in the DLNA view is "@<key>" of the catalog.
+    # What these modules put in state or in the DLNA view is "@<key>" of the catalog.
     for rel in ("modules/airplay/src/airplay_module.cpp", "modules/audio/src/audio_module.cpp",
                 "components/dlna_client/src/dlna_browser.cpp"):
         spelled = [s for kind, s in gen.cpp_tokens((ROOT / rel).read_text(encoding="utf-8"))

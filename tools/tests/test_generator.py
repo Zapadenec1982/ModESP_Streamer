@@ -412,7 +412,7 @@ class TestDisplayScreensGenerator:
 
 
 # ══════════════════════════════════════════════════════════════
-#  Long string keys (stage 7, item 7.1)
+#  Long string keys
 # ══════════════════════════════════════════════════════════════
 
 def _manifest(module, state):
@@ -460,7 +460,7 @@ class TestLongStateKeys:
 
 
 # ══════════════════════════════════════════════════════════════
-#  Command keys (stage 8, item 8.7)
+#  Command keys
 # ══════════════════════════════════════════════════════════════
 
 class TestCommandKeys:
@@ -508,7 +508,7 @@ class TestCommandKeys:
 
 
 # ══════════════════════════════════════════════════════════════
-#  StateEnumsGenerator (stage 8, item 8.1b)
+#  StateEnumsGenerator
 # ══════════════════════════════════════════════════════════════
 
 class TestStateEnumsGenerator:

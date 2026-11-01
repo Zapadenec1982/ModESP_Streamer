@@ -6,7 +6,7 @@
 #include <cstdint>
 #include "dlna_browser.h"
 #include "upnp_xml.h"
-// dlna_browser.cpp's own separator for a message's arguments (U8.5): the functions taken from
+// dlna_browser.cpp's own separator for a message's arguments: the functions taken from
 // it use the macro, which is defined at the top of that file and not in the parts copied here.
 #define MSG_ARG "\x1f"
 namespace dlna_client {

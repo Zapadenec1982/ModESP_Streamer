@@ -1211,9 +1211,8 @@ def validate_bindings(board, bindings, all_driver_manifests, errors, warnings,
         # player-fork: 'driver' is optional, a binding without one is a hardware assignment.
         # (i) required fields present. NOT 'driver': a binding with no driver is a plain
         # hardware ASSIGNMENT — it says which board resource plays a role for a module, and
-        # the module uses the HAL resource directly. That is how the satellite UART and the
-        # card slot stopped being literals inside their modules (item 8.8). The driver
-        # checks below are skipped for those, and DriverManager creates nothing.
+        # the module uses the HAL resource directly. The driver checks below are skipped for
+        # those, and DriverManager creates nothing.
         missing = [name for name, val in
                    (("hardware", hw_id), ("role", role), ("module", module)) if not val]
         if missing:

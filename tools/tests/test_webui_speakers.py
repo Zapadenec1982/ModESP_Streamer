@@ -1,6 +1,6 @@
 """Колонки: webui/src/lib/speakers.js in Node.
 
-The DoD of S6: a measurement is not applied without «Прийняти» or «Застосувати», «Пропустити» at
+What must hold: a measurement is not applied without «Прийняти» or «Застосувати», «Пропустити» at
 any step writes nothing, and neither does the choice of step 1. Also what the speakers page says
 for each state, what the port meter's messages mean to the wizard, and the usual volume's scale.
 """

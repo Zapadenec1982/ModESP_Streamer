@@ -172,7 +172,7 @@ console.log(JSON.stringify({{ defaults: c.TONE_DEFAULTS, calMax: c.CAL_MAX_S }})
 
 
 def test_a_test_tone_leaves_nothing_saved():
-    """S0b: the manual port search changes no saved setting. The port off and the volume cap ride
+    """The manual port search changes no saved setting. The port off and the volume cap ride
     in keys the device never saves and drops with the tone; a tone through the chain goes off by
     itself, as a calibration tone always did."""
     manifest = json.loads((ROOT / "modules/audio/manifest.json").read_text(encoding="utf-8"))["state"]
@@ -188,7 +188,7 @@ def test_a_test_tone_leaves_nothing_saved():
 
 def test_calibration_page_and_shell_keep_the_rules():
     """The amplifier's ceiling is set nowhere in the web (customer, 18.10.2026: «Максимум» is the one
-    limit); the tone bar is the shell's, so a tone shows, and stops, on every page (S0a)."""
+    limit); the tone bar is the shell's, so a tone shows, and stops, on every page."""
     import re
     for p in WEBUI.rglob("*"):
         if p.suffix in (".svelte", ".js") and p.is_file():

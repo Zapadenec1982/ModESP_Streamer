@@ -1,7 +1,7 @@
 """The web's EQ curve is the firmware's: webui/src/lib/eqmath.js against the vectors the C++
 host test writes from the design itself (tests/host/test_eq_curve_vectors.cpp).
 
-The DoD is the same curve on the panel and in the browser. The JS is a port of
+What must hold: the same curve on the panel and in the browser. The JS is a port of
 dsp_chain.cpp, so it is held to it number by number: each band matched and bilinear (double on
 both sides, so a hair apart), and the summed curve the panel draws (float there, so a
 thousandth of a dB apart at most, within the +-48 dB anything is drawn in).

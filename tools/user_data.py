@@ -5,7 +5,7 @@ Until 22.09.2026 this tool was the workaround for a design fault it described it
 
     "This does not fix that; the fix is to stop storing user files next to build output."
 
-That fix is now in (plan item 11.1). The flash has two LittleFS partitions:
+That fix is in. The flash has two LittleFS partitions:
 
     data      board.json, bindings.json, ui.json, the web bundle   REWRITTEN by every flash
     userdata  eq.json, stations.json, last_track, devices.json,    NO image, never written

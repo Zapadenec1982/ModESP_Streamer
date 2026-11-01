@@ -1,7 +1,8 @@
 # tools/sdio_soak — bare-IDF soak test of the ESP32-P4 ↔ ESP32-C6 SDIO link (docs/SOAK_TEST.md).
 # Transport block identical to boards/p4_player/sdkconfig.board — keep them in sync.
 
-# ── Chip revision: Guition panel ships ESP32-P4 v1.3 (docs/C6_UPDATE.md §6) ──
+# ── Chip revision: Guition panel ships ESP32-P4 v1.3 ──
+# docs/C6_UPDATE.md, "Host configuration the C6 link depends on".
 CONFIG_ESP32P4_SELECTS_REV_LESS_V3=y
 CONFIG_ESP32P4_REV_MIN_100=y
 

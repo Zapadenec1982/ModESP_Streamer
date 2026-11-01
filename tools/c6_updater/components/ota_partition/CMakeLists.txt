@@ -6,7 +6,7 @@ idf_component_register(
     SRCS "ota_partition.c"
     INCLUDE_DIRS "."
     # mbedtls: the SHA-256 the image carries is verified before a byte of it is sent to
-    # the C6 (cp_image_verify in ota_partition.c, plan item 11.3).
+    # the C6 (cp_image_verify in ota_partition.c).
     PRIV_REQUIRES "esp_partition" "esp_hosted" "bootloader_support" "esp_app_format" "mbedtls"
 )
 
