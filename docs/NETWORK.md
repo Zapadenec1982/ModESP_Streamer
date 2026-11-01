@@ -496,7 +496,7 @@ URL, and a truncated URL fails as 404.
 
 | Key | Value |
 |---|---|
-| `radio.state` | `idle` / `connecting` / `buffering` / `playing` / `reconnecting` |
+| `radio.state` | `idle` / `connecting` / `buffering` / `playing` / `reconnecting`; `idle` while another source plays |
 | `radio.cmd` | command: 1 play, 2 stop, 3 next, 4 previous |
 | `radio.station` | index in the list (0–63), −1 — a catalog station; persist |
 | `radio.name`, `radio.url`, `radio.uuid`, `radio.now_playing`, `radio.format`, `radio.buffer` | what is playing |

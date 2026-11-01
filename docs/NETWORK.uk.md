@@ -484,7 +484,7 @@ URL має бути `http(s)://` і ≤ 223 Б.
 
 | Ключ | Значення |
 |---|---|
-| `radio.state` | `idle` / `connecting` / `buffering` / `playing` / `reconnecting` |
+| `radio.state` | `idle` / `connecting` / `buffering` / `playing` / `reconnecting`; `idle`, поки грає інше джерело |
 | `radio.cmd` | команда: 1 грати, 2 стоп, 3 наступна, 4 попередня |
 | `radio.station` | індекс у списку (0–63), −1 — станція з каталогу; persist |
 | `radio.name`, `radio.url`, `radio.uuid`, `radio.now_playing`, `radio.format`, `radio.buffer` | що грає |

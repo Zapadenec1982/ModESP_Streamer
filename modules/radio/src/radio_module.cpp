@@ -2091,6 +2091,11 @@ void RadioModule::on_update(uint32_t dt_ms) {
     const bool mine = (read_int("audio.source", 0) == AUDIO_SRC_RADIO);
     if (!mine) {
         if (s.up) radio_down();
+        // Not what plays any more, whatever the radio was doing when the source moved on. The
+        // publish at the end of this function is not reached while another source owns the
+        // output, so without this radio.state kept its last value — "playing" — after a switch
+        // away. Once per switch: the key does not change again until the radio is chosen.
+        if (!idle_shown_) { state_set("radio.state", "idle"); idle_shown_ = true; }
         report_ms_ = 0;
         health_ms_ = 0;
         up_wait_ms_ = 0;        // chosen again, the radio starts at once
@@ -2103,6 +2108,7 @@ void RadioModule::on_update(uint32_t dt_ms) {
         while (next_command(drop)) {}
         return;
     }
+    idle_shown_ = false;
     if (s.up && !s.run) { radio_down(); if(s.up)return; }
     // A start that failed is tried again a few seconds on, not on the next pass: memory that
     // is not there now is not there ten milliseconds later either.
