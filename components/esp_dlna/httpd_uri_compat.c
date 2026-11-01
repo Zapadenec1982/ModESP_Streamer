@@ -22,8 +22,8 @@
  *
  * This app has CONFIG_HTTPD_WS_SUPPORT=y, because the web UI is pushed over a WebSocket.
  * So httpd reads `supported_subprotocol` at offset 20 — past the end of the object the
- * library passed — and hands whatever is next on that stack to strdup(). On the panel, on
- * 18.09.2026, what was next was the 3 that had just been written as the method:
+ * library passed — and hands whatever is next on that stack to strdup(). On the panel, what
+ * was next was the 3 that had just been written as the method:
  *
  *     Guru Meditation Error: Core 0 panic'ed (Load access fault)
  *     MTVAL : 0x00000003

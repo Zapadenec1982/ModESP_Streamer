@@ -9,7 +9,7 @@
  *
  * Pure, like the rest of radio_catalog. What is worth testing is the judgement, not the
  * fetch: which title is a song at all, and which search hit is that song rather than a
- * cover version or a namesake. Checked on 05.10.2026 with real titles: the advanced syntax
+ * cover version or a namesake. Checked with real titles: the advanced syntax
  * (artist:"…" track:"…") returns nothing over HTTP or HTTPS, the plain query works, and a
  * Ukrainian artist may be listed in Latin ("Океан Ельзи" is "Okean Elzy") — hence the
  * transliteration.

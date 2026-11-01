@@ -69,7 +69,7 @@ struct Status {
 };
 Published<Status>& status();
 
-/// Radio Browser lists 241 countries (04.10.2026).
+/// Radio Browser lists 241 countries.
 constexpr int MAX_COUNTRIES = 256;
 
 /// The countries the screen offers, in its order. Written by the catalog task.

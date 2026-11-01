@@ -161,8 +161,8 @@ namespace {
 
 /// keep_brackets: what is in brackets stays, as words. Needed because a bracket is not always
 /// a suffix to drop: the song Radio ROKS sent as "Everything I Do (I Do It For You)" is
-/// "(Everything I Do) I Do It For You" on Deezer (bench, 05.10.2026), and dropping the
-/// brackets leaves the two with no word in common.
+/// "(Everything I Do) I Do It For You" on Deezer, and dropping the brackets leaves the two
+/// with no word in common.
 void normalise_as(const char* in, char* out, size_t out_sz, bool keep_brackets) {
     if (!out_sz) return;
     size_t o = 0;

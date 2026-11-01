@@ -10,7 +10,7 @@
  * buffered task decrypts and decodes every packet with the decoder SETUP made, whatever the
  * packet names.
  *
- * Seen on 13.10.2026: the AAC decoder refused one frame (esp_aac_dec error 20, then a
+ * Seen on the panel: the AAC decoder refused one frame (esp_aac_dec error 20, then a
  * decoder reset) about 0.7 s before each TEARDOWN at the end of a YouTube item - every ad -
  * and never across Apple Music's gapless track changes, which have no TEARDOWN.
  *

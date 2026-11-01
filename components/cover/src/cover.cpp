@@ -50,7 +50,7 @@ const char* TAG = "Cover";
 /// w2 x h2 x sizeof(short) coefficient buffer per component all at once (stb_image.h:3337
 /// and :3346) - about 7.5 times the pixel count at 4:2:0, so 2048 a side wants 31 MB and
 /// 2560 49 MB. What the running firmware has free is less than either: about 23 MB in one
-/// block on the bench (05.10.2026). So MAX_SIDE is only the outer cap; the limit that decides
+/// block, measured on the bench. So MAX_SIDE is only the outer cap; the limit that decides
 /// is decode_soft()'s check of stb's own peak against the largest free block at the time
 /// (cover_guard.h). At the bench's figure that refuses progressive 4:2:0 from about 1670 px.
 ///
@@ -63,9 +63,9 @@ constexpr uint32_t MAX_SIDE_HW   = 4096;   ///< the hardware path
 /// Which SOF marker the file carries, which decides whether the hardware engine can have it
 /// at all: the P4's JPEG decoder is baseline only.
 ///
-/// Worth naming rather than inferring. A 2560x2560 cover that never displayed (22.09.2026)
-/// is a completely different problem depending on the answer - baseline means raise the
-/// hardware limit and it works, progressive means no decoder on this chip can do it.
+/// Worth naming rather than inferring. A 2560x2560 cover that never displays is a completely
+/// different problem depending on the answer - baseline means raise the hardware limit and
+/// it works, progressive means no decoder on this chip can do it.
 enum class Sof { Baseline, Progressive, Other };
 /// `frame`, when given, also gets what the header says about stb_image's memory: the
 /// components and their sampling factors.
@@ -270,8 +270,8 @@ bool decode_soft(Store& g, const uint8_t* jpg, size_t len, uint32_t expected) {
     // Split from the test above, and not for tidiness. A JPEG this decoder can read but will
     // not spend memory on is not a broken JPEG: stb never failed, so it recorded no reason,
     // and the single test printed that absent reason through %s. A panel died in vfprintf
-    // walking it on 22.09.2026, on a 488 KB cover embedded in a track on the card. The
-    // message was wrong as well as fatal - it said "not a JPEG at all" about a good one.
+    // walking it, on a 488 KB cover embedded in a track on the card. The message was wrong
+    // as well as fatal - it said "not a JPEG at all" about a good one.
     if (w <= 0 || h <= 0 || w > (int)MAX_SIDE || h > (int)MAX_SIDE) {
         // The kind is the actionable half of this message. Baseline here means the hardware
         // engine refused it for some other reason and the fix is on that side; progressive
@@ -355,9 +355,9 @@ bool decode_soft(Store& g, const uint8_t* jpg, size_t len, uint32_t expected) {
 ///
 /// A PNG takes 8736 bytes of stack under cover_soft_decode(): the inflate state with both
 /// Huffman tables in it, 4112; the code-length table built under that, 2544; the PNG
-/// reader's palette above both, 1296. A progressive JPEG takes 868. Measured on 05.10.2026
-/// by running the firmware's own cover_soft.c.obj under QEMU on a painted stack, and within
-/// 16 bytes of -fstack-usage. The callers had 6 KB
+/// reader's palette above both, 1296. A progressive JPEG takes 868. Measured by running the
+/// firmware's own cover_soft.c.obj under QEMU on a painted stack, and within 16 bytes of
+/// -fstack-usage. The callers had 6 KB
 /// (Bluetooth, AirPlay), 8 KB (the player) and 12 KB with 2.7 KB of it their own (DLNA), so a
 /// PNG cover through any of them was a stack overflow and a reboot - which the radio's art
 /// task, then 8 KB, met first, on a station's logo.

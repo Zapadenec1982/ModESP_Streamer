@@ -26,8 +26,8 @@
  *
  * When the allocation fails, a received frame is skipped with no log line and no counter,
  * and an outgoing one (an ACK, a ping reply) is refused with ESP_ERR_NO_MEM, which lwIP
- * does not retry. That is the loss that grew with the TCP window on 17.09: the window is
- * the size of the burst, and the burst is how many of these copies exist at once.
+ * does not retry. That is the loss that grows with the TCP window: the window is the size
+ * of the burst, and the burst is how many of these copies exist at once.
  *
  * WHY PSRAM IS SAFE FOR THEM
  *

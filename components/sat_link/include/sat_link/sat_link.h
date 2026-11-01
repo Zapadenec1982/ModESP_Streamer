@@ -30,8 +30,8 @@ constexpr size_t MAX_PAYLOAD = MAX_FRAME - 4;   ///< 1036
 constexpr size_t MAX_WIRE    = 1048;            ///< what a receiver must be able to hold
 
 constexpr uint8_t PROTO_MAJOR = 1;
-/// 1.10 (24.10.2026, the customer's decision): the port expander is gone. Codes 0x30..0x35,
-/// device bits 4 and 5 and host bit 2 mean nothing any more and are never reused.
+/// 1.10: the port expander is gone. Codes 0x30..0x35, device bits 4 and 5 and host bit 2
+/// mean nothing any more and are never reused.
 constexpr uint8_t PROTO_MINOR = 10;
 
 // ── Message types ──────────────────────────────────────────────────────────────────────────
@@ -132,8 +132,8 @@ enum : uint32_t {
     /// Added in 1.9. We clock the link: BCLK and WS at the announced rate in 32-bit slots,
     /// from the same controller and PLL as the DAC. A satellite that sees it stays a slave
     /// and says so with DEV_CAP_I2S_SLAVE; one that does not keeps clocking the link itself.
-    /// Measured reason (30.09.2026): as a SLAVE this P4 received ~95 856 of the 96 000 frames
-    /// a second the satellite's own pins carried; frames it clocks itself cannot go missing.
+    /// Measured reason: as a SLAVE this P4 received ~95 856 of the 96 000 frames a second the
+    /// satellite's own pins carried; frames it clocks itself cannot go missing.
     HOST_CAP_I2S_MASTER = 1u << 8,
 };
 
@@ -180,8 +180,8 @@ enum : uint8_t {   ///< TRACK_POS.state
 /// The contract puts this cleanup on the satellite ("`total_ms` завжди санітизувати"), and
 /// parse() repeats it because an older satellite build is still a legal peer. One bound
 /// covers both faults it has to catch: a day is far below 2^31, so every negative value —
-/// the bench phone answered GetPlayStatus with a length of −1000 on 18.09.2026, which
-/// arrives here as 0xFFFFFC18 — is already past it.
+/// the bench phone answered GetPlayStatus with a length of −1000, which arrives here as
+/// 0xFFFFFC18 — is already past it.
 constexpr uint32_t POS_MAX_MS = 24u * 60u * 60u * 1000u;
 
 enum : uint8_t {   ///< CMD_TRANSPORT.cmd

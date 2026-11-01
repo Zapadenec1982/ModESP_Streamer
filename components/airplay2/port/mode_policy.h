@@ -17,8 +17,8 @@ static inline const char *airplay_mode_model(bool legacy) {
  * as an AirPlay 2 sender is asked for it: by these feature bits, not by the RAOP record's
  * md, which an AirPlay 1 sender reads instead. 17 text, 16 progress, 15 artwork, set the
  * way shairport-sync sets them (shairport.c, airplay_features). Upstream advertises none of
- * the three. Measured 13.10.2026 with md=0,1,2: an iPhone (AirPlay/620.8.2) on the AirPlay 2
- * profile sent the text and the progress, and over three track changes never a cover. */
+ * the three. Measured with md=0,1,2: an iPhone (AirPlay/620.8.2) on the AirPlay 2 profile
+ * sent the text and the progress, and over three track changes never a cover. */
 #define AIRPLAY_FEATURE_META_ARTWORK  (UINT64_C(1) << 15)
 #define AIRPLAY_FEATURE_META_PROGRESS (UINT64_C(1) << 16)
 #define AIRPLAY_FEATURE_META_TEXT     (UINT64_C(1) << 17)

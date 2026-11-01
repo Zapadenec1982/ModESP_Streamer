@@ -11,8 +11,8 @@
  *      bindings.json fails the boot parser, and config is a CRITICAL module.
  *   2. The bytes are written whole and are wrong. POST /api/bindings used to check two keys
  *      by eye and write; a file the boot parser would reject went to flash and the board
- *      came up with no drivers (18.09.2026). The answer for bindings.json is to run the boot
- *      parser over the candidate before the swap.
+ *      came up with no drivers. The answer for bindings.json is to run the boot parser over
+ *      the candidate before the swap.
  *   3. The replace itself is not atomic. `remove(live); rename(new, live)` has a window with
  *      no live file at all, and that window contains a flash erase.
  *

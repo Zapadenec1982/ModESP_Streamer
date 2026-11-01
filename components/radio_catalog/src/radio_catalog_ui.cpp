@@ -45,8 +45,8 @@ Published<Genres>&    genres()    { return single<Published<Genres>>(); }
 Asks&                 asks()      { return single<Asks>(); }
 
 int order_countries(CountryCount* items, int n, const char* first) {
-    // The service keys countries as typed, so "GR" and "gr" are both there (04.10.2026); the
-    // parser has upper-cased them, and here they become one country with both counts.
+    // The service keys countries as typed, so "GR" and "gr" are both there; the parser has
+    // upper-cased them, and here they become one country with both counts.
     int kept = 0;
     for (int i = 0; i < n; i++) {
         if (!items[i].stations || !country_name(items[i].code, 0)) continue;
