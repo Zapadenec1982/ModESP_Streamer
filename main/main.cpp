@@ -237,7 +237,7 @@ static void enter_safe_mode(modesp::App& app, const char* phase, bool ota_pendin
 extern "C" void app_main(void)
 {
     // First of all, because it decides what the rest of this function is allowed to print.
-    // The build ships at WARN (plan item 11.4); this puts back the handful of tags whose
+    // The build ships at WARN; this puts back the handful of tags whose
     // INFO lines have each already settled a fault, including this one.
     modesp::log_policy::apply();
 

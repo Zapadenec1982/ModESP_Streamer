@@ -2,7 +2,7 @@
  * @file sdmmc_card_driver.cpp
  * @brief Bring a microSD card up on the SDMMC controller and mount FAT32 on it.
  *
- * Every line here came from modules/storage, unchanged in order and in effect (item 8.9).
+ * Every line here came from modules/storage, unchanged in order and in effect.
  * It is here because none of it is a decision the module makes: a module that reads files
  * should not know what a power rail, a bus width or a mount config is, and the next board
  * that keeps its files somewhere else should need a second driver, not a second module.

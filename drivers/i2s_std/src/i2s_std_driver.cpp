@@ -202,9 +202,9 @@ bool I2sStdDriver::init() {
     // parked on the crystal for the rest of the uptime.
     //
     // The XTAL is comfortable here: 44.1 kHz in 16-bit slots needs MCLK of at least 8 x BCLK,
-    // which is 11.29 MHz, against a source above twice that. 40 MHz clears it. The bench note
-    // of 2026-09-15 about "sample rate is too large" was measured at 48 kHz in 32-BIT slots,
-    // where the requirement is above 49 MHz — a different case, not this one.
+    // which is 11.29 MHz, against a source above twice that. 40 MHz clears it. The "sample
+    // rate is too large" refusal seen on the bench was at 48 kHz in 32-BIT slots, where the
+    // requirement is above 49 MHz — a different case, not this one.
     std_cfg.clk_cfg.clk_src = bus_->master ? I2S_CLK_SRC_APLL : I2S_CLK_SRC_DEFAULT;
     switch (bus_->mclk_multiple) {
         case 128: std_cfg.clk_cfg.mclk_multiple = I2S_MCLK_MULTIPLE_128; break;

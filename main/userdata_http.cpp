@@ -136,7 +136,7 @@ esp_err_t userdata_post(httpd_req_t* req) {
         text[i] = new Buf(e[i].len + 1);       // unescaping never makes a string longer
         if (!text[i]->p) { no_memory = true; break; }
         // A file over what its reader takes is refused, not staged: it would be read cut
-        // short or never installed, after a reply that said ok (deep review CO-3).
+        // short or never installed, after a reply that said ok.
         const bool json = modesp::user_backup::is_json_file(e[i].name);
         if (!modesp::user_backup::unescape(e[i].text, e[i].len, text[i]->p, text[i]->n, len[i]) ||
             (json && !modesp::user_backup::is_json_object(text[i]->p, len[i])) ||

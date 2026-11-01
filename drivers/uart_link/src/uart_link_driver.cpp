@@ -2,7 +2,7 @@
  * @file uart_link_driver.cpp
  * @brief The satellite's wire: bytes on and off a UART, and the one thing only the wire knows.
  *
- * Moved out of modules/bt unchanged in order and in effect (item 8.9). It is here because
+ * Moved out of modules/bt unchanged in order and in effect. It is here because
  * none of it is about the protocol: the RX-FIFO threshold, the event queue that is the only
  * place an overflow is ever reported, and the pin probe are all answers to "is this wire
  * carrying bytes", which is the same question on any board and for any protocol. What is said
