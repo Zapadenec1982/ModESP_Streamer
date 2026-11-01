@@ -22,7 +22,6 @@ import { badge } from '../lib/numbers.js';
  *   live        the transport has someone to command (Bluetooth needs a phone; AirPlay needs
  *               the sender's DACP remote, which AirPlay 2 senders do not give)
  *   toggle, prev, next      { key, value } commands, null where the source has none
- *   stopIcon    radio stops rather than pauses
  *   progress    'track' (pos/dur), or null
  *   pos, dur    seconds; dur 0 = unknown
  *   seekKey     where to write a position, or null where seeking does not exist
@@ -73,8 +72,9 @@ function face(s) {
 
   if (src === 5) {
     // The station face: who plays — the station — and under it what, the ICY title once it
-    // plays, the state in words until then. No progress; ‹ › are prev and next. The play/stop
-    // here is the mini-player's: the Player's station card has none (PlayerPage.svelte).
+    // plays, the state in words until then. No progress; ‹ › are prev and next. No play/stop
+    // either: a station does not pause, and stopping it would only be the mute, which is the
+    // mini-player's button for it (MiniPlayer.svelte), as the knob's press is on the glass.
     const sounding = ['playing', 'buffering', 'connecting', 'reconnecting'].includes(radioState);
     const name = s['radio.name'];
     const stateKey = {
@@ -87,8 +87,8 @@ function face(s) {
       title: name || null, titleKey: name ? null : K('src.radio'),
       subtitle: radioState === 'playing' ? s['radio.now_playing'] || null : null, subtitleKey: stateKey,
       format: compact(s['radio.format']),
-      playing: sounding, live: true, stopIcon: true,
-      toggle: cmd('radio.cmd', radioState === 'idle' ? 1 : 2), prev: cmd('radio.cmd', 4), next: cmd('radio.cmd', 3),
+      playing: sounding, live: true,
+      toggle: null, prev: cmd('radio.cmd', 4), next: cmd('radio.cmd', 3),
       progress: null, pos: 0, dur: 0, seekKey: null,
       repeat: null, shuffle: null,
     };

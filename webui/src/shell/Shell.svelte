@@ -18,8 +18,8 @@
   /** Hide the mini-player where the page itself is the player. */
   export let mini = true;
   // ... and where nothing plays and nothing could go on from it: switched off, no phone, a
-  // computer that sends nothing — «Телефон не підключено» over the navigation was a line with
-  // nothing to do. A pause it can resume keeps it.
+  // computer that sends nothing, a stopped station (its button is the mute) — «Телефон не
+  // підключено» over the navigation was a line with nothing to do. A pause it can resume keeps it.
   $: np = $now;
   $: showMini = mini && (np.playing || !!(np.toggle && np.live));
   /** The Player's background: ui.cover_rgb, the colour

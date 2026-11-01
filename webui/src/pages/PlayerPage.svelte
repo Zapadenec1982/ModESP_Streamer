@@ -17,7 +17,7 @@
   // does not pause, stopping it is only the mute. The station's name between ‹ and ›, what it
   // plays under it, and right there the six presets, the reason to own a radio, with the glass's
   // rules: a tap tunes, a hold stores what plays, a tap on an empty one stores too. The picture
-  // is small: a logo does not need half a phone, and the card fits one screen with the volume.
+  // takes the height the rest leaves, within bounds: the card fits one screen with the volume.
   import { onDestroy } from 'svelte';
   import { now, subLine } from '../stores/now.js';
   import { state } from '../stores/state.js';
@@ -249,8 +249,8 @@
   K('srcsub.tracks.one'); K('srcsub.tracks.few'); K('srcsub.tracks.many'); K('srcsub.tracks.other');
 
   $: hasTransport = !!np.toggle;
-  $: playIcon = np.playing ? (np.stopIcon ? 'stop' : 'pause') : 'play_arrow';
-  $: playLabel = !np.playing ? $t['transport.play'] : np.stopIcon ? $t['transport.stop'] : $t['transport.pause'];
+  $: playIcon = np.playing ? 'pause' : 'play_arrow';
+  $: playLabel = np.playing ? $t['transport.pause'] : $t['transport.play'];
   $: repeatLabel = np.repeat === 1 ? $t['transport.repeat_one'] : np.repeat === 2 ? $t['transport.repeat_all'] : $t['transport.repeat_off'];
 </script>
 
@@ -480,9 +480,10 @@
     box-shadow: 0 24px 48px rgb(0 0 0 / 0.5);
   }
   .art img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  /* a station's: small, and smaller on a short screen, so the presets and the volume stay on it */
+  /* a station's: what the height leaves (the rest of the card, the bottom bar and the gap above
+     it take 510 px; 20 more are kept spare), from 96 on a short phone to 260 on a tall one */
   .art.tile {
-    --tile: clamp(96px, calc(100vh - 530px), 152px);
+    --tile: clamp(96px, calc(100vh - 530px), 260px);
     margin-top: 8px;
     width: var(--tile);
     max-width: none;
@@ -490,7 +491,7 @@
     box-shadow: 0 12px 32px rgb(0 0 0 / 0.45);
   }
   @supports (height: 100svh) {
-    .art.tile { --tile: clamp(96px, calc(100svh - 530px), 152px); }
+    .art.tile { --tile: clamp(96px, calc(100svh - 530px), 260px); }
   }
   /* the station's disc: its logo, or its stand-in (lib/stationbadge.js), as on the glass's tile */
   .disc {

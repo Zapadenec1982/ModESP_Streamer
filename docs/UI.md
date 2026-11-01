@@ -524,12 +524,14 @@ that step back.
 bar on a phone, a rail from 600 px (`lib/nav.js`, the same icons as in the panel's menu), the
 mini-player above them, a test-tone bar while the tone plays (`ToneBar.svelte`), a banner after 5 s
 without a WebSocket (connection lost) or when the panel is busy. The mini-player is on every page
-except the Player when the source is playing (tone and AUX — always) or can be resumed from the
-mini-player: card, radio, DLNA, Bluetooth with a phone, AirPlay with a remote
-(`np.playing || np.toggle && np.live`, `stores/now.js`). Output off, Bluetooth without a phone, USB
-without a stream and AirPlay without a remote that is not playing do not have it. The Player has no
-top bar and is tinted with `ui.cover_rgb`. Above everything: login (`LoginModal`), the snackbar and
-the pairing dialog (`PairDialog.svelte`).
+except the Player when the source is playing (tone and AUX — always; a station while it plays or
+connects) or can be resumed from the mini-player: card, DLNA, Bluetooth with a phone, AirPlay with
+a remote (`np.playing || np.toggle && np.live`, `stores/now.js`). Its button is play/pause; on a
+station, which does not pause, the mute (`audio.mute`), as the encoder's press on the glass — a
+track DLNA pushed keeps play/pause. Output off, Bluetooth without a phone, USB without a stream,
+AirPlay without a remote that is not playing and a stopped station do not have it. The Player has
+no top bar and is tinted with `ui.cover_rgb`. Above everything: login (`LoginModal`), the snackbar
+and the pairing dialog (`PairDialog.svelte`).
 
 ### Pages and what they read/write
 
@@ -558,8 +560,9 @@ The endpoint formats are in [NETWORK.md](NETWORK.md); the EQ document and calibr
 has the track's card) is the glass's station face: no transport, no progress, no buffer line.
 From the top:
 
-- where it plays from, then a small tile — 152 px, down to 96 on a short screen — with the cover
-  (`/api/cover`), else the station's logo, else its stand-in: `lib/stationbadge.js`, a copy of
+- where it plays from, then a tile as big as the screen's height leaves — `100svh` − 530 px, 96 to
+  260 px: 260 on a 390×844 phone, 210 at 360×740, 134 at 390×664 (Safari with its bars) — with the
+  cover (`/api/cover`), else the station's logo, else its stand-in: `lib/stationbadge.js`, a copy of
   `station_badge.h` held to the header's pinned cases by `tools/tests/test_webui_station_badge.py`;
 - the station's name between ‹ and › (`radio.cmd` 4 and 3, greyed while the list has no other
   station); beside the name, for a catalog station outside the list (`radio.station` = −1), ♥,
@@ -571,18 +574,19 @@ From the top:
   here" while a tap would store;
 - "All stations · N ›" to `#/stations`, the volume, "Sound" and the moon.
 
-On a 390×844 phone the card fits above the bottom bar in all four languages. The presets come from
-`GET /api/stations`, read again when `radio.list_rev` moves and kept between visits. They have the
-glass's rules: a tap tunes (`radio.station`; the tuned station, when it is not on, `radio.cmd` 1),
-a 500 ms hold or the context menu (the right button, the menu key) stores what plays, and so does a
-tap on an empty one. A store names the station in `radio.web_name`, `radio.web_url`,
-`radio.web_uuid` and the preset in `radio.web_act` 2–7 (the panel finds a station of the list by
-its stream and adds one from the catalog); for a catalog station `radio.fav_add` goes in the same
-request, so the stream that plays becomes the list's station, as on the glass. The logos are Radio
-Browser's favicons, which the browser asks for itself (`lib/radiobrowser.js`): one
-`/json/stations/byuuid?uuids=…` for the presets' and the playing station's uuids once the list is
-read, each uuid once in the tab's session (`sessionStorage`). A station without a uuid, or a
-picture that does not load, keeps its stand-in. The mini-player keeps play/stop for a station.
+At 390×844, 390×664 and 360×740 the card fits above the bottom bar, with no scrolling, in all four
+languages. The presets come from `GET /api/stations`, read again when `radio.list_rev` moves and
+kept between visits. They have the glass's rules: a tap tunes (`radio.station`; the tuned station,
+when it is not on, `radio.cmd` 1), a 500 ms hold or the context menu (the right button, the menu
+key) stores what plays, and so does a tap on an empty one. A store names the station in
+`radio.web_name`, `radio.web_url`, `radio.web_uuid` and the preset in `radio.web_act` 2–7 (the
+panel finds a station of the list by its stream and adds one from the catalog); for a catalog
+station `radio.fav_add` goes in the same request, so the stream that plays becomes the list's
+station, as on the glass. The logos are Radio Browser's favicons, which the browser asks for itself
+(`lib/radiobrowser.js`): one `/json/stations/byuuid?uuids=…` for the presets' and the playing
+station's uuids once the list is read, each uuid once in the tab's session (`sessionStorage`). A
+station without a uuid, or a picture that does not load, keeps its stand-in. On the other pages the
+mini-player's button for a station is the mute.
 
 ### State: reading and writing
 
