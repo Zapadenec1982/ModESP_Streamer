@@ -9,8 +9,8 @@
 
 #define JSMN_STATIC          // jsmn is header-only and linked in several places
 #include "jsmn.h"
+#include "jsmn_util.h"
 
-#include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -20,10 +20,7 @@ namespace {
 
 constexpr int MAX_TOKENS = 48;
 
-bool key_is(const char* json, const jsmntok_t& t, const char* name) {
-    const int n = t.end - t.start;
-    return t.type == JSMN_STRING && (int)strlen(name) == n && !strncmp(json + t.start, name, n);
-}
+using jsmn_util::key_is;
 
 bool boolean(const char* json, const jsmntok_t& t, bool& out) {
     const int n = t.end - t.start;
@@ -47,87 +44,6 @@ bool integer(const char* json, const jsmntok_t& t, long long lo, long long hi, l
     return true;
 }
 
-int hexval(char c) {
-    if (c >= '0' && c <= '9') return c - '0';
-    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
-    return -1;
-}
-
-/// A JSON string's raw bytes, escapes undone. False on a bad escape, a control character, or
-/// when it does not fit `cap` (with its NUL). A raw byte is copied as it stands, so whether the
-/// result is UTF-8 is the caller's to check.
-bool unescape(const char* s, size_t n, char* out, size_t cap, size_t& len) {
-    size_t w = 0;
-    auto put = [&](uint32_t cp) {
-        char b[4];
-        size_t k;
-        if (cp < 0x80)       { b[0] = (char)cp; k = 1; }
-        else if (cp < 0x800) { b[0] = (char)(0xC0 | (cp >> 6)); b[1] = (char)(0x80 | (cp & 0x3F)); k = 2; }
-        else if (cp < 0x10000) {
-            b[0] = (char)(0xE0 | (cp >> 12)); b[1] = (char)(0x80 | ((cp >> 6) & 0x3F));
-            b[2] = (char)(0x80 | (cp & 0x3F)); k = 3;
-        } else {
-            b[0] = (char)(0xF0 | (cp >> 18)); b[1] = (char)(0x80 | ((cp >> 12) & 0x3F));
-            b[2] = (char)(0x80 | ((cp >> 6) & 0x3F)); b[3] = (char)(0x80 | (cp & 0x3F)); k = 4;
-        }
-        if (w + k >= cap) return false;
-        memcpy(out + w, b, k);
-        w += k;
-        return true;
-    };
-    auto hex4 = [&](size_t at, uint32_t& v) {
-        if (at + 4 > n) return false;
-        v = 0;
-        for (size_t k = 0; k < 4; k++) {
-            const int h = hexval(s[at + k]);
-            if (h < 0) return false;
-            v = v * 16 + (uint32_t)h;
-        }
-        return true;
-    };
-    for (size_t i = 0; i < n;) {
-        const unsigned char c = (unsigned char)s[i];
-        if (c < 0x20) return false;
-        if (c != '\\') {
-            if (w + 1 >= cap) return false;
-            out[w++] = (char)c;
-            i++;
-            continue;
-        }
-        if (i + 1 >= n) return false;
-        const char e = s[i + 1];
-        uint32_t cp = 0;
-        switch (e) {
-        case '"': cp = '"'; break;
-        case '\\': cp = '\\'; break;
-        case '/': cp = '/'; break;
-        case 'b': case 'f': case 'n': case 'r': case 't': return false;   // control characters
-        case 'u': {
-            if (!hex4(i + 2, cp)) return false;
-            if (cp >= 0xD800 && cp <= 0xDBFF) {             // a surrogate pair
-                uint32_t lo = 0;
-                if (i + 12 > n) return false;                 // "\uD8xx\uDCxx" whole
-                if (s[i + 6] != '\\' || s[i + 7] != 'u' || !hex4(i + 8, lo) || lo < 0xDC00 || lo > 0xDFFF)
-                    return false;
-                cp = 0x10000 + ((cp - 0xD800) << 10) + (lo - 0xDC00);
-                i += 6;
-            } else if ((cp >= 0xDC00 && cp <= 0xDFFF) || cp < 0x20) {
-                return false;
-            }
-            i += 4;
-            break;
-        }
-        default: return false;
-        }
-        if (!put(cp)) return false;
-        i += 2;
-    }
-    out[w] = '\0';
-    len = w;
-    return true;
-}
-
 }  // namespace
 
 void addr_text(const uint8_t a[6], char* out, size_t n) {
@@ -137,7 +53,7 @@ void addr_text(const uint8_t a[6], char* out, size_t n) {
 bool parse_addr(const char* s, size_t n, uint8_t out[6]) {
     if (n != 17) return false;
     for (int i = 0; i < 6; i++) {
-        const int hi = hexval(s[i * 3]), lo = hexval(s[i * 3 + 1]);
+        const int hi = jsmn_util::hex_digit(s[i * 3]), lo = jsmn_util::hex_digit(s[i * 3 + 1]);
         if (hi < 0 || lo < 0) return false;
         if (i < 5 && s[i * 3 + 2] != ':') return false;
         out[i] = (uint8_t)(hi * 16 + lo);
@@ -147,17 +63,8 @@ bool parse_addr(const char* s, size_t n, uint8_t out[6]) {
 
 size_t json(const bt_settings::View& v, const bt_settings::Pairing& p, bool confirmer,
             char* buf, size_t buf_sz) {
-    size_t o = 0;
-    // the bounded append of eq_web.cpp: too small a buffer gives 0, never half a body
-    auto add = [&](const char* fmt, auto... args) {
-        const size_t at = o;
-        if (at >= buf_sz) { o = buf_sz + 1; return; }
-        size_t room = buf_sz - at;
-        if (room > (size_t)INT_MAX) room = (size_t)INT_MAX;
-        const int w = snprintf(buf + at, room, fmt, args...);
-        if (w < 0 || (size_t)w >= room) o = buf_sz + 1;
-        else o = at + (size_t)w;
-    };
+    // too small a buffer gives 0, never half a body
+    jsmn_util::Appender add(buf, buf_sz);
     char name[modesp::net::json_escaped_capacity(bt_settings::NAME_CAP - 1)];
     auto esc = [&](const char* s) {
         if (!modesp::net::json_escape(name, sizeof(name), s)) name[0] = '\0';
@@ -184,7 +91,7 @@ size_t json(const bt_settings::View& v, const bt_settings::Pairing& p, bool conf
     add("\"code\":%lu,\"result\":%u,\"by\":%u,\"accepted\":%s},", (unsigned long)(p.active ? p.passkey : 0),
         (unsigned)p.result, (unsigned)p.by, p.accepted ? T : F);
     add("\"confirmer\":%s}", confirmer ? T : F);
-    return o > buf_sz ? 0 : o;
+    return add.size();
 }
 
 bool parse(const char* json, size_t len, Edit& out) {
@@ -219,9 +126,11 @@ bool parse(const char* json, size_t len, Edit& out) {
         } else if (key_is(json, key, "name")) {
             // Held to the satellite's rule here, before anything is queued: a name it refuses
             // never comes back in its BT_CONFIG, and the panel must not keep one that cannot.
+            // A name is one line: no control character, escaped or not.
             size_t got = 0;
             if (v.type != JSMN_STRING ||
-                !unescape(json + v.start, (size_t)(v.end - v.start), out.name, sizeof(out.name), got) ||
+                !jsmn_util::unescape(json + v.start, (size_t)(v.end - v.start), out.name, sizeof(out.name),
+                                     got, jsmn_util::Controls::NONE) ||
                 !device_name::valid(out.name, got)) return false;
             out.rename = true;
         } else if (key_is(json, key, "forget")) {

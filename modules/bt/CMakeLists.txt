@@ -10,5 +10,5 @@ idf_component_register(
     # the web's Bluetooth page and its answer to a pairing request.
     # modesp_services: nvs_helper, for the panel's one name (src/device_name.cpp).
     PRIV_REQUIRES cover sat_link esp_app_format esp_timer esp_ringbuf modesp_net esp_http_server jsmn
-                  modesp_services
+                  jsmn_util modesp_services
 )
