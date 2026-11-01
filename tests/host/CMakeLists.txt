@@ -33,6 +33,7 @@ include_directories(
     "${ROOT}/components/radio_catalog/include"               # radio_catalog.h — the station catalog, pure
     "${ROOT}/components/cover/include"                       # cover.h — for cover_tone.cpp, which is pure
     "${ROOT}/components/jsmn"                                # header-only JSON parser
+    "${ROOT}/components/jsmn_util/include"                   # jsmn_util.h — the parsers' shared helpers
     "${ROOT}/components/audio_resampler"                     # resampler.h — vendored dbry, plain C
     "${ROOT}/components/audio_pipe/include"                  # audio_pipe.h — decoder-to-ring arithmetic
     "${ROOT}/components/sat_link/include"                    # sat_link.h — the BT satellite wire format
@@ -171,6 +172,7 @@ set(TEST_SOURCES
     "${CMAKE_SOURCE_DIR}/test_module_manager.cpp"    # request_stop_all(): on_stop() on the update_all() task
     "${CMAKE_SOURCE_DIR}/test_shared_state.cpp"
     "${CMAKE_SOURCE_DIR}/test_json_escape.cpp"
+    "${CMAKE_SOURCE_DIR}/test_jsmn_util.cpp"         # components/jsmn_util — key_is, span, unescape, Appender
     "${CMAKE_SOURCE_DIR}/test_utf8.cpp"              # modesp/utf8.h — cutting text on a character boundary
     "${CMAKE_SOURCE_DIR}/test_ws_slots.cpp"          # modesp/net/ws_slots.h — WsService's slot rules
     "${CMAKE_SOURCE_DIR}/test_module_commands.cpp"
