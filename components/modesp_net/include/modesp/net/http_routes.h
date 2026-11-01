@@ -106,6 +106,15 @@ inline bool read_body(httpd_req_t* req, char* buf, bool reply = true) {
     return true;
 }
 
+/// A JSON answer: `status` as httpd takes it ("200 OK"), the body a NUL-terminated string. Never
+/// cached — what a route answers is the state of the moment.
+inline esp_err_t send_json(httpd_req_t* req, const char* status, const char* body) {
+    httpd_resp_set_status(req, status);
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+    return httpd_resp_send(req, body, HTTPD_RESP_USE_STRLEN);
+}
+
 /// Room for eight. Four was meant as a smell threshold — a fifth subsystem wanting routes
 /// would mean the seam needed revisiting — and it was revisited when the player reached it
 /// (11.10.2026): DLNA, the station list, the screenshot, the EQ, Bluetooth and the user's
