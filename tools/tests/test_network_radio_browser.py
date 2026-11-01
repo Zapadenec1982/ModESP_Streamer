@@ -274,6 +274,8 @@ int main() {
 
 
 # The framework's HTTP handlers, compiled as they are against a stub server and a stub store.
+HTTPD_INCLUDES = [ROOT / "components/jsmn", ROOT / "components/jsmn_util/include",
+                  ROOT / "components/modesp_net/include"]
 HTTPD_STUBS = r"""
 #include <cstdio>
 #include <cstdlib>
@@ -283,6 +285,7 @@ HTTPD_STUBS = r"""
 #include <string>
 #include <variant>
 #include "jsmn.h"
+#include "jsmn_util.h"
 #include "modesp/net/json_escape.h"
 using esp_err_t = int;
 constexpr int ESP_OK = 0, ESP_FAIL = -1;
@@ -364,7 +367,6 @@ def test_settings_take_a_value_of_the_keys_type_unescaped(tmp_path):
     source = (ROOT / "components/modesp_net/src/http_service.cpp").read_text(encoding="utf-8")
     handlers = "\n".join(extract(source, signature) for signature in (
         "static bool value_fits(",
-        "static int json_span(",
         "esp_err_t HttpService::handle_post_settings(",
         "esp_err_t HttpService::handle_get_backup(",
     ))
@@ -425,15 +427,13 @@ int main() {
   return 0;
 }
 """
-    build_and_run(tmp_path, harness,
-                  [ROOT / "components/jsmn", ROOT / "components/modesp_net/include"])
+    build_and_run(tmp_path, harness, HTTPD_INCLUDES)
 
 
 def test_restore_takes_a_value_of_the_keys_type(tmp_path):
     source = (ROOT / "components/modesp_net/src/http_service.cpp").read_text(encoding="utf-8")
     handlers = "\n".join(extract(source, signature) for signature in (
         "static bool value_fits(",
-        "static int json_span(",
         "esp_err_t HttpService::handle_post_restore(",
     ))
     harness = HTTPD_STUBS + SETTINGS_STUBS + r"""
@@ -485,8 +485,7 @@ int main() {
   return 0;
 }
 """
-    build_and_run(tmp_path, harness,
-                  [ROOT / "components/jsmn", ROOT / "components/modesp_net/include"])
+    build_and_run(tmp_path, harness, HTTPD_INCLUDES)
 
 
 def test_auth_reads_back_a_name_with_quotes_as_json(tmp_path):
@@ -623,8 +622,7 @@ int main() {
   return 0;
 }
 """
-    build_and_run(tmp_path, harness,
-                  [ROOT / "components/jsmn", ROOT / "components/modesp_net/include"])
+    build_and_run(tmp_path, harness, HTTPD_INCLUDES)
 
 
 def test_late_routes_wait_for_a_held_server(tmp_path):

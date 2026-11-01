@@ -36,6 +36,7 @@
 
 #include "state_meta.h"
 #include "jsmn.h"
+#include "jsmn_util.h"           // player-fork: span(), a value stepped over whole
 #include "modesp/net/json_escape.h"
 
 #include <cstdio>
@@ -217,17 +218,6 @@ static bool value_fits(const gen::StateMeta* meta, const jsmntok_t& tok, const c
     if (tok.type != JSMN_PRIMITIVE) return false;
     if (strcmp(meta->type, "bool") == 0) return strcmp(val, "true") == 0 || strcmp(val, "false") == 0;
     return val[0] == '-' || (val[0] >= '0' && val[0] <= '9');          // "int", "float"
-}
-
-// player-fork: how many tokens one value occupies, everything nested inside it included. jsmn
-// lays them out depth-first: each token takes the place of one child still owed and owes its own
-// in turn, and the value ends when nothing is owed. A loop, as span() in
-// components/radio_catalog/src/json_util.h, not recursion: the depth is the body's to choose.
-static int json_span(const jsmntok_t* tok, int count, int i) {
-    if (i >= count) return 1;
-    int j = i + 1;
-    for (int pending = tok[i].size; pending > 0 && j < count; ++j) pending += tok[j].size - 1;
-    return j - i;
 }
 
 // Context for SharedState serialization
@@ -726,14 +716,14 @@ esp_err_t HttpService::handle_post_settings(httpd_req_t* req) {
     int accepted = 0;
     int rejected = 0;
 
-    // player-fork: each value stepped over whole (json_span), as /api/restore does. Two tokens per
-    // key fitted only plain values: past an object or an array the walk took the keys inside it
-    // for settings of their own ({"x":["audio.volume",7]} set the volume to 7). Such a value is
-    // refused with its key (value_fits() takes no object or array); a key jsmn let close with no
-    // value, as in {"a":}, is refused alone.
+    // player-fork: each value stepped over whole (jsmn_util::span), as /api/restore does. Two
+    // tokens per key fitted only plain values: past an object or an array the walk took the keys
+    // inside it for settings of their own ({"x":["audio.volume",7]} set the volume to 7). Such a
+    // value is refused with its key (value_fits() takes no object or array); a key jsmn let close
+    // with no value, as in {"a":}, is refused alone.
     for (int i = 1, next = 1; i < r; i = next) {
         const bool has_value = tokens[i].size == 1 && i + 1 < r;
-        next = has_value ? i + 1 + json_span(tokens, r, i + 1) : i + 1;
+        next = has_value ? i + 1 + jsmn_util::span(tokens, r, i + 1) : i + 1;
         if (tokens[i].type != JSMN_STRING) continue;
         if (!has_value) {
             rejected++;
@@ -1275,14 +1265,14 @@ esp_err_t HttpService::handle_post_restore(httpd_req_t* req) {
     }
 
     // Знаходимо "keys" об'єкт
-    // player-fork: stepping over each value whole (json_span). A skip of size * 2 tokens fitted
-    // only an object of plain values: past an array of three it went six tokens on, and "keys"
-    // after it was never found. A key's value is its one child: a key jsmn let close with no
-    // value, as in {"a":}, owns no token after it.
+    // player-fork: stepping over each value whole (jsmn_util::span). A skip of size * 2 tokens
+    // fitted only an object of plain values: past an array of three it went six tokens on, and
+    // "keys" after it was never found. A key's value is its one child: a key jsmn let close with
+    // no value, as in {"a":}, owns no token after it.
     int keys_tok = -1;
     for (int i = 1, next = 1; i < r; i = next) {
         const bool has_value = tokens[i].size == 1 && i + 1 < r;
-        next = has_value ? i + 1 + json_span(tokens, r, i + 1) : i + 1;
+        next = has_value ? i + 1 + jsmn_util::span(tokens, r, i + 1) : i + 1;
         if (!has_value || tokens[i].type != JSMN_STRING) continue;
         int klen = tokens[i].end - tokens[i].start;
         if (klen == 4 && strncmp(buf + tokens[i].start, "keys", 4) == 0) {
@@ -1309,7 +1299,7 @@ esp_err_t HttpService::handle_post_restore(httpd_req_t* req) {
     int j = keys_tok + 1;
     for (int k = 0, next = j; k < key_count && j < r; k++, j = next) {
         const bool has_value = tokens[j].size == 1 && j + 1 < r;
-        next = has_value ? j + 1 + json_span(tokens, r, j + 1) : j + 1;
+        next = has_value ? j + 1 + jsmn_util::span(tokens, r, j + 1) : j + 1;
         if (tokens[j].type != JSMN_STRING) continue;
         if (!has_value) {
             skipped++;

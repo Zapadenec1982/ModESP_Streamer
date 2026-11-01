@@ -23,7 +23,7 @@ idf_component_register(
     SRCS ${net_srcs}
     INCLUDE_DIRS "include"
     REQUIRES ${net_reqs}
-    PRIV_REQUIRES jsmn mbedtls safe_file user_store esp_timer
+    PRIV_REQUIRES jsmn jsmn_util mbedtls safe_file user_store esp_timer
 )
 
 # Доступ до згенерованих headers (state_meta.h для валідації POST /api/settings)
