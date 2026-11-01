@@ -553,7 +553,6 @@
   "svc.internal": "Internal",
   "svc.largest": "Largest block",
   "svc.free": "Free",
-  "svc.min": "Minimum",
   "svc.internal_min": "Internal min.",
   "svc.sat": "Bluetooth module",
   "svc.link": "Link",

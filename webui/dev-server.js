@@ -706,13 +706,15 @@ setInterval(() => {
 }, 1000);
 setInterval(() => {
   const j = (v, d, lo, hi) => Math.round(Math.min(hi, Math.max(lo, v + (Math.random() - 0.5) * d)) * 100) / 100;
+  const internal = Math.round(j(state['system.heap_internal'] ?? 120000, 4000, 40000, 200000));
   quiet({
     'audio.cpu_pct': j(state['audio.cpu_pct'] ?? 30, 6, 5, 95),
     'audio.dsp_pct': j(state['audio.dsp_pct'] ?? 19, 4, 2, 60),
     'audio.dsp_max_pct': j(state['audio.dsp_max_pct'] ?? 23, 6, 5, 90),
     'audio.lim_gr': Math.random() < 0.3 ? j(1.2, 2, 0, 4) : 0,
     'system.main_loop_max_ms': Math.round(j(state['system.main_loop_max_ms'] ?? 12, 8, 10, 60)),
-    'system.heap_internal': Math.round(j(state['system.heap_internal'] ?? 120000, 4000, 40000, 200000)),
+    'system.heap_internal': internal,
+    'system.heap_internal_min': Math.min(state['system.heap_internal_min'] ?? internal, internal),
     'ui.touch_x': Math.floor(Math.random() * 480),
     'ui.touch_y': Math.floor(Math.random() * 800),
   });

@@ -128,7 +128,7 @@
       <Reading label={$t['svc.largest']} value={bytes('system.heap_largest')} />
       <Reading label="PSRAM" value={bytes('system.heap_psram')} />
       <Reading label={$t['svc.free']} value={bytes('system.heap_free')} />
-      <Reading label={$t['svc.min']} value={bytes('system.heap_min')} />
+      <Reading label={$t['svc.internal_min']} value={bytes('system.heap_internal_min')} grade={svc.internalFree(n('system.heap_internal_min'))} />
     </Group>
 
     <Group caps caption={$t['svc.sat']}>

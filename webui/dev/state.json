@@ -160,6 +160,7 @@
   "system.heap_dma": 87983,
   "system.heap_free": 23946191,
   "system.heap_internal": 123443,
+  "system.heap_internal_min": 101376,
   "system.heap_largest": 47104,
   "system.heap_min": 23684043,
   "system.heap_psram": 23822748,

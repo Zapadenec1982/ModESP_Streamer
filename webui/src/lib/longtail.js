@@ -31,7 +31,7 @@ export const SHOWN = [
   'audio.dsp_max_pct', 'audio.eq_headroom_db', 'audio.out_clamps', 'audio.dsp_faults',
   'audio.bt_clock_follow',
   'system.uptime', 'system.boot_reason', 'system.main_stack_min', 'system.stalled',
-  'system.safe_mode', 'system.main_loop_max_ms', 'system.heap_free', 'system.heap_min',
+  'system.safe_mode', 'system.main_loop_max_ms', 'system.heap_free',
   // Service › Calibration: the speakers' port
   'audio.port_hz', 'audio.port_meas', 'audio.port_meas_ch',
   'audio.port_meas_status', 'audio.port_meas_hz',
@@ -68,6 +68,9 @@ export const DROPPED = [
   // The amplifier's ceiling, the drive into it and the bass power cap: «Максимум» is the one
   // limit a person sets, and these stay what the datasheet gives.
   'audio.amp_clip_db10', 'audio.amp_cal', 'audio.ceiling_dbfs', 'audio.drive_db', 'audio.rms_cap_db10',
+  // The whole heap's minimum counts the free PSRAM too, tens of MB, so it can never warn:
+  // Service shows the lowest free internal RAM (system.heap_internal_min) in its place.
+  'system.heap_min',
 ];
 
 /**
