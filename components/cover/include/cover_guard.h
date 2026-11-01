@@ -167,9 +167,10 @@ inline uint64_t png_soft_peak(int w, int h, bool sixteen_bit) {
 /// and the rest of the firmware keeps allocating while a decode runs.
 constexpr uint64_t SOFT_RESERVE = 2u << 20;
 
-/// True when a decode that peaks at `peak` bytes fits beside the largest free PSRAM block.
-inline bool soft_memory_ok(uint64_t peak, size_t largest_free) {
-    return peak + SOFT_RESERVE <= (uint64_t)largest_free;
+/// The free PSRAM block a decode that peaks at `peak` bytes needs before it starts: the peak
+/// and the reserve, in one piece. decode_soft() asks for it by allocating it.
+inline uint64_t soft_memory_need(uint64_t peak) {
+    return peak + SOFT_RESERVE;
 }
 
 }  // namespace cover_guard

@@ -300,15 +300,24 @@ bool decode_soft(Store& g, const uint8_t* jpg, size_t len, uint32_t expected) {
     // And the memory, against what is free now rather than what the chip has. stb asks for
     // its output only after the last scan, so a picture that does not fit used to cost the
     // whole decode - seconds, at the sizes where this bites - and then fail on "outofmem".
-    const size_t largest = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
-    if (!cover_guard::soft_memory_ok(peak, largest)) {
-        ESP_LOGW(TAG, "a %s at %dx%d: the software decoder would hold about %u KB at once and "
-                      "the largest free PSRAM block is %u KB",
-                 kind_name(kind, png), w, h, (unsigned)(peak >> 10), (unsigned)(largest >> 10));
+    //
+    // Asked by taking the block and giving it straight back: TLSF finds one or refuses in
+    // constant time. heap_caps_get_largest_free_block() answers the same question by walking
+    // every block of the 32 MB pool with interrupts off on this core, 2.6-4.3 ms - longer than
+    // the satellite UART's FIFO lasts at 460800 baud, so a decode during a Bluetooth cover
+    // lost a frame of it (main.cpp took the same call out of its once-a-second report).
+    const uint64_t need = cover_guard::soft_memory_need(peak);
+    void* room = need <= SIZE_MAX
+               ? heap_caps_malloc((size_t)need, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT) : nullptr;
+    if (!room) {
+        ESP_LOGW(TAG, "a %s at %dx%d: the software decoder would hold about %u KB at once, and "
+                      "PSRAM has no free block of %u KB for that and the reserve",
+                 kind_name(kind, png), w, h, (unsigned)(peak >> 10), (unsigned)(need >> 10));
         return false;
     }
-    ESP_LOGI(TAG, "software path: %dx%d, PSRAM free %u, largest %u", w, h,
-             (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM), (unsigned)largest);
+    heap_caps_free(room);
+    ESP_LOGI(TAG, "software path: %dx%d, PSRAM free %u", w, h,
+             (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
     uint8_t* rgb = cover_soft_decode(jpg, (int)len, &w, &h);
     if (!rgb) {
         ESP_LOGW(TAG, "software decode failed: %s", soft_reason());

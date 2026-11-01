@@ -189,13 +189,12 @@ TEST_CASE("cover guard: stb's peak follows sampling, padding and progressive") {
 
 TEST_CASE("cover guard: at the bench's free memory, big progressive covers are refused up front") {
     const auto p420 = frame(true, {0x22, 0x11, 0x11});
-    using cover_guard::soft_memory_ok;
+    using cover_guard::soft_memory_need;
     using cover_guard::jpeg_soft_peak;
-    CHECK(soft_memory_ok(jpeg_soft_peak(p420, 1000, 1000), BENCH_LARGEST));
-    CHECK(soft_memory_ok(jpeg_soft_peak(p420, 1664, 1664), BENCH_LARGEST));
-    CHECK_FALSE(soft_memory_ok(jpeg_soft_peak(p420, 1672, 1672), BENCH_LARGEST));   // the reserve
-    CHECK_FALSE(soft_memory_ok(jpeg_soft_peak(p420, 1750, 1750), BENCH_LARGEST));
-    CHECK_FALSE(soft_memory_ok(jpeg_soft_peak(p420, 2048, 2048), BENCH_LARGEST));
-    CHECK(soft_memory_ok(1000, 1000 + cover_guard::SOFT_RESERVE));
-    CHECK_FALSE(soft_memory_ok(1001, 1000 + cover_guard::SOFT_RESERVE));
+    CHECK(soft_memory_need(jpeg_soft_peak(p420, 1000, 1000)) <= BENCH_LARGEST);
+    CHECK(soft_memory_need(jpeg_soft_peak(p420, 1664, 1664)) <= BENCH_LARGEST);
+    CHECK(soft_memory_need(jpeg_soft_peak(p420, 1672, 1672)) > BENCH_LARGEST);   // the reserve
+    CHECK(soft_memory_need(jpeg_soft_peak(p420, 1750, 1750)) > BENCH_LARGEST);
+    CHECK(soft_memory_need(jpeg_soft_peak(p420, 2048, 2048)) > BENCH_LARGEST);
+    CHECK(soft_memory_need(1000) == 1000 + cover_guard::SOFT_RESERVE);
 }
