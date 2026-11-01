@@ -292,8 +292,9 @@ void   dialog_hide(Dialog& d);
 /// typing on — so that rebuilding the UI (a palette or a language changed from the web) can
 /// wait for it to go instead of throwing away a question or half a password.
 void mark_modal(lv_obj_t* o);
-/// A marked object under `root` is showing (it and every parent not hidden).
-bool modal_shown(lv_obj_t* root);
+/// A marked object under `root` is showing (it and every parent not hidden). `except`, and what
+/// is under it, is not looked at.
+bool modal_shown(lv_obj_t* root, const lv_obj_t* except = nullptr);
 
 // ── feedback ───────────────────────────────────────────────────────────────────────────────
 

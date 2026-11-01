@@ -125,6 +125,8 @@ void ui_pick_show(const char* title, const char* const* items, int n, int curren
 
 bool ui_pick_shown() { return pick.shown; }
 
+const lv_obj_t* ui_pick_scrim() { return pick.d.scrim; }
+
 void ui_pick_hide() {
     if (!pick.shown) return;
     m3w::dialog_hide(pick.d);

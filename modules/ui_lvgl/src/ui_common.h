@@ -276,6 +276,9 @@ void ui_pick_build(lv_obj_t* scr);
 void ui_pick_show(const char* title, const char* const* items, int n, int current, void (*chosen)(int index));
 bool ui_pick_shown();
 void ui_pick_hide();
+/// The list's scrim — the object m3w::dialog marks modal — for a look past the list
+/// (m3w::modal_shown's `except`): the return to the Player closes the list rather than wait for it.
+const lv_obj_t* ui_pick_scrim();
 
 extern const UiScreenDef UI_SCREEN_NOW;
 extern const UiScreenDef UI_SCREEN_SRC;

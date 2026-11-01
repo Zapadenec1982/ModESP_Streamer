@@ -565,7 +565,8 @@ void UiLvglModule::poll_inputs(uint32_t dt_ms) {
     }
 
     // Auto-standby. Any encoder or touch activity restarts the timer; the touch side feeds
-    // it through publish_touch(), which is the only place that knows a finger arrived.
+    // it through publish_touch(), which is the only place that knows a finger arrived. The
+    // shell reads the same timer to go back to the Player after a minute alone (idle_home.h).
     if (input) { idle_ms_ = 0; if (standby_) set_standby(false); }
     else       { idle_ms_ += dt_ms; }
     const int32_t sleep_min = read_int("ui.standby_min", 5);
@@ -648,6 +649,7 @@ void UiLvglModule::mirror_state() {
     const int32_t cpu_pct = has_audio ? read_number("audio.cpu_pct", 0) : 0;
     const int32_t in_rate = has_audio ? read_number("audio.in_rate", 0) : 0;
     const int32_t tone_hz = has_audio ? read_int("audio.tone_hz", 0) : 0;
+    const bool port_meas = has_audio && read_bool("audio.port_meas", false);
     char audio_state[16] = "";
     if (has_audio) read_string("audio.state", audio_state, sizeof(audio_state));
 
@@ -840,6 +842,7 @@ void UiLvglModule::mirror_state() {
     snap_.cpu_pct = cpu_pct;
     snap_.in_rate = in_rate;
     snap_.tone_hz = tone_hz;
+    snap_.port_meas = port_meas;
     strncpy(snap_.play_title, play_title, sizeof(snap_.play_title) - 1);
     strncpy(snap_.radio_name, radio_name, sizeof(snap_.radio_name) - 1);
     strncpy(snap_.radio_now, radio_now, sizeof(snap_.radio_now) - 1);
@@ -868,6 +871,7 @@ void UiLvglModule::mirror_state() {
     snap_.sb_music = sb_music_;
     snap_.lim_gr_db = lim_gr_db;
     snap_.standby = standby_;
+    snap_.idle_ms = idle_ms_;       // the return to the Player reads the standby's own timer
     portEXIT_CRITICAL(&mux_);
 }
 

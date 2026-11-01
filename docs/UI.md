@@ -160,6 +160,16 @@ that line is deleted and `idf.py reconfigure` is run), otherwise only the addres
 hierarchy of their own), then goes to `parent`, then to `from`. The station tabs (`radio` and
 `catalog`) are one page; moving between them creates no `parent`.
 
+**A minute alone.** After 60 s with no touch on the glass and no turn or press of the knob (the
+standby's idle timer), the panel goes back to the Player by itself, from any page, and closes the
+menu, the "Sound" sheet and the pick list (the list as "Cancel" does) — over the Player too. It
+does not leave Service (`svc`), which is watched rather than touched, or `m3test`. It waits while a
+keyboard or a dialog other than the pick list is open (the pairing dialog, "Forget “…”?"), a test
+tone plays (`audio.source` = 1) or a measurement runs (`audio.port_meas`), and goes as soon as that
+is over if the panel is still alone. In standby nothing moves. Once per idle period: the first pass
+after the minute decides, and a page brought up after that without a touch (the bench's `screen=`)
+stays. The rules are `include/idle_home.h` (test `tests/host/test_idle_home.cpp`).
+
 **Overlays**, bottom to top: the volume pop-up, the menu, the "Sound" side sheet (384 px, on the
 right), the pick list (`src/ui_pick.cpp`, up to 9 items), the "Undo" snackbar, the standby screen,
 the Bluetooth pairing dialog; above everything, the touch ring (30 px, follows the finger).
@@ -327,13 +337,15 @@ touch writes `ui.touch_x/y` and `ui.touch_down` and resets the idle timer. The f
 - scrolling a page never sets anything.
 
 **Modality.** A dialog or a keyboard is marked modal (`m3w::mark_modal`); a UI rebuild from outside
-waits for them. Dialogs are at screen level, not page level (the pick list, pairing, "Forget “…”?"
+waits for them, and so does the return to the Player after a minute alone, which closes the pick
+list instead. Dialogs are at screen level, not page level (the pick list, pairing, "Forget “…”?"
 on Wi-Fi and Bluetooth): their scrim covers the header with ← as well.
 
 ### Standby
 
 - Turned on by the idle timer after `ui.standby_min` minutes (0 — never); the encoder, a touch, a tap
-  on the standby screen or a pairing request wakes the screen.
+  on the standby screen or a pairing request wakes the screen. The same timer takes a page back to
+  the Player after a minute ("A minute alone" above).
 - Two layouts: while music plays — the clock (160 px digits), the date, one line, *artist · title* or
   *station · what is playing* (scrolls if wider than the 640 px window) and the 28-bar spectrum;
   without music — only the clock and the date, centred.

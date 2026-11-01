@@ -919,12 +919,12 @@ void mark_modal(lv_obj_t* o) {
     if (o) lv_obj_add_flag(o, MODAL);
 }
 
-bool modal_shown(lv_obj_t* root) {
-    if (!root || lv_obj_has_flag(root, LV_OBJ_FLAG_HIDDEN)) return false;   // nor anything under it
+bool modal_shown(lv_obj_t* root, const lv_obj_t* except) {
+    if (!root || root == except || lv_obj_has_flag(root, LV_OBJ_FLAG_HIDDEN)) return false;   // nor anything under it
     if (lv_obj_has_flag(root, MODAL)) return true;
     const uint32_t n = lv_obj_get_child_count(root);
     for (uint32_t i = 0; i < n; i++) {
-        if (modal_shown(lv_obj_get_child(root, (int32_t)i))) return true;
+        if (modal_shown(lv_obj_get_child(root, (int32_t)i), except)) return true;
     }
     return false;
 }

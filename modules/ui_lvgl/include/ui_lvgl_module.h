@@ -68,6 +68,7 @@ public:
         int32_t  cpu_pct    = 0;
         int32_t  in_rate    = 0;        ///< measured input sample rate, 0 = none
         int32_t  tone_hz    = 0;
+        bool     port_meas  = false;    ///< audio.port_meas: the port measurement runs (the panel's microphone)
         char     play_title[96] = "";   ///< player.title mirror; as wide as the tag field
                                     ///  and as a file name, which is the fallback
         char     play_artist[96] = "";  ///< player.artist mirror; empty when the file has no tag
@@ -181,6 +182,7 @@ public:
         uint8_t  enc_event = 0;         ///< 1 = short click, 2 = long press
         uint32_t enc_event_seq = 0;
         bool     standby = false;       ///< screen asleep (auto or from the quick menu)
+        uint32_t idle_ms = 0;           ///< the standby's idle timer: since the last touch or knob input
     };
 
     /// What a screen can ask the main loop to do. SharedState is written from the main loop

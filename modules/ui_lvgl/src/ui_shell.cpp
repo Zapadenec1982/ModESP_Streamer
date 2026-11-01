@@ -12,7 +12,8 @@
  * the design package drew was dropped (88 px off every page for something wanted a few times
  * a day), and so were its "sleep" and "off" actions — standby comes by itself on the idle
  * timer, and switching the output off is not a touch interface's job. Lists (stations, DLNA,
- * the service readout) are reached from a page and their ← goes back to it.
+ * the service readout) are reached from a page and their ← goes back to it. Left alone for a
+ * minute, any page goes back to the Player by itself (idle_home.h).
  *
  * Pages are built once and shown/hidden, and a page can be redrawn without the shell changing
  * for it.
@@ -30,6 +31,7 @@
 #include "ui_common.h"
 #include "ui_m3_widgets.h"
 #include "i18n.h"
+#include "idle_home.h"
 #include "device_name.h"
 #include "bt_settings.h"
 #include "eq_store.h"
@@ -180,6 +182,9 @@ struct Shell {
 };
 
 Shell g;
+/// Outside `g`, which a rebuild starts over (ui_shell_build): a scheme or a language changed from
+/// the web must not give an idle period that is spent a second return to the Player.
+idle_home::Period s_idle;
 
 void set_drawer(bool open);
 void paint_drawer();
@@ -701,6 +706,31 @@ void refresh_pairing(UiCtx& c) {
     }
 }
 
+// ── a minute alone ─────────────────────────────────────────────────────────────────────────
+
+/// Something on the glass waits for an answer: a keyboard, or a dialog other than the pick list —
+/// the pairing dialog, «Забути …?». A minute alone throws away neither half a password nor a
+/// question, as a rebuild does not (rebuild_look); the pick list it answers «Скасувати».
+bool waiting_for_answer() { return m3w::modal_shown(lv_screen_active(), ui_pick_scrim()); }
+
+/// Back to the bare Player after idle_home::AFTER_MS alone (idle_home.h).
+void refresh_idle(const UiCtx& c) {
+    // The standby's idle time, or less while a press LVGL has seen has not reached it yet: that
+    // goes round the main loop first, and the tap that closes a keyboard must not pass for a
+    // minute alone. The knob's input comes that way too, but the knob ends nothing that holds a
+    // page.
+    const uint32_t idle = LV_MIN(c.s.idle_ms, lv_display_get_inactive_time(nullptr));
+    const bool over = g.drawer_open || ui_sound_is_open() || ui_pick_shown();
+    const bool test = c.s.source == modesp::gen::AUDIO_SOURCE_TONE || c.s.port_meas;
+    if (!s_idle.pass(idle, g.standby, PAGES[g.cur].def->id, over,
+                     [test] { return test || waiting_for_answer(); }))
+        return;
+    set_drawer(false);
+    ui_pick_hide();                             // as its «Скасувати»
+    ui_sound_close();
+    select_page(PAGE_HOME);
+}
+
 } // namespace
 
 // ═══════════════════════════════════════════════════════════════════════════════════════════
@@ -771,6 +801,7 @@ void ui_shell_build(lv_obj_t* scr, UiCtx& c) {
 void ui_shell_refresh(UiCtx& c) {
     if (g.undo_at && lv_tick_elaps(g.undo_at) > touch::UNDO_MS) undo_hide();
     refresh_pairing(c);
+    refresh_idle(c);          // first, so the page painted below is the one it leaves on the glass
     if (g.standby) {
         refresh_standby(c);
         return;
