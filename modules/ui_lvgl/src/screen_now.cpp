@@ -80,17 +80,17 @@ constexpr int32_t ROW_H   = 48;                              // the source line,
 constexpr int32_t ROW_BTN = 48;                              // «Звук», the list and the volume as drawn;
 constexpr int32_t ROW_EXT = 8;                               // a finger takes 8 px more to the sides and below
 constexpr int32_t TITLE_Y = ROW_H;
-// The transport by the rules: one height, the glass's 64 (7.5 mm, every row and button's); the
-// main button set apart by its width and its fill, not its height — play 96, prev and next 64;
-// one gap, 24 px (~3 mm), near enough to read as one group and far enough apart for a finger; the
-// group centred under the progress bar, symmetric with it and its two times. On the card shuffle
-// and repeat stand at the bar's two ends, and the five are 24 apart across the 448.
-constexpr int32_t TRAN_H   = 64;
-constexpr int32_t TRAN_GAP = 24;
-constexpr int32_t PLAY_W   = 96;
+// The transport as the web draws it (PlayerPage.svelte): play a filled disc, prev and next its
+// bare glyphs, no container. Every target the glass's 64 (7.5 mm) at least; play set apart by its
+// fill and a disc a size up, 72, which still ends where the progress box does. The group centred
+// under the progress bar; on the card shuffle and repeat stand at the bar's two ends, and the five
+// are one gap apart across the 448.
+constexpr int32_t TRAN_H   = 72;
+constexpr int32_t TRAN_GAP = 30;
+constexpr int32_t PLAY_W   = TRAN_H;
 static_assert(64 + TRAN_GAP + 64 + TRAN_GAP + PLAY_W + TRAN_GAP + 64 + TRAN_GAP + 64 == 448,
               "on the card the five fill the column at one gap");
-constexpr int32_t TRAN_Y  = COVER - TRAN_H;                  // 216: bottom-aligned with the cover
+constexpr int32_t TRAN_Y  = COVER - TRAN_H;                  // 208: bottom-aligned with the cover
 constexpr int32_t COL_H   = COVER;
 // the progress: the bar near the top of its box, the times under it, and the whole box the
 // finger's target (a press reaches a box only inside its parent's)
@@ -477,7 +477,7 @@ lv_obj_t* build(lv_obj_t* parent, UiCtx& c) {
     uih::show(n.badge, false);
 
     // ── progress: the bar, which is also the seek control ──
-    const int32_t prog_y = sub_y + lh_sub + 3;          // 158: the box ends at 208, the transport is at 216
+    const int32_t prog_y = sub_y + lh_sub + 3;          // 158: the box ends at 208, where the transport starts
     n.prog = uih::box(col, 0, prog_y, COL_W, PROG_H);
     // A 4-pixel bar is a fine thing to look at and an impossible thing to hit, so the touch
     // target is the whole box, twelve times its height, with the times in it. It was a taller box
@@ -506,11 +506,13 @@ lv_obj_t* build(lv_obj_t* parent, UiCtx& c) {
     // the two that change what "next" means: the card's queue, nobody else's
     n.shuf = m3w::icon_button(n.transport, 0, 0, 64, UI_SYM_SHUFFLE, t.t.icon_m);
     lv_obj_add_event_cb(n.shuf.obj, shuf_cb, LV_EVENT_CLICKED, nullptr);
-    n.prev = m3w::tonal_button(n.transport, 0, 0, 64, TRAN_H, m3::shape::M, UI_SYM_PREV, t.t.icon_l_fill);
+    n.prev = m3w::icon_button(n.transport, 0, 0, 64, UI_SYM_PREV, t.t.icon_xl_fill);
+    lv_obj_set_style_text_color(n.prev.icon, m3::col(t.c.on_surface), 0);
     lv_obj_add_event_cb(n.prev.obj, tran_cb, LV_EVENT_CLICKED, (void*)(intptr_t)0);
-    n.play = m3w::filled_button(n.transport, 0, 0, PLAY_W, TRAN_H, m3::shape::XL, UI_SYM_PLAY, t.t.icon_xl_fill);
+    n.play = m3w::filled_button(n.transport, 0, 0, PLAY_W, TRAN_H, m3::shape::FULL, UI_SYM_PLAY, t.t.icon_xl_fill);
     lv_obj_add_event_cb(n.play.obj, tran_cb, LV_EVENT_CLICKED, (void*)(intptr_t)1);
-    n.next = m3w::tonal_button(n.transport, 0, 0, 64, TRAN_H, m3::shape::M, UI_SYM_NEXT, t.t.icon_l_fill);
+    n.next = m3w::icon_button(n.transport, 0, 0, 64, UI_SYM_NEXT, t.t.icon_xl_fill);
+    lv_obj_set_style_text_color(n.next.icon, m3::col(t.c.on_surface), 0);
     lv_obj_add_event_cb(n.next.obj, tran_cb, LV_EVENT_CLICKED, (void*)(intptr_t)2);
     n.rep = m3w::icon_button(n.transport, 0, 0, 64, UI_SYM_REPEAT, t.t.icon_m);
     lv_obj_add_event_cb(n.rep.obj, rep_cb, LV_EVENT_CLICKED, nullptr);
