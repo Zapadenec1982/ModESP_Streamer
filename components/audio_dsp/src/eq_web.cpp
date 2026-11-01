@@ -7,8 +7,8 @@
 
 #define JSMN_STATIC          // jsmn is header-only and linked in several places
 #include "jsmn.h"
+#include "jsmn_util.h"
 
-#include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -19,10 +19,8 @@ namespace {
 /// A whole band set is 1 + 2 + 2 + 10 × 11 tokens; room for a stray field or two besides.
 constexpr int MAX_TOKENS = 160;
 
-bool key_is(const char* json, const jsmntok_t& t, const char* name) {
-    const int n = t.end - t.start;
-    return t.type == JSMN_STRING && (int)strlen(name) == n && !strncmp(json + t.start, name, n);
-}
+using jsmn_util::key_is;
+using jsmn_util::span;
 
 bool number(const char* json, const jsmntok_t& t, double& out) {
     if (t.type != JSMN_PRIMITIVE) return false;
@@ -38,15 +36,6 @@ bool number(const char* json, const jsmntok_t& t, double& out) {
 
 bool truthy(const char* json, const jsmntok_t& t) {
     return t.type == JSMN_PRIMITIVE && (t.end - t.start) == 4 && !strncmp(json + t.start, "true", 4);
-}
-
-/// Tokens `tok[i]` spans, itself included, never past `count` (as in eq_config.cpp: a loop,
-/// because the nesting depth is whatever the posted body says).
-int span(const jsmntok_t* tok, int count, int i) {
-    if (i >= count) return 1;
-    int j = i + 1;
-    for (int pending = tok[i].size; pending > 0 && j < count; ++j) pending += tok[j].size - 1;
-    return j - i;
 }
 
 float clampf(float v, float lo, float hi) { return v < lo ? lo : v > hi ? hi : v; }
@@ -65,17 +54,8 @@ void eq_web_clamp(EqBand& b) {
 }
 
 size_t eq_web_json(const EqDoc& doc, uint32_t rev, float fs_hz, char* buf, size_t buf_sz) {
-    size_t o = 0;
     // The same bounded append as eq_serialize: a buffer too small gives 0, never half a body.
-    auto add = [&](const char* fmt, auto... args) {
-        const size_t at = o;
-        if (at >= buf_sz) { o = buf_sz + 1; return; }
-        size_t room = buf_sz - at;
-        if (room > (size_t)INT_MAX) room = (size_t)INT_MAX;
-        const int w = snprintf(buf + at, room, fmt, args...);
-        if (w < 0 || (size_t)w >= room) o = buf_sz + 1;
-        else o = at + (size_t)w;
-    };
+    jsmn_util::Appender add(buf, buf_sz);
     add("{\"rev\":%lu,\"fs\":%.0f,\"preset\":\"%s\",\"presets\":[",
         (unsigned long)rev, (double)fs_hz, eq_preset(doc.preset).id);
     // the sounds offered, and a kept preset while it plays (eq_offered)
@@ -92,7 +72,7 @@ size_t eq_web_json(const EqDoc& doc, uint32_t rev, float fs_hz, char* buf, size_
             b.enabled ? "true" : "false");
     }
     add("]}");
-    return o > buf_sz ? 0 : o;
+    return add.size();
 }
 
 bool eq_web_parse(const char* json, size_t len, EqWebEdit& out) {

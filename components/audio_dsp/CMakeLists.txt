@@ -22,7 +22,7 @@ idf_component_register(
          "src/port_finder.cpp"
     INCLUDE_DIRS "include"
     REQUIRES espressif__esp-dsp
-    PRIV_REQUIRES jsmn safe_file
+    PRIV_REQUIRES jsmn jsmn_util safe_file
 )
 
 # Speed here, size everywhere else.

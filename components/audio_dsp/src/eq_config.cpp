@@ -9,12 +9,12 @@
 
 #define JSMN_STATIC          // jsmn is header-only and linked in several places
 #include "jsmn.h"
+#include "jsmn_util.h"
 
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <climits>
 
 namespace audio_core {
 
@@ -49,10 +49,8 @@ namespace {
 constexpr size_t MAX_FILE   = 4096;
 constexpr int    MAX_TOKENS = 320;
 
-bool key_is(const char* json, const jsmntok_t& t, const char* name) {
-    const int n = t.end - t.start;
-    return t.type == JSMN_STRING && (int)strlen(name) == n && !strncmp(json + t.start, name, n);
-}
+using jsmn_util::key_is;
+using jsmn_util::span;
 
 void copy_str(const char* json, const jsmntok_t& t, char* out, size_t out_sz) {
     int n = t.end - t.start;
@@ -97,18 +95,6 @@ const char* type_name(BandType t) {
     case BandType::NOTCH:      return "notch";
     default:                   return "peak";
     }
-}
-
-/// Number of tokens `tok[i]` spans, itself included, never past `count`. jsmn lays children
-/// out contiguously after their parent. A loop, not recursion: eq.json can come back from a
-/// user backup, and a few hundred levels of '[' would recurse off main's stack at every boot
-/// (the defect RP-2 fixed in the radio parsers, deep review 2026-10-12). Each token takes the
-/// place of one child still owed and owes its own in turn; the value ends when nothing is owed.
-int span(const jsmntok_t* tok, int count, int i) {
-    if (i >= count) return 1;
-    int j = i + 1;
-    for (int pending = tok[i].size; pending > 0 && j < count; ++j) pending += tok[j].size - 1;
-    return j - i;
 }
 
 /// The index of the value the key at `k` holds, or -1 when it holds none. jsmn here is not
@@ -234,25 +220,9 @@ bool eq_parse(const char* json, size_t len, EqConfig& cfg) {
 }
 
 size_t eq_serialize(const EqConfig& cfg, char* buf, size_t buf_sz) {
-    size_t o = 0;
-    // A tiny append helper: every write checks the remaining room, so a too-small buffer
-    // returns 0 rather than producing half a JSON document.
-    // `at` is a local copy on purpose. `o` is captured by reference, so with the size
-    // bound written as `buf_sz - o` the optimiser cannot prove the subtraction does not
-    // wrap — and at -O2 it says so. Reading the offset once states the invariant the guard
-    // already establishes: past this point the offset is strictly inside the buffer.
-    auto add = [&](const char* fmt, auto... args) {
-        const size_t at = o;
-        if (at >= buf_sz) { o = buf_sz + 1; return; }
-        // Clamped because snprintf reports its length as an int, so a size past INT_MAX is
-        // meaningless to it in any case. It also settles the range analysis, which at -O2
-        // will not take the guard above as proof that the subtraction cannot wrap.
-        size_t room = buf_sz - at;
-        if (room > (size_t)INT_MAX) room = (size_t)INT_MAX;
-        const int w = snprintf(buf + at, room, fmt, args...);
-        if (w < 0 || (size_t)w >= room) o = buf_sz + 1;
-        else o = at + (size_t)w;
-    };
+    // Every write checks the remaining room, so a too-small buffer returns 0 rather than
+    // producing half a JSON document.
+    jsmn_util::Appender add(buf, buf_sz);
 
     add("{\n  \"_comment\": \"%s\",\n",
         "Written by the player. DSP config, sectioned by output — see docs/CONCEPT.md, \\\"Outputs\\\". "
@@ -281,7 +251,7 @@ size_t eq_serialize(const EqConfig& cfg, char* buf, size_t buf_sz) {
         add("      ]\n    }%s\n", s + 1 < cfg.sections ? "," : "");
     }
     add("  ]\n}\n");
-    return o > buf_sz ? 0 : o;
+    return add.size();
 }
 
 bool eq_load(const char* path, EqConfig& cfg) {
