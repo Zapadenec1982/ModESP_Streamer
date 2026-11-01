@@ -177,7 +177,10 @@ one wire never meet for longer than one greeting. As a slave the P4 receives too
 ### microSD
 
 SDMMC slot 0, 4 bits, 20 MHz: CLK 43, CMD 44, D0–D3 39–42, no card-detect. The pins are the default IOMUX
-pins of slot 0 (`soc/sdmmc_pins.h`). The slot's IO is powered from the P4 LDO, channel 4, 3.3 V. The P4 has one
+pins of slot 0 (`soc/sdmmc_pins.h`), and buccaneer-jak's public JC4880P443C project mounts the card on this
+same panel with `SD_MMC.begin()` and no `setPins()`, that is on those defaults, in 4 bits (§8b). 4 bits
+rather than 1: 1-bit mode leaves D3 unconfigured, and D3 also holds an SD card in SD mode, so with nothing
+holding D3 the card never answers. The slot's IO is powered from the P4 LDO, channel 4, 3.3 V. The P4 has one
 SDMMC controller with two slots, and slot 1 is held by ESP-Hosted for the C6, so the card driver
 (`drivers/sdmmc_card`) neither initializes nor deinitializes the controller. FatFs is configured for the
 card: 512 B sector, long file names, UTF-8 (`sdkconfig.board`). `modules/storage` mounts it,
@@ -412,6 +415,7 @@ the server in ~200 ms.
 | Project | What is taken | Where in the tree |
 |---|---|---|
 | csvke/esp32_p4_jc4880p433c_bsp (Apache-2.0) | the DSI constants and the ST7701S init table of this panel | `drivers/dsi_st7701` |
+| buccaneer-jak, JC4880P443C project | the microSD pins (the slot-0 defaults) and the 4-bit width, §3a | `board.json`, `sd_0` |
 | `esp_hosted`, example `examples/ota/coprocessor_ota/mcu_host` | updating the C6 from the P4 over SDIO | `tools/c6_updater` |
 | TinyUSB `examples/device/uac2_speaker_fb`; `espressif/usb_device_uac` — TinyUSB without `esp_tinyusb` | UAC2 with a feedback endpoint | `components/usb_uac` |
 | ESP-ADF, DLNA example (`release/v2.x`) | the three DLNA renderer services | `components/esp_dlna` (README) |

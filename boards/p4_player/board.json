@@ -27,7 +27,7 @@
 
   "sdmmc_slots": [
     {"id": "sd_0",
-     "label": "microSD (TF). Pins CONFIRMED: they are the P4 slot-0 IOMUX defaults (soc/sdmmc_pins.h), and buccaneer-jak/JC4880P443C-... mounts this same panel with SD_MMC.begin() and no setPins(), i.e. on the defaults. 4-bit because that reference works in 4-bit and 1-bit leaves D3 unconfigured - on an SD card D3 also holds it in SD mode, and an undriven D3 is a card that never answers.",
+     "label": "microSD (TF), SDMMC slot 0, 4-bit",
      "slot": 0, "width": 4,
      "clk": 43, "cmd": 44, "d0": 39, "d1": 40, "d2": 41, "d3": 42,
      "cd": -1, "freq_khz": 20000, "ldo_chan": 4, "ldo_mv": 3300,
@@ -61,7 +61,7 @@
       "sample_rate_hz": 48000, "slot_bits": 32, "mclk_multiple": 256
     },
     {
-      "id": "i2s_b", "label": "I2S-B in from the BT satellite (JP1). Below link 1.9 the satellite is master and the three P4 pins are inputs; from 1.9 I2S0 drives BCLK/WS (GPIO33/30). No MCLK. Rate follows STREAM_FMT; the WIDTH is opened at its maximum deliberately - IDF reallocates the DMA descriptors on a width change and that allocation fails once Wi-Fi has taken its share. See park_bt_off_pll(). docs/CONCEPT.md, \"JP1\"",
+      "id": "i2s_b", "label": "I2S-B: in from the BT satellite (JP1)",
       "port": 1, "role": "slave",
       "bclk": 33, "ws": 30, "din": 31,
       "sample_rate_hz": 32000, "slot_bits": 32
@@ -71,7 +71,7 @@
   "uart_buses": [
     {
       "id": "uart_sat",
-      "label": "Control link to the BT satellite (J5, freed by removing R70/R75/R76). Far end GPIO16/17 on a WROOM. Wire format: docs/LINK_PROTOCOL.md. tx/rx here are an assignment, not a schematic fact - swap them if the pair is wired the other way",
+      "label": "Control link to the BT satellite (J5)",
       "port": 1,
       "tx": 26,
       "rx": 27,
