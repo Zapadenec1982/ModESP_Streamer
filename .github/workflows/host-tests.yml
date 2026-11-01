@@ -1,7 +1,6 @@
 # Host tests: the pytest suite in tools/tests/ plus the native C++ doctest runner in
 # tests/host/ (built by tools/tests/test_cpp_host.py). With the esp32p4 build (build-p4.yml)
-# this is the per-commit gate, run on Linux; the C++ runner is included by default since
-# 2026-09-21.
+# this is the per-commit gate, run on Linux; the C++ runner is included by default.
 #
 # Not covered here: tools/check_protocol_mirror.py needs a checkout of the satellite
 # repository (ModESP_BT_Satellite, P4_SATELLITE_ROOT), which this workflow does not make;
