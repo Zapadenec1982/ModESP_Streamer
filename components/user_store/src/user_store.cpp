@@ -157,8 +157,8 @@ void UserStore::begin() {
             // only warning anyone gets.
             ESP_LOGW(TAG, "no 'userdata' partition — this panel still has the old table");
             ESP_LOGW(TAG, "user files stay in %s and a full flash will erase them; "
-                          "a full flash (table included) is what fixes it - see CLAUDE.md, "
-                          "'Moving an existing panel to this layout'", IMAGE_DIR);
+                          "a full flash (table included) is what fixes it - see "
+                          "tools/user_data.py, 'THE ONE-TIME MOVE'", IMAGE_DIR);
         } else {
             ESP_LOGE(TAG, "userdata mount failed: %s — falling back to %s",
                      esp_err_to_name(err), IMAGE_DIR);
