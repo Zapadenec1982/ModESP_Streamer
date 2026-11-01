@@ -283,8 +283,8 @@ void WiFiService::on_update(uint32_t dt_ms) {
     // esp_wifi_sta_get_ap_info() is not a local read here — it is a synchronous RPC to the
     // C6 with a five-second timeout, made from the task that feeds the five-second
     // watchdog. While the SDIO link is carrying a radio stream that RPC takes long enough
-    // that the two meet, and the board resets (bench, 17.09.2026: task_wdt on main, stack
-    // shows eh_host_wifi_sta_get_ap_info). And it buys nothing: the note below records that
+    // that the two meet, and the board resets (task_wdt on main, the stack shows
+    // eh_host_wifi_sta_get_ap_info). And it buys nothing: the note below records that
     // this path returns 0 on this stack anyway. Revisit after an esp_hosted bump, and then
     // only off the main loop.
     if (false && connected_ && !ap_mode_) {
@@ -294,8 +294,8 @@ void WiFiService::on_update(uint32_t dt_ms) {
             // player-fork: over esp_wifi_remote 1.6.4 + esp_hosted 3.0.7 this reads 0 — the
             // sta_get_ap_info RPC response omits rssi (host glue copies ssid/bssid/channel/
             // authmode only) and esp_wifi_sta_get_rssi() cannot even be composed by the host
-            // RPC layer (msg_id 341 "pack_req_payload failed", bench 2026-09-15). Kept as the
-            // upstream code path; revisit after an esp_hosted bump.
+            // RPC layer (msg_id 341 "pack_req_payload failed"). Kept as the upstream code
+            // path; revisit after an esp_hosted bump.
             wifi_ap_record_t ap_info;
             if (esp_wifi_sta_get_ap_info(&ap_info) == ESP_OK) {
                 state_set("wifi.rssi", static_cast<int32_t>(ap_info.rssi));

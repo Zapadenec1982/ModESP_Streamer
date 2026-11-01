@@ -37,9 +37,9 @@ using Registrar = void (*)(httpd_handle_t server, void* ctx);
 /// GET path there is, so with it registered, EVERY later GET registration is refused with
 /// "already registered" — not shadowed, refused.
 ///
-/// Measured on the panel, 18.09.2026: four of those warnings in a row, then a load access
-/// fault inside the library that had just had its routes turned down. So a subsystem coming
-/// up late takes the wildcard down first, registers, and puts it back.
+/// Measured on the panel: four of those warnings in a row, then a load access fault inside
+/// the library that had just had its routes turned down. So a subsystem coming up late
+/// takes the wildcard down first, registers, and puts it back.
 using WildcardCtl = void (*)(void* self, bool on);
 
 inline WildcardCtl& wildcard_fn() { static WildcardCtl f = nullptr; return f; }
@@ -115,11 +115,11 @@ inline esp_err_t send_json(httpd_req_t* req, const char* status, const char* bod
     return httpd_resp_send(req, body, HTTPD_RESP_USE_STRLEN);
 }
 
-/// Room for eight. Four was meant as a smell threshold — a fifth subsystem wanting routes
-/// would mean the seam needed revisiting — and it was revisited when the player reached it
-/// (11.10.2026): DLNA, the station list, the screenshot, the EQ, Bluetooth and the user's
-/// files each own their routes, which is the seam doing its job, not a fault in it. Each slot
-/// is two pointers; add() still says no when the table is full, and the caller logs it.
+/// Room for eight. Four would be a smell threshold — a fifth subsystem wanting routes would
+/// mean the seam needs revisiting — but in the player DLNA, the station list, the
+/// screenshot, the EQ, Bluetooth and the user's files each own their routes, which is the
+/// seam doing its job, not a fault in it. Each slot is two pointers; add() still says no
+/// when the table is full, and the caller logs it.
 inline constexpr size_t MAX_REGISTRARS = 8;
 
 struct Entry { Registrar fn; void* ctx; };
