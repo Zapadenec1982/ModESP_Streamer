@@ -21,6 +21,7 @@
 
 #define JSMN_STATIC          // jsmn is header-only and linked in several places
 #include "jsmn.h"
+#include "jsmn_util.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -33,10 +34,8 @@ namespace {
 /// one more field a hand-edited file may carry.
 constexpr int MAX_TOKENS = 4 + MAX_STATIONS * 9 + PRESETS + 8;
 
-bool key_is(const char* json, const jsmntok_t& t, const char* name) {
-    const int n = t.end - t.start;
-    return t.type == JSMN_STRING && (int)strlen(name) == n && !strncmp(json + t.start, name, n);
-}
+using jsmn_util::key_is;
+using jsmn_util::span;
 
 /// Copies a JSON string token, undoing the escapes.
 ///
@@ -79,20 +78,6 @@ int to_int(const char* json, const jsmntok_t& t) {
     char buf[16];
     copy_str(json, t, buf, sizeof(buf));
     return (int)strtol(buf, nullptr, 10);
-}
-
-/// How many tokens one value occupies, including everything nested inside it. jsmn lays
-/// them out depth-first, so skipping a value is a matter of counting its children.
-///
-/// A loop, not recursion, and bounded by `count`: a list restored through the web nested a
-/// few hundred levels deep overflowed the httpd stack, and main's at every boot (deep
-/// review 2026-10-12, RP-2). Each token takes the place of one child still owed and owes
-/// its own in turn; the value ends when nothing is owed.
-int span(const jsmntok_t* tok, int count, int i) {
-    if (i >= count) return 1;
-    int j = i + 1;
-    for (int pending = tok[i].size; pending > 0 && j < count; ++j) pending += tok[j].size - 1;
-    return j - i;
 }
 
 /// JSON string escaping: `"`, `\` and every control character, which JSON allows nowhere raw

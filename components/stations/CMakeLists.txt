@@ -3,5 +3,5 @@
 idf_component_register(
     SRCS "src/stations.cpp"
     INCLUDE_DIRS "include"
-    PRIV_REQUIRES jsmn
+    PRIV_REQUIRES jsmn jsmn_util
 )
