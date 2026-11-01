@@ -156,14 +156,16 @@ SNTP, `pool.ntp.org`, режим poll. NVS `time/ntp_enabled` (типово true
 **Ім'я пристрою** одне для Bluetooth, AirPlay, DLNA, USB-аудіо й заголовка шухляди панелі
 (`modules/bt/include/device_name.h`):
 
-- NVS `devname/name`, 1–32 байти — межа супутника (`BT_CONFIG_SET`,
+- NVS `devname/name`, 1–32 байти UTF-8 — правило супутника (`BT_CONFIG_SET`,
   [LINK_PROTOCOL.uk.md](LINK_PROTOCOL.uk.md)); поки імені немає — `P4 Player` (`device_name::FALLBACK`,
-  те саме, що `system.device_name` у `project.json`).
-- Задає поле «Ім'я» на сторінці Bluetooth панелі чи вебу (`POST /api/bt`, `{"name":…}`): ім'я йде
-  на супутник і зберігається в NVS. Потрібен супутник, що віддає налаштування
-  (`DEV_CAP_BT_SETTINGS`); без нього `POST /api/bt` відповідає `409`.
+  те саме, що `system.device_name` у `project.json`). Збережене ім'я, що порушує правило, рахується
+  як відсутнє.
+- Задає поле «Ім'я» на сторінці Bluetooth панелі чи вебу (`POST /api/bt`, `{"name":…}`, на ім'я
+  не в UTF-8 — `400`): ім'я йде на супутник і зберігається в NVS. Потрібен супутник, що віддає
+  налаштування (`DEV_CAP_BT_SETTINGS`); без нього `POST /api/bt` відповідає `409`.
 - Перше ім'я, яке повідомив супутник, зберігається, коли свого ще немає; супутникові з іншим
-  ім'ям панель передає своє.
+  ім'ям панель передає своє, один раз за з'єднання: супутник, що й після цього повідомляє своє,
+  лишається з ним.
 - Bluetooth бере нове ім'я одразу; AirPlay, DLNA і USB-аудіо читають його під час старту — після
   перезапуску.
 - DLNA оголошує його як friendlyName (`dlna.name`), AirPlay — як ім'я в списку (`airplay.name`) і

@@ -124,6 +124,27 @@ TEST_CASE("bt web: a name in UTF-8, escapes read, the limits the satellite has")
     CHECK_FALSE(parse_s(R"({"name":7})", e));
 }
 
+TEST_CASE("bt web: raw bytes that are not UTF-8 are not a name") {
+    // The satellite refuses such a name and answers with its old one, and the panel used to keep
+    // it in NVS and give it back on every BT_CONFIG: a ping-pong at wire speed that a reboot kept.
+    Edit e;
+    CHECK_FALSE(parse_s("{\"name\":\"\xFF\"}", e));
+    CHECK_FALSE(parse_s("{\"name\":\"ab\x80\"}", e));                  // a stray continuation
+    CHECK_FALSE(parse_s("{\"name\":\"\xD0\"}", e));                    // half a letter
+    CHECK_FALSE(parse_s("{\"name\":\"\xE2\x82\"}", e));
+    CHECK_FALSE(parse_s("{\"name\":\"\xC0\x80\"}", e));                // an overlong NUL
+    CHECK_FALSE(parse_s("{\"name\":\"\xED\xA0\x80\"}", e));            // a surrogate
+    CHECK_FALSE(parse_s("{\"name\":\"\xF4\x90\x80\x80\"}", e));        // past U+10FFFF
+    CHECK_FALSE(parse_s("{\"name\":\"\xF8\x88\x80\x80\x80\"}", e));
+    CHECK_FALSE(e.rename);
+    // Raw UTF-8 is a name as much as escaped: 16 Cyrillic letters are the 32 bytes allowed.
+    REQUIRE(parse_s("{\"name\":\"\xD0\x9A\xD1\x83\xD1\x85\xD0\xBD\xD1\x8F \xE2\x82\xAC\"}", e));
+    CHECK(std::string(e.name) == "Кухня €");
+    REQUIRE(parse_s(R"({"name":"ЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖ"})", e));
+    CHECK(strlen(e.name) == 32);
+    CHECK_FALSE(parse_s(R"({"name":"ЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖЖa"})", e));
+}
+
 TEST_CASE("bt web: forget one phone or all, disconnect, refresh") {
     Edit e;
     REQUIRE(parse_s(R"({"forget":"A4:50:46:01:02:0F"})", e));

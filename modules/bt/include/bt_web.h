@@ -58,8 +58,8 @@ struct Edit {
 };
 
 /// POST's body. False for anything malformed: a value of the wrong type, a name that is empty,
-/// longer than 32 bytes or has a control character, an address that is not one, a pairing
-/// answer without its request number, or nothing at all asked.
+/// longer than 32 bytes, not UTF-8 (device_name::valid) or has a control character, an address
+/// that is not one, a pairing answer without its request number, or nothing at all asked.
 ///
 /// Its token array is static: one caller, the HTTP server's task.
 bool parse(const char* json, size_t len, Edit& out);

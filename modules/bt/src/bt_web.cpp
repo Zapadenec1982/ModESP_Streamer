@@ -4,6 +4,7 @@
  */
 
 #include "bt_web.h"
+#include "device_name.h"
 #include "modesp/net/json_escape.h"
 
 #define JSMN_STATIC          // jsmn is header-only and linked in several places
@@ -53,8 +54,9 @@ int hexval(char c) {
     return -1;
 }
 
-/// A JSON string's raw bytes, unescaped into UTF-8. False on a bad escape, a control
-/// character, or when it does not fit `cap` (with its NUL).
+/// A JSON string's raw bytes, escapes undone. False on a bad escape, a control character, or
+/// when it does not fit `cap` (with its NUL). A raw byte is copied as it stands, so whether the
+/// result is UTF-8 is the caller's to check.
 bool unescape(const char* s, size_t n, char* out, size_t cap, size_t& len) {
     size_t w = 0;
     auto put = [&](uint32_t cp) {
@@ -215,10 +217,12 @@ bool parse(const char* json, size_t len, Edit& out) {
             if (!integer(json, v, 0, 255, x)) return false;
             out.codecs = (int16_t)x;
         } else if (key_is(json, key, "name")) {
+            // Held to the satellite's rule here, before anything is queued: a name it refuses
+            // never comes back in its BT_CONFIG, and the panel must not keep one that cannot.
             size_t got = 0;
             if (v.type != JSMN_STRING ||
                 !unescape(json + v.start, (size_t)(v.end - v.start), out.name, sizeof(out.name), got) ||
-                got == 0) return false;
+                !device_name::valid(out.name, got)) return false;
             out.rename = true;
         } else if (key_is(json, key, "forget")) {
             if (v.type != JSMN_STRING) return false;

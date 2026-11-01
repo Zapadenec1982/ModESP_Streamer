@@ -159,14 +159,17 @@ synchronization `system.time` and `system.date` show `--:--:--` and `--.--.----`
 **The device name** is shared by Bluetooth, AirPlay, DLNA, USB audio and the header of the panel's
 drawer (`modules/bt/include/device_name.h`):
 
-- NVS `devname/name`, 1–32 bytes — the satellite's limit (`BT_CONFIG_SET`,
+- NVS `devname/name`, 1–32 bytes of UTF-8 — the satellite's rule (`BT_CONFIG_SET`,
   [LINK_PROTOCOL.md](LINK_PROTOCOL.md)); while there is no name — `P4 Player` (`device_name::FALLBACK`,
-  the same as `system.device_name` in `project.json`).
+  the same as `system.device_name` in `project.json`). A stored name that breaks the rule counts as
+  none.
 - Set by the "Name" field on the Bluetooth page of the panel or the web (`POST /api/bt`,
-  `{"name":…}`): the name goes to the satellite and is saved in NVS. Needs a satellite that exposes
-  its settings (`DEV_CAP_BT_SETTINGS`); without one `POST /api/bt` answers `409`.
+  `{"name":…}`, a name that is not UTF-8 gets `400`): the name goes to the satellite and is saved in
+  NVS. Needs a satellite that exposes its settings (`DEV_CAP_BT_SETTINGS`); without one
+  `POST /api/bt` answers `409`.
 - The first name the satellite reports is saved when the panel has none of its own yet; to a
-  satellite with a different name the panel passes its own.
+  satellite with a different name the panel passes its own, once per link: a satellite that still
+  reports its own after that keeps it.
 - Bluetooth takes a new name at once; AirPlay, DLNA and USB audio read it at startup — after a
   restart.
 - DLNA announces it as friendlyName (`dlna.name`), AirPlay as the name in the list (`airplay.name`)

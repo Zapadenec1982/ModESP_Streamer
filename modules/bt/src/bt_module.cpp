@@ -957,6 +957,7 @@ void BtModule::handle(const sat::Frame& f) {
                      (unsigned long)link_->stats().rx_bytes);
             if (!(h.caps & sat::DEV_CAP_A2DP))
                 ESP_LOGI(TAG, "satellite reports no A2DP — a link-only build");
+            name_given_ = false;   // maybe another satellite: it may be given the panel's name once
         }
         // The satellite acts on no command from a host that has not greeted it since it
         // started or since we went quiet (protocol section 3), and a greeting of ours from
@@ -1181,16 +1182,23 @@ void BtModule::handle(const sat::Frame& f) {
                                 c.codecs_supported, c.codecs_enabled, name, strlen(name));
         // The panel's one name (device_name.h): the first the satellite tells is kept — somebody
         // gave it that name — and after that a satellite that comes up with another (reflashed,
-        // swapped) is given the panel's back. A rename that crossed this report is sent again,
-        // which changes nothing.
+        // swapped) is given the panel's back, once. A rename that crossed this report is sent
+        // again, which changes nothing. Only once: a name the satellite does not apply leaves its
+        // old one in the answer (LINK_PROTOCOL.md, BT_CONFIG_SET), and answering every such
+        // BT_CONFIG bounced the two frames off each other at wire speed. A report that agrees
+        // ends the wait, so a satellite that later comes up with another name gets one more.
         if (name[0]) {
             if (!device_name::kept()) {
                 device_name::keep(name);
             } else {
                 char mine[device_name::CAP];
                 device_name::get(mine, sizeof mine);
-                if (strcmp(mine, name) != 0) {
-                    ESP_LOGI(TAG, "satellite named \"%s\", the panel \"%s\": giving it the panel's", name, mine);
+                if (strcmp(mine, name) == 0) {
+                    name_given_ = false;
+                } else if (!name_given_) {
+                    name_given_ = true;
+                    ESP_LOGI(TAG, "satellite named \"%s\", the panel \"%s\": giving it the panel's, "
+                                  "once on this link", name, mine);
                     bt_settings::request_name(mine);
                 }
             }

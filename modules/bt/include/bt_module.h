@@ -159,4 +159,9 @@ private:
     /// contract sends that result once, and nothing else would ever close a lost one.
     uint32_t pair_seq_seen_ = 0;
     uint32_t pair_open_ms_  = 0;
+
+    /// The panel's name went to a satellite that reported another, and no BT_CONFIG has carried
+    /// it back since. Cleared by one that does and by a new link: until then it is not sent
+    /// again (handle(), MSG_BT_CONFIG).
+    bool     name_given_ = false;
 };

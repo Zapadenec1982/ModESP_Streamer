@@ -81,6 +81,7 @@ set(MODULE_SOURCES
     "${ROOT}/components/audio_dsp/src/eq_store.cpp"          # the EQ document the panel and the web share
     "${ROOT}/components/audio_dsp/src/eq_web.cpp"            # GET/POST /api/eq bodies
     "${ROOT}/modules/bt/src/bt_web.cpp"                      # GET/POST /api/bt bodies (bt_settings types only)
+    "${ROOT}/modules/bt/src/device_name.cpp"                 # the panel's one name, over the in-memory NVS
     "${ROOT}/components/audio_dsp/src/spectrum.cpp"          # FFT kernel mocked in mocks/dsps_fft_ref.h
     "${ROOT}/components/audio_dsp/src/pcm_ring.cpp"          # SPSC ring, decoder -> audio task
     "${ROOT}/components/audio_dsp/src/port_finder.cpp"       # the port meter's lock-in and dip finder
@@ -125,6 +126,7 @@ set(TEST_SOURCES
     "${CMAKE_SOURCE_DIR}/test_eq_store.cpp"
     "${CMAKE_SOURCE_DIR}/test_eq_curve_vectors.cpp"
     "${CMAKE_SOURCE_DIR}/test_bt_web.cpp"
+    "${CMAKE_SOURCE_DIR}/test_device_name.cpp"       # modules/bt/include/device_name.h — only a name the satellite takes
     "${CMAKE_SOURCE_DIR}/test_bt_volume_gate.cpp"
     "${CMAKE_SOURCE_DIR}/test_bt_stall_kick.cpp"
     "${CMAKE_SOURCE_DIR}/test_airplay_meta.cpp"
