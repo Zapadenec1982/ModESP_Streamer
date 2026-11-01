@@ -45,10 +45,10 @@ struct WsSerCtx {
 /// A serialisation buffer, from PSRAM, allocated once and kept.
 ///
 /// It has to be 8 KB now (a `long` value is up to 256 characters rather than the 63 the old
-/// escape buffer allowed), and 8 KB of internal .bss would give back a chunk of what stage 7
-/// just freed. Nothing here is DMA: the send copies out of it. Allocated on first use rather
-/// than per request, so a request never pays for an allocation, and never on the stack - the
-/// tasks that reach this have 8 KB of it.
+/// escape buffer allowed), and 8 KB of internal .bss would come out of the internal RAM that
+/// DMA needs (docs/CONCEPT.md, "Board constraints"). Nothing here is DMA: the send copies out
+/// of it. Allocated on first use rather than per request, so a request never pays for an
+/// allocation, and never on the stack - the tasks that reach this have 8 KB of it.
 static char* json_scratch(size_t bytes) {
     static char* p = static_cast<char*>(heap_caps_calloc_prefer(
         1, bytes, 2, MALLOC_CAP_SPIRAM  | MALLOC_CAP_8BIT,

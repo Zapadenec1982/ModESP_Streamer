@@ -121,7 +121,7 @@ private:
     static esp_err_t handle_get_log_summary(httpd_req_t* req);
     static esp_err_t handle_get_auth(httpd_req_t* req);
     static esp_err_t handle_post_auth(httpd_req_t* req);
-    // Runtime log verbosity (plan item 11.4). The panel ships at WARN; this is how it is
+    // Runtime log verbosity. The panel ships at WARN; this is how it is
     // made to talk without reflashing it. Not persisted - see modesp/log_policy.h.
     static esp_err_t handle_get_loglevel(httpd_req_t* req);
     static esp_err_t handle_post_loglevel(httpd_req_t* req);

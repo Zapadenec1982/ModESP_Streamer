@@ -236,10 +236,10 @@ struct SerCtx {
 /// A serialisation buffer, from PSRAM, allocated once and kept.
 ///
 /// It has to be 8 KB now (a `long` value is up to 256 characters rather than the 63 the old
-/// escape buffer allowed), and 8 KB of internal .bss would give back a chunk of what stage 7
-/// just freed. Nothing here is DMA: the send copies out of it. Allocated on first use rather
-/// than per request, so a request never pays for an allocation, and never on the stack - the
-/// tasks that reach this have 8 KB of it.
+/// escape buffer allowed), and 8 KB of internal .bss would come out of the internal RAM that
+/// DMA needs (docs/CONCEPT.md, "Board constraints"). Nothing here is DMA: the send copies out
+/// of it. Allocated on first use rather than per request, so a request never pays for an
+/// allocation, and never on the stack - the tasks that reach this have 8 KB of it.
 static char* json_scratch(size_t bytes) {
     static char* p = static_cast<char*>(heap_caps_calloc_prefer(
         1, bytes, 2, MALLOC_CAP_SPIRAM  | MALLOC_CAP_8BIT,
@@ -470,7 +470,7 @@ esp_err_t HttpService::handle_post_bindings(httpd_req_t* req) {
     // rename it over the old one: a rejected upload leaves bindings.json as it was, and a
     // power cut mid-write leaves a .new file instead of a half-written config.
     //
-    // The sequence itself now lives in components/safe_file (plan item 11.2) so that the EQ,
+    // The sequence itself lives in components/safe_file so that the EQ,
     // the station list and the resume point get the same one instead of three near-copies.
     // What stays here is the part that is specific to this endpoint: the validator IS the
     // boot parser, so a file this handler accepts is a file the next boot can read.
@@ -614,7 +614,7 @@ esp_err_t HttpService::handle_post_devices(httpd_req_t* req) {
         return ESP_FAIL;
     }
 
-    // Same write -> read back -> rename as bindings (plan item 11.2). This one used to be a
+    // Same write -> read back -> rename as bindings. This one used to be a
     // plain fopen("w") + fwrite: it truncated the live registry before the first byte of the
     // new one arrived, so a reset in between left a half-written file. ConfigService only
     // WARNs about an unusable devices.json and carries on, so the loss would have been
@@ -1914,7 +1914,7 @@ esp_err_t HttpService::handle_get_log_summary(httpd_req_t* req) {
     return ESP_FAIL;
 }
 
-// ── Runtime log verbosity (plan item 11.4) ──────────────────────
+// ── Runtime log verbosity ───────────────────────────────────────
 //
 // The panel ships at WARN with the INFO strings still in the binary, and a short allowlist
 // of tags held at INFO because their INFO lines have each already settled a fault
@@ -2276,7 +2276,7 @@ void HttpService::register_api_handlers() {
         {"/api/log/summary", HTTP_GET, handle_get_log_summary},
         {"/api/auth", HTTP_GET,  handle_get_auth},
         {"/api/auth", HTTP_POST, handle_post_auth},
-        // The panel ships quiet (plan item 11.4). This is how it is made to talk again
+        // The panel ships quiet. This is how it is made to talk again
         // without a reflash, for a fault that only happens where the bench is not.
         {"/api/loglevel", HTTP_GET,  handle_get_loglevel},
         {"/api/loglevel", HTTP_POST, handle_post_loglevel},
@@ -2367,7 +2367,7 @@ void HttpService::register_static_handler() {
     }
     if (err != ESP_OK) {
         // Without the wildcard every page is a 404 while the API still answers. It went
-        // unnoticed once (W4, 12.10.2026: the handler table was full when DLNA put it back).
+        // unnoticed once: the handler table was full when DLNA put it back.
         ESP_LOGE(TAG, "Static file handler NOT registered (%s): no page will load - "
                       "raise max_uri_handlers", esp_err_to_name(err));
         return;
@@ -2386,7 +2386,7 @@ bool HttpService::start_server() {
     // the wildcard). UPnP adds seven more when the renderer is on — the device description
     // plus two per service — and 56 left exactly one spare, which is not headroom, it is a
     // coincidence waiting to be spent.
-    // 72 was spent by W4 (12.10.2026): 67 at boot with the wildcard, and the renderer's seven
+    // 72 was spent too: 67 at boot with the wildcard, and the renderer's seven
     // need 74. The last UPnP route and the wildcard's return failed, and every page was a 404.
     // 88 leaves 14 spare; a slot is one pointer until a handler takes it.
     config.max_uri_handlers = 88;

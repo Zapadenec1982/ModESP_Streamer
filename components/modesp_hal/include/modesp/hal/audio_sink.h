@@ -166,7 +166,7 @@ public:
     // drift. Where the peer owns the clock — the Bluetooth satellite is the I2S master and
     // this panel its slave — the choice is to absorb that drift with a resampler, which
     // costs about a quarter of a core and is never bit-exact, or to move this port's own
-    // clock the same few ppm and absorb it for nothing (plan stage 13).
+    // clock the same few ppm and absorb it for nothing (docs/AUDIO.md, "Playback").
 
     /// Whether the clock can be trimmed right now. It is a question about the moment, not
     /// about the hardware: on this chip the audio PLL can only be retuned while exactly one
