@@ -9,12 +9,21 @@
 #include "esp_app_desc.h"
 #include "esp_crt_bundle.h"
 #include "esp_http_client.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 
 #include <cstdio>
 #include <cstring>
 
 namespace radio_http {
 namespace {
+
+/// Held for the whole of an HTTPS fetch (get_url).
+SemaphoreHandle_t tls_lock() {
+    static StaticSemaphore_t storage;
+    static SemaphoreHandle_t lock = xSemaphoreCreateMutexStatic(&storage);
+    return lock;
+}
 
 /// Opens, checks the status and reads the whole body. A fresh client every time.
 int fetch(esp_http_client_config_t& cfg, const char* label, char* buf, size_t cap,
@@ -96,10 +105,23 @@ int get_url(const char* url, char* buf, size_t cap, const char* user_agent, bool
         cfg.url               = url;
         cfg.user_agent        = user_agent;
         cfg.crt_bundle_attach = esp_crt_bundle_attach;
-        return fetch(cfg, "https", buf, cap, why, why_sz);
+        xSemaphoreTake(tls_lock(), portMAX_DELAY);
+        const int n = fetch(cfg, "https", buf, cap, why, why_sz);
+        xSemaphoreGive(tls_lock());
+        return n;
     }
     snprintf(why, why_sz, "not an http(s) URL");
     return -1;
+}
+
+int get_logo(const char* url, char* buf, size_t cap, bool allow_tls, char* why, size_t why_sz) {
+    char plain[radio_art::URL_LEN];
+    snprintf(plain, sizeof(plain), "%s", url ? url : "");
+    radio_art::plain_http(plain);
+    int len = get_url(plain, buf, cap, user_agent(), false, why, why_sz);
+    if (len <= 0 && url && strcmp(plain, url) != 0)
+        len = get_url(url, buf, cap, user_agent(), allow_tls, why, why_sz);
+    return len;
 }
 
 const char* user_agent() {

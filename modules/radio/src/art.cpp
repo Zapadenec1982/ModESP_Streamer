@@ -42,7 +42,6 @@ const char* TAG = "Radio";   // the module's tag: on the INFO allowlist
 namespace rc = radio_catalog;
 
 constexpr const char* SEARCH_HOST  = "api.deezer.com";
-constexpr const char* CATALOG_HOST = "all.api.radio-browser.info";
 constexpr size_t SEARCH_MAX = 48 * 1024;    // ten hits are ~22 KB
 constexpr size_t IMAGE_MAX  = 256 * 1024;   // a 500 px cover is tens of KB
 constexpr size_t LOGO_MAX   = 128 * 1024;   // favicons are small; a few are full-size art
@@ -155,9 +154,9 @@ void serve_title(const TitleAsk& rq) {
 /// The favicon URL for a station known only by its uuid.
 bool favicon_by_uuid(const char* uuid, char* out, size_t out_sz) {
     char path[96];
-    snprintf(path, sizeof(path), "/json/stations/byuuid?uuids=%s", uuid);
+    if (!rc::byuuid_path(&uuid, 1, path, sizeof(path))) return false;
     char why[64] = "";
-    const int n = radio_http::get(CATALOG_HOST, 80, path, a.search, SEARCH_MAX,
+    const int n = radio_http::get(rc::LOOKUP_HOST, 80, path, a.search, SEARCH_MAX,
                                   radio_http::user_agent(), why, sizeof(why));
     if (n < 0) {
         ESP_LOGW(TAG, "art: station %s: %s", uuid, why);
@@ -185,17 +184,8 @@ void serve_station(const StationAsk& rq) {
     if (!favicon[0] && rq.uuid[0] && !favicon_by_uuid(rq.uuid, favicon, sizeof(favicon))) return;
     if (!favicon[0]) return;
 
-    // Plain HTTP first, even for an https:// logo: some hosts still serve it there.
     char why[64] = "";
-    char plain[rc::URL_LEN];
-    snprintf(plain, sizeof(plain), "%s", favicon);
-    radio_art::plain_http(plain);
-    int len = radio_http::get_url(plain, (char*)a.logo, LOGO_MAX, radio_http::user_agent(),
-                                  false, why, sizeof(why));
-    if (len <= 0 && strcmp(plain, favicon) != 0) {
-        len = radio_http::get_url(favicon, (char*)a.logo, LOGO_MAX, radio_http::user_agent(),
-                                  rq.tls_free, why, sizeof(why));
-    }
+    const int len = radio_http::get_logo(favicon, (char*)a.logo, LOGO_MAX, rq.tls_free, why, sizeof(why));
     if (a.station.load(std::memory_order_acquire) != rq.serial) return;   // a newer station
     if (len <= 0) {
         ESP_LOGI(TAG, "art: no logo from %s: %s", favicon, why);
