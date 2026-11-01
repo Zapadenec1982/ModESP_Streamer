@@ -36,6 +36,7 @@ export function createEq({ onConflict, onError } = {}) {
   let pending = null;        // bands waiting to go
   let busy = 0;              // requests queued or in flight
   let edited = false;        // something was sent since the last keep
+  let keepAfter = false;     // a keep asked for while requests were on their way
   let seen = 0;              // the last device revision followed
   let chain = Promise.resolve();
 
@@ -54,8 +55,19 @@ export function createEq({ onConflict, onError } = {}) {
           onError && onError(e);
         }
       })
-      .finally(() => { busy--; });
+      .finally(() => {
+        busy--;
+        if (busy === 0 && keepAfter) keepNow();
+      });
     return chain;
+  }
+
+  /** Everything sent has landed: the device writes it at once. The keep names no revision. */
+  function keepNow() {
+    keepAfter = false;
+    if (!edited) return;
+    edited = false;
+    apiPostKeepalive('/api/eq', { keep: true });
   }
 
   async function reload() {
@@ -112,16 +124,16 @@ export function createEq({ onConflict, onError } = {}) {
       enqueue(reload);
     },
 
-    /** The page is left or hidden: what is unsent goes now, and the device writes it at once. */
+    /**
+     * The page is left or hidden: the device writes what it has at once. Not before the requests
+     * on their way have landed: bands still waiting would go with the revision from before the
+     * one in flight, and the device refuses that (409) — the last edit lost and the keep with it,
+     * or a conflict that is the page's own. They go in turn, from the revision it brings back,
+     * and the keep after them.
+     */
     keep() {
-      if (pending) {
-        apiPostKeepalive('/api/eq', { rev, bands: pending, keep: true });
-        pending = null;
-        edited = false;
-      } else if (edited) {
-        apiPostKeepalive('/api/eq', { keep: true });
-        edited = false;
-      }
+      if (busy !== 0) keepAfter = true;
+      else keepNow();
     },
   };
 }
