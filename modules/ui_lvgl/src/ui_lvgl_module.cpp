@@ -929,6 +929,8 @@ void UiLvglModule::mirror_diag() {
     read_string("bt.peer", bt_peer, sizeof(bt_peer));
     read_string("bt.codec", bt_codec, sizeof(bt_codec));
     read_string("airplay.name", ap_name, sizeof(ap_name));
+    char usb_name[33] = "";
+    read_string("usb_audio.name", usb_name, sizeof(usb_name));
     const bool    ap_enabled  = read_bool("airplay.enabled", false);
     const int32_t ap_mode     = read_int("airplay.mode", 0);
     const bool    ap_switching = read_bool("airplay.switching", false);
@@ -976,6 +978,7 @@ void UiLvglModule::mirror_diag() {
     strncpy(snap_.bt_peer, bt_peer, sizeof(snap_.bt_peer) - 1);
     strncpy(snap_.bt_codec, bt_codec, sizeof(snap_.bt_codec) - 1);
     strncpy(snap_.ap_name, ap_name, sizeof(snap_.ap_name) - 1);
+    strncpy(snap_.usb_name, usb_name, sizeof(snap_.usb_name) - 1);
     snap_.ap_enabled  = ap_enabled;
     snap_.ap_mode     = ap_mode;
     snap_.ap_switching = ap_switching;

@@ -48,6 +48,7 @@ bool UsbAudioModule::on_init() {
     // The computer lists the panel under its one name (device_name.h), as phones do.
     char name[device_name::CAP];
     device_name::get(name, sizeof(name));
+    state_set("usb_audio.name", name);           // what the faces tell to pick on the computer
     const uint8_t* mac = modesp::device_mac();
     char serial[13];
     snprintf(serial, sizeof(serial), "%02X%02X%02X%02X%02X%02X",

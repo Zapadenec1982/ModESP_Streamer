@@ -11,6 +11,11 @@
       "access": "read",
       "description": "off | waiting | ready | playing"
     },
+    "usb_audio.name": {
+      "type": "string",
+      "access": "read",
+      "description": "Ім'я, під яким панель видно на комп'ютері; береться при старті"
+    },
     "usb_audio.rate": {
       "type": "int",
       "access": "read",

@@ -1,6 +1,6 @@
 import { derived } from 'svelte/store';
 import { state } from './state.js';
-import { K } from './i18n.js';
+import { K, fmt } from './i18n.js';
 import { badge } from '../lib/numbers.js';
 
 /*
@@ -13,6 +13,8 @@ import { badge } from '../lib/numbers.js';
  *   nameKey     catalog key of the source's name
  *   title, subtitle         text from the device, or null
  *   titleKey, subtitleKey   catalog key to show when the text is null
+ *   subtitleArgs            what the subtitle key's {placeholders} take, or absent: the name the
+ *                           phone or the computer lists the panel by
  *   format      the codec badge ("44.1 kHz 128 kbps", "LHDC V5 96.0 kHz"), or ''
  *   fromKey     catalog key of the line over the cover — the source's name, as the glass prints it
  *               («Bluetooth»; it said «Грає з Bluetooth» with nothing playing) — or null where the
@@ -116,6 +118,7 @@ function face(s) {
       kind: 'airplay', source: 6, icon: 'airplay', nameKey: K('src.airplay'), fromKey: K('src.airplay'), device: '',
       title: s['airplay.title'] || (active ? 'AirPlay' : null), titleKey: s['airplay.title'] || active ? null : K('now.airplay_waiting'),
       subtitle: join(s['airplay.artist'], s['airplay.album']) || null, subtitleKey: active ? null : K('now.airplay_pick'),
+      subtitleArgs: { name: s['airplay.name'] || '…' },
       format: 'AirPlay',
       playing: s['airplay.state'] === 'playing', live: !!s['airplay.remote'],
       toggle: cmd('airplay.cmd', 6), prev: cmd('airplay.cmd', 5), next: cmd('airplay.cmd', 4),
@@ -140,10 +143,11 @@ function face(s) {
     const st = s['usb_audio.state'];
     const streaming = st === 'playing';
     const rate = s['usb_audio.rate'];
-    const fmt = streaming && rate ? `${(rate / 1000).toFixed(1)} kHz ${s['usb_audio.bits'] || ''} bit` : '';
+    const line = streaming && rate ? `${(rate / 1000).toFixed(1)} kHz ${s['usb_audio.bits'] || ''} bit` : '';
     return { ...still, kind: 'usb', source: 7, icon: 'usb', nameKey: K('src.usb'), fromKey: K('src.usb'),
              title: null, titleKey: streaming || st === 'ready' ? K('now.usb') : K('now.usb_waiting'),
-             subtitle: fmt || null, subtitleKey: fmt ? null : K('now.usb_pick'), playing: streaming };
+             subtitle: line || null, subtitleKey: line ? null : K('now.usb_pick'),
+             subtitleArgs: { name: s['usb_audio.name'] || '…' }, playing: streaming };
   }
   return { ...still, kind: 'off', source: 0, icon: 'power_settings_new', nameKey: K('src.off'), title: null, titleKey: K('now.off'),
            subtitle: null, subtitleKey: K('now.pick') };
@@ -159,6 +163,6 @@ K('unit.khz'); K('unit.hz'); K('unit.kbps'); K('unit.bit'); K('unit.ch');
  * is a technical line, USB's rate and the tone's frequency (numbers.js badge) — or the catalog's.
  */
 export function subLine(np, t, lang) {
-  if (np.subtitle == null) return np.subtitleKey ? t[np.subtitleKey] : '';
+  if (np.subtitle == null) return np.subtitleKey ? fmt(t[np.subtitleKey], np.subtitleArgs || {}) : '';
   return np.kind === 'usb' || np.kind === 'tone' ? badge(np.subtitle, t, lang) : np.subtitle;
 }

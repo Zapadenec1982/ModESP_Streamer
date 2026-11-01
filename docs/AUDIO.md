@@ -624,7 +624,8 @@ Class 2 device on the HS port. The port's hardware limits: `docs/CONCEPT.md`, "U
   TinyUSB task — priority 20, control requests only.
 - Keys: `usb_audio.state` (off | waiting | ready | playing), `usb_audio.rate`, `usb_audio.bits`,
   `usb_audio.diag` (phase, frames, fill, feedback, packets, losses, level, tone, gaps),
-  `usb_audio.losses` (the latest packet losses).
+  `usb_audio.losses` (the latest packet losses), `usb_audio.name` (the name the computer lists the
+  panel by, the panel's one name as it stood at boot; the Player's "Choose “…”" line names it).
 
 ## Spectrum
 

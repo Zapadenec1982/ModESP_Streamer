@@ -989,7 +989,7 @@ void refresh(lv_obj_t*, UiCtx& c) {
         else if (is_bt && !s.bt_connected)
             bt_wait_line(s, sub, sizeof(sub));
         else if (is_ap && !s.ap_connected)
-            snprintf(sub, sizeof(sub), "%s", tr(S::now_airplay_pick));
+            i18n::fmt(sub, sizeof(sub), tr(S::now_airplay_pick), {{"name", s.ap_name[0] ? s.ap_name : "…"}});
         else
             sub[0] = '\0';
         set_sub(sub);
@@ -1043,10 +1043,10 @@ void refresh(lv_obj_t*, UiCtx& c) {
                     : s.source == AUDIO_SOURCE_AUX ? tr(S::now_aux)
                     : is_usb ? tr(s.usb_connected ? S::now_usb : S::now_usb_waiting)
                     : tr(S::now_off));
-        char sub[96];
+        char sub[160];   // the USB line: a sentence in Cyrillic and a 32-byte name
         if (s.source == AUDIO_SOURCE_TONE) snprintf(sub, sizeof(sub), "%ld %s", (long)s.tone_hz, tr(S::unit_hz));
         else if (is_usb && s.play_fmt[0])  i18n::badge(sub, sizeof(sub), s.play_fmt);
-        else if (is_usb)                   snprintf(sub, sizeof(sub), "%s", tr(S::now_usb_pick));
+        else if (is_usb)                   i18n::fmt(sub, sizeof(sub), tr(S::now_usb_pick), {{"name", s.usb_name[0] ? s.usb_name : "…"}});
         else if (s.in_rate > 0)            snprintf(sub, sizeof(sub), "%ld %s", (long)s.in_rate, tr(S::unit_hz));
         else                               snprintf(sub, sizeof(sub), "%s", tr(S::now_pick));
         set_sub(sub);

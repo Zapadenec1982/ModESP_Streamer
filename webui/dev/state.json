@@ -18,6 +18,7 @@
   "airplay.mode_error": "",
   "airplay.mode_status": "Режим застосовано",
   "airplay.name": "P4 Player",
+  "usb_audio.name": "P4 Player",
   "airplay.pos_s": 0,
   "airplay.remote": false,
   "airplay.state": "idle",

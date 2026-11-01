@@ -147,6 +147,7 @@ public:
         bool     ap_switching = false;  ///< receiver is applying the selected mode
         bool     ap_mode_error = false; ///< a mode switch failed; details are on the web page
         char     ap_name[32]  = "";     ///< airplay.name
+        char     usb_name[33] = "";     ///< usb_audio.name — what the computer lists the panel as
         bool     dlna_enabled = false;  ///< dlna.enabled — the renderer announced by SSDP
         bool     dlna_built   = false;  ///< the key exists: this build has the renderer
         char     dlna_name[40] = "";    ///< dlna.name
