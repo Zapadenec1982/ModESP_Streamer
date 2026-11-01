@@ -401,7 +401,7 @@ void refresh_band_panel() {
     lv_label_set_text(g.band_lbl, buf);
     if (b.enabled) lv_obj_add_state(g.band_sw, LV_STATE_CHECKED);
     else           lv_obj_remove_state(g.band_sw, LV_STATE_CHECKED);
-    // Numbers with the language's decimal separator (decision 7), units in its words.
+    // Numbers with the language's decimal separator, units in its words.
     char v[16];
     if (b.freq_hz >= 1000.0f) snprintf(buf, sizeof(buf), "%s %s", i18n::num(v, sizeof(v), (int32_t)lroundf(b.freq_hz / 10.0f), 2), tr(S::unit_khz));
     else                      snprintf(buf, sizeof(buf), "%.0f %s", (double)b.freq_hz, tr(S::unit_hz));

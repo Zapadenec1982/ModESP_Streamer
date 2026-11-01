@@ -20,8 +20,8 @@
  *               {"pair":"accept"|"reject","seq":N}  — the answer to pairing request N
  *
  * The pairing code is in GET only, behind the login: the WebSocket that tells every tab a
- * phone is asking is open to the whole network (decision 4), and the code is what proves the
- * phone in the room is the one pairing.
+ * phone is asking is open to the whole network, and the code is what proves the phone in the
+ * room is the one pairing.
  */
 
 #include "bt_settings.h"
