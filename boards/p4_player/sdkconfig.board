@@ -48,8 +48,7 @@ CONFIG_SPIRAM_XIP_FROM_PSRAM=y
 # SPIRAM_USE_MALLOC, already set above.
 CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC=y
 
-# TLS input window 16 KB (stage 7, item 7.6). This is a memory decision and it was blocked
-# on the two above it.
+# TLS input window 16 KB. This is a memory decision and it was blocked on the two above it.
 #
 # The evidence is in docs/SOAK_TEST.md, "TLS: 16 KB input buffer": with the 4096 of
 # sdkconfig.defaults, the reference station (icecast.radiofrance.fr) breaks every second with
@@ -100,7 +99,7 @@ CONFIG_EH_HOST_PORT_DMA_PREFER_SPIRAM=y
 # ── BLE stays off (hosted HCI to the C6 is a later stage) ──
 CONFIG_MODESP_BLE_ENABLE=n
 
-# ── Stage 2: LVGL 9 UI (modules/ui_lvgl) ──
+# ── LVGL 9 UI (modules/ui_lvgl) ──
 # LVGL's own examples and demos are built into every image because nothing overrides the
 # component's defaults (both default to y outside LV_CONF_MINIMAL, and neither appeared in
 # any defaults file here). That is 238 of the 708 LVGL translation units in this build,
@@ -138,7 +137,7 @@ CONFIG_LVGL_PORT_ENABLE_PPA=y
 # restriction does not apply); keeps ~16 KB of internal SRAM free.
 CONFIG_FREERTOS_TASK_CREATE_ALLOW_EXT_MEM=y
 
-# ── Stage 3: audio core (modules/audio) — esp-dsp RISC-V kernels for the P4 ──
+# ── Audio core (modules/audio) — esp-dsp RISC-V kernels for the P4 ──
 CONFIG_DSP_OPTIMIZED=y
 
 # esp_audio_codec: compile in only what the player actually uses. The component defaults to
@@ -189,7 +188,7 @@ CONFIG_FATFS_CODEPAGE_866=y
 # by 10 ms time slices against a 5 ms audio block. A slice landing on the audio task is a
 # block that leaves late, and the DMA ring running dry is a click that happens after the
 # samples, where nothing in the audio path can see or prevent it. Three `audio task late`
-# reports of 81, 97 and 125 ms are in the bench logs.
+# reports of 81, 97 and 125 ms were logged on the panel.
 #
 # Pinning the TCP/IP task to core 0 puts it with Wi-Fi, the main loop and the producers, and
 # leaves core 1 to the audio task and LVGL. It does not make lwIP slower — it stops it being
@@ -248,7 +247,7 @@ CONFIG_FREERTOS_HZ=1000
 # Measured on 05.10.2026, and the window doubled on the strength of it. A connection carries at
 # most one window per round trip, and the stock 5760 starved a 320 kbit/s station from a server
 # ~200 ms away: stream.nightride.fm's US host gave 28.7 KB/s of the 40 the stream needs, the
-# buffer at 0 % (docs: the plan of stage 20, the radio-dropouts note). tools/net_probe.py on the
+# buffer at 0 % (docs/NETWORK.md, "lwIP"). tools/net_probe.py on the
 # NETTEST image, hosted_mem in place, 90 s each, bursts the size a window lets through:
 #
 #   burst 4  (5760, stock)     0 % lost, no drops, DMA min 20.2 KB, longest gap  68 ms
@@ -281,8 +280,7 @@ CONFIG_LWIP_DNS_MAX_HOST_IP=4
 # SO_RCVBUF, which lwIP refuses without the first. A realtime ALAC stream is 125 packets a
 # second, so the stock mailbox of six is 48 ms of scheduling slack before lwIP drops them at
 # the socket. What waits in it is frame memory, which is PSRAM here (hosted_mem, and
-# SPIRAM_TRY_ALLOCATE_WIFI_LWIP above) — the internal/DMA figures before and after are part
-# of plan item 17.6 on the bench.
+# SPIRAM_TRY_ALLOCATE_WIFI_LWIP above).
 CONFIG_LWIP_SO_RCVBUF=y
 CONFIG_LWIP_UDP_RECVMBOX_SIZE=64
 
@@ -309,7 +307,7 @@ CONFIG_LWIP_MAX_SOCKETS=36
 CONFIG_LWIP_MAX_ACTIVE_TCP=32
 
 # ── Shipping log level: WARN by default, INFO still in the binary ──────────────────────
-# (plan item 11.4, and see components/modesp_services/include/modesp/log_policy.h.)
+# (See components/modesp_services/include/modesp/log_policy.h.)
 #
 # DEFAULT at WARN, so the console stops carrying the chatter this project does not own —
 # esp_hosted, lwIP, LVGL and the codec libraries, which is where the volume is.

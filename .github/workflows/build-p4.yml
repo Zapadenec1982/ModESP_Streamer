@@ -4,7 +4,7 @@
 # "Building") and the one dependencies.lock records as `idf: 5.5.5`. Checked on Docker Hub
 # 2026-09-21: the tag exists (pushed 2026-07-17), so no "closest tag" substitution.
 #
-# dependencies.lock is committed (plan 5.2). The build must resolve exactly the locked
+# dependencies.lock is committed. The build must resolve exactly the locked
 # component set; if the Component Manager rewrote the lock (a manifest changed without
 # the lock being updated) the "lock file honoured" step fails.
 name: build-p4

@@ -21,7 +21,7 @@ main/Kconfig.boards
 # === ESP-IDF managed dependencies ===
 /managed_components/
 # dependencies.lock IS committed (also under tools/c6_updater and tools/sdio_soak): it pins the
-# resolved component set so a fresh clone builds the bench-verified firmware (plan 5.2).
+# resolved component set so a fresh clone builds the bench-verified firmware.
 
 # === SDK config (keep sdkconfig.defaults, ignore generated) ===
 sdkconfig
@@ -66,7 +66,7 @@ gcc_stderr.txt
 test_err.txt
 commit_msg.txt
 *.ps1
-# ...except the one tracked tooling script (dry-run cleanup of the working root, plan 5.7)
+# ...except the one tracked tooling script (dry-run cleanup of the working root)
 !tools/cleanup_root.ps1
 
 # === Confidential docs ===

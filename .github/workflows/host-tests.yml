@@ -4,8 +4,8 @@
 # 2026-09-21.
 #
 # Not covered here: tools/check_protocol_mirror.py needs a checkout of the satellite
-# repository (P4_SATELLITE_ROOT) and that repository has no remote yet (plan 5.1); its
-# test skips with a visible reason until one exists.
+# repository (ModESP_BT_Satellite, P4_SATELLITE_ROOT), which this workflow does not make;
+# its test skips with a visible reason.
 name: host-tests
 
 on:
