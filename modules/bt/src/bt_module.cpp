@@ -338,6 +338,12 @@ bool BtModule::on_init() {
         if (modesp::I2SBusResource* i2s = hal_->find_i2s_bus(i2s_id_))
             slot_bits_ = i2s->slot_bits;
 
+    // Before the wire task exists. The probe pulls the RX pin low, which the UART takes for a
+    // break, and then drops the zeros that put in the driver's ring; a reader already running
+    // (core 0, priority 8, above this task) woke on them first, and the first link-down report
+    // showed "00" and a delimiter — a talking partner — for a pin attached to nothing.
+    probe_rx();
+
     // ── the wire task ──
     // Internal RAM for both the ring and the stack: this task runs while the flash cache is
     // off during an NVS or LittleFS write, and a PSRAM stack dies there (docs/CONCEPT.md,
@@ -370,7 +376,6 @@ bool BtModule::on_init() {
              link_->describe(),
              (unsigned)sat::PROTO_MAJOR, (unsigned)sat::PROTO_MINOR,
              (unsigned long)our_caps);
-    probe_rx();
     say_hello();
     return true;
 }
