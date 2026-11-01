@@ -144,7 +144,8 @@ curl -u <логін>:<пароль> -X POST http://<панель>/api/loglevel -
    фреймбуфера), `UiFlush: no PPA client`, `UiLvgl: touch init failed — continuing without touch`,
    `UiLvgl: panel init failed — screen disabled`.
 2. Ручка: поворот — `audio.volume` у `GET /api/state` міняється на 2 за клацання і з'являється
-   повзунок гучності; натиск — пауза / відтворення; утримання — меню ([UI.md](UI.uk.md), «Введення»).
+   повзунок гучності; натиск — пауза / відтворення (на станції — вимкнення звуку); утримання — меню
+   ([UI.md](UI.uk.md), «Введення»).
 3. Тач: кільце 30 px іде за пальцем; `ui.touch_x` / `ui.touch_y` і рядок `UiLvgl: touch x,y`;
    чотири кути — розділ «Орієнтація».
 4. Знімок екрана: `curl -u <логін>:<пароль> -o shot.bmp http://<панель>/api/screenshot`.

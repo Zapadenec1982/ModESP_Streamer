@@ -3,11 +3,19 @@
  * @brief "Плеєр" — the home page: what is playing, from whichever source, and the controls
  *        that source answers to.
  *
- * One page, five faces — card, DLNA, radio, Bluetooth, AirPlay — and an empty one. The
- * layout does not move between them: the artwork tile on the left, the track block on the
- * right, the spectrum strip below. What changes is what the block says and which controls
- * are live; a control that does not apply is greyed, not hidden, so nothing shifts under a
- * finger that is already reaching for play.
+ * One page, five sources — card, DLNA, radio, Bluetooth, AirPlay — and an empty face. The
+ * frame does not move between them: the artwork tile on the left, the block on the right, the
+ * spectrum strip below. A track, whoever sends it, has the title, the progress and the
+ * transport, and on that face a control that does not apply is greyed, not hidden, so nothing
+ * shifts under a finger that is already reaching for play.
+ *
+ * A station has no track to move through and nothing to pause: stopping it would only be the
+ * silence the mute already gives, and the stream stops by itself once another source is chosen.
+ * Its face has no transport and no progress. The block is the station's name between ‹ and ›,
+ * which step through the list; what it plays under that, or how far it has got connecting; and
+ * where the transport stands, the six presets — the Stations page's buttons with its rules
+ * (screen_radio.cpp), so the station after this one is a tap away. A pushed DLNA track plays on
+ * the same engine but is a track, and has the track's face.
  *
  * Over the block, where the sound comes from — «BLUETOOTH» and the phone's name — and «Звук»,
  * the sheet with the sounds, Бас, Високі and the loudness; the codec beside the artist; and
@@ -28,9 +36,10 @@
  * action, not a state). The satellite cannot be asked to call a phone (LINK_PROTOCOL.md), so
  * there is no «connect».
  *
- * The knob's press is this page's play button, from any page (ui_now_play_pause): the knob has
- * one job everywhere — a turn is the volume, a press plays and pauses — rather than ringing this
- * page's buttons in turn, which would be a mode.
+ * The knob's press is this page's play button, from any page (ui_now_press): the knob has one
+ * job everywhere — a turn is the volume, a press plays and pauses — rather than ringing this
+ * page's buttons in turn, which would be a mode. A station does not pause, so there the press
+ * is the mute.
  */
 
 #include "ui_common.h"
@@ -41,6 +50,7 @@
 #include "playlist.h"
 #include "cover.h"
 #include "bt_settings.h"
+#include "stations.h"
 #include "station_badge.h"
 #include <cstdio>
 #include <cstdlib>
@@ -96,6 +106,29 @@ constexpr int32_t SPEC_H    = SPEC_BASE - COVER - 16;          // 88
 // in the biggest face that keeps 20 px clear of the edge at each end
 constexpr int32_t PH_DISC = 200;
 constexpr int32_t PH_TEXT = PH_DISC - 40;
+// The station face. ‹ and › are a finger's 64 whatever their glyph, and start where the row's
+// buttons stop taking a finger, so neither steals the other's; the name is one headline line 4 px
+// lower, between them, and their glyphs stand on that line. The presets are two rows of three
+// 64-px buttons that end where the tile does, as the transport did: the station's disc, then its
+// name in up to two lines. Each keeps the outline the playing one shows, uncoloured, so nothing in
+// a button moves when it plays (LVGL lays a child out inside the border).
+constexpr int32_t ST_Y      = ROW_H + ROW_EXT;               // 56
+constexpr int32_t ST_ARROW  = 64;
+constexpr int32_t ST_NAME_Y = ST_Y + 4;
+constexpr int     N_PRE     = radio_core::PRESETS;           // 6
+constexpr int32_t PRE_COLS  = 3;
+constexpr int32_t PRE_GAP   = 8;
+constexpr int32_t PRE_H     = 64;
+constexpr int32_t PRE_W     = (COL_W - (PRE_COLS - 1) * PRE_GAP) / PRE_COLS;   // 144
+constexpr int32_t PRE_Y     = COL_H - 2 * PRE_H - PRE_GAP;   // 144
+constexpr int32_t PRE_LINE  = 2;                             // the outline
+constexpr int32_t PRE_PAD   = 8;
+constexpr int32_t PRE_LOGO  = 40;
+constexpr int32_t PRE_TEXT_X = PRE_PAD + PRE_LOGO + PRE_PAD;   // 56
+constexpr int32_t PRE_TEXT_W = PRE_W - PRE_TEXT_X - PRE_PAD;   // 80: «Порожньо», the widest word, is 78.4
+static_assert(N_PRE == 2 * PRE_COLS, "the presets are two rows of three");
+static_assert(PRE_COLS * PRE_W + (PRE_COLS - 1) * PRE_GAP == COL_W, "the grid fills the column");
+static_assert(ST_Y + ST_ARROW <= PRE_Y, "the arrows stand over the grid, not on it");
 
 struct Now {
     lv_obj_t* page     = nullptr;   ///< the whole screen: the cover's colour behind everything
@@ -128,7 +161,10 @@ struct Now {
     lv_obj_t* title = nullptr;
     lv_obj_t* sub   = nullptr;
     lv_obj_t* badge = nullptr;      ///< the codec, after the artist
-    // progress: a bar with times for a track, the buffer line for the radio
+    int32_t   sub_y   = 0;          ///< where the line under the title stands on a track's face…
+    int32_t   now_y   = 0;          ///< …and under the station's name on a station's
+    int32_t   badge_dy = 0;         ///< the badge, on that line
+    // progress: a bar with times for a track
     lv_obj_t* prog     = nullptr;
     lv_obj_t* prog_hit = nullptr;   ///< the touch target: taller than the bar it drives
     touch::Slide prog_touch;        ///< a finger on it (touch_gesture.h)
@@ -139,14 +175,20 @@ struct Now {
     lv_obj_t* prog_knob= nullptr;   ///< at the fill's end, where the bar seeks
     lv_obj_t* t_pos    = nullptr;
     lv_obj_t* t_dur    = nullptr;
-    lv_obj_t* wave     = nullptr;
-    float     phase    = 0.0f;
     // transport
     lv_obj_t*   transport = nullptr;
     m3w::Button prev, play, next, rep, shuf;
     m3w::Button pick;               ///< the empty face's way to the sources
     m3w::Button visible;            ///< Bluetooth, no phone, new phones not let in: let them in
     int8_t    vis_shown = -1;
+    // the station face: ‹ the name ›, and the presets
+    lv_obj_t*   station = nullptr;
+    m3w::Button st_prev, st_next;
+    lv_obj_t*   st_name = nullptr;
+    lv_obj_t*   pre[N_PRE]      = {};
+    lv_obj_t*   pre_disc[N_PRE] = {};   ///< the station's disc, or the empty button's number
+    lv_obj_t*   pre_mark[N_PRE] = {};   ///< what is on the disc
+    lv_obj_t*   pre_lbl[N_PRE]  = {};
     // spectrum
     lv_obj_t* spec = nullptr;
 
@@ -158,6 +200,11 @@ struct Now {
     char  dev_txt[32]     = "";
     char  pos_txt[12]     = "";
     char  dur_txt[12]     = "";
+    char  st_name_txt[64] = "";
+    uint32_t pre_gen      = 0xFFFFFFFF;   ///< the station list's generation the presets show
+    int32_t  pre_station  = -2;
+    int8_t   pre_storable = -1;
+    int8_t   st_steps     = -1;           ///< ‹ and › have a station to step to
     PlayerFace face = PlayerFace::NONE;
     int32_t source  = -2;
     bool    network_push = false;
@@ -212,9 +259,10 @@ void rep_cb(lv_event_t*)    { post(UiLvglModule::Req::REPEAT, -1); }
 void shuf_cb(lv_event_t*)   { post(UiLvglModule::Req::SHUFFLE, -1); }
 
 /// The transport speaks the source's language: player.cmd codes for a track (the module
-/// forwards them to the phone or the DLNA queue), radio.cmd codes for a station. `which`: 0 prev,
-/// 1 play/pause, 2 next. Read from the snapshot, not this page's buttons: the knob's press comes
-/// here from every page, and only the page on the glass is refreshed.
+/// forwards them to the phone or the DLNA queue), radio.cmd codes for a station's ‹ and ›.
+/// `which`: 0 prev, 1 play/pause, 2 next. Read from the snapshot, not this page's buttons: the
+/// knob's press comes here from every page, and only the page on the glass is refreshed. A
+/// station has no pause, and its "play/pause" — the knob's press — is the mute.
 void transport(const UiLvglModule::Snapshot& s, int which) {
     const PlayerFace face = ui_face(s);
     if (face == PlayerFace::EMPTY) return;               // the tone, AUX, USB, off: nothing to command
@@ -222,8 +270,8 @@ void transport(const UiLvglModule::Snapshot& s, int which) {
     if ((s.source == AUDIO_SOURCE_BT && !s.bt_connected) || (s.source == AUDIO_SOURCE_AIRPLAY && !s.ap_remote))
         return;
     if (face == PlayerFace::RADIO) {
-        const bool playing = strcmp(s.radio_state, "playing") == 0;
-        post(UiLvglModule::Req::RADIO_CMD, which == 0 ? 4 : which == 2 ? 3 : playing ? 2 : 1);
+        if (which == 1) post(UiLvglModule::Req::MUTE, -1);
+        else            post(UiLvglModule::Req::RADIO_CMD, which == 0 ? 4 : 3);
     } else if (which == 1 && s.source == AUDIO_SOURCE_FILE && strcmp(s.play_state, "playing") != 0 &&
                strcmp(s.play_state, "paused") != 0) {
         // Play on a card with nothing open: the toggle only pauses and resumes a track that is
@@ -236,6 +284,14 @@ void transport(const UiLvglModule::Snapshot& s, int which) {
 
 void tran_cb(lv_event_t* e) {
     if (n.ctx) transport(n.ctx->s, (int)(intptr_t)lv_event_get_user_data(e));
+}
+
+/// A preset of the station face, with the Stations page's own gestures. SHORT_CLICKED, not
+/// CLICKED: LVGL sends CLICKED after a long press as well, and a store must not also tune.
+void pre_cb(lv_event_t* e) {
+    const int slot = (int)(intptr_t)lv_event_get_user_data(e);
+    if (lv_event_get_code(e) == LV_EVENT_LONG_PRESSED) ui_preset_store(slot);
+    else                                               ui_preset_tap(slot);
 }
 
 /// The knob's centre for a fill `w` px long: at its end, held inside the bar.
@@ -390,6 +446,8 @@ lv_obj_t* build(lv_obj_t* parent, UiCtx& c) {
     lv_obj_set_size(n.title, COL_W, 2 * lh_title);
     lv_label_set_long_mode(n.title, LV_LABEL_LONG_DOT);
     const int32_t sub_y = TITLE_Y + 2 * lh_title + 2;   // 130
+    n.sub_y = sub_y;
+    n.now_y = ST_NAME_Y + lh_title + 4;                 // 104: the station's line, over the presets at 144
     n.sub = m3w::text(col, t.t.body_l, t.c.on_surface_var, "");
     lv_obj_set_pos(n.sub, 0, sub_y);
     lv_obj_set_size(n.sub, COL_W, lh_sub);
@@ -401,10 +459,11 @@ lv_obj_t* build(lv_obj_t* parent, UiCtx& c) {
     lv_obj_set_style_radius(n.badge, 6, 0);
     lv_obj_set_style_pad_hor(n.badge, 8, 0);
     lv_obj_set_style_pad_ver(n.badge, 1, 0);
-    lv_obj_set_y(n.badge, sub_y + (lh_sub - lv_font_get_line_height(t.t.label_s) - 4) / 2);
+    n.badge_dy = (lh_sub - lv_font_get_line_height(t.t.label_s) - 4) / 2;
+    lv_obj_set_y(n.badge, sub_y + n.badge_dy);
     uih::show(n.badge, false);
 
-    // ── progress: the bar (which is also the seek control) or the radio's buffer line ──
+    // ── progress: the bar, which is also the seek control ──
     const int32_t prog_y = sub_y + lh_sub + 3;          // 158: the box ends at 208, the transport is at 216
     n.prog = uih::box(col, 0, prog_y, COL_W, PROG_H);
     // A 4-pixel bar is a fine thing to look at and an impossible thing to hit, so the touch
@@ -425,8 +484,6 @@ lv_obj_t* build(lv_obj_t* parent, UiCtx& c) {
     lv_obj_set_pos(n.t_pos, 0, BAR_Y + BAR_H + 6);
     n.t_dur = m3w::text(n.prog, t.t.label_s, t.c.outline, "");
     lv_obj_align(n.t_dur, LV_ALIGN_TOP_RIGHT, 0, BAR_Y + BAR_H + 6);
-    n.wave = m3w::wave(col, 0, prog_y - 6, COL_W);
-    uih::show(n.wave, false);
 
     // ── transport: centred under the progress bar at one gap; the hidden take no room ──
     n.transport = uih::box(col, 0, TRAN_Y, COL_W, TRAN_H);
@@ -454,6 +511,48 @@ lv_obj_t* build(lv_obj_t* parent, UiCtx& c) {
     lv_obj_add_event_cb(n.visible.obj, vis_cb, LV_EVENT_CLICKED, nullptr);
     uih::show(n.visible.obj, false);
 
+    // ── the station face: ‹ the station's name ›, and the presets where the transport stands.
+    //    A box over the whole column that takes no finger itself, so the row's buttons still do. ──
+    n.station = uih::box(col, 0, 0, COL_W, COL_H);
+    n.st_prev = m3w::icon_button(n.station, 0, ST_Y, ST_ARROW, UI_SYM_CHEVRON_LEFT, t.t.icon_xl);
+    n.st_next = m3w::icon_button(n.station, COL_W - ST_ARROW, ST_Y, ST_ARROW, UI_SYM_CHEVRON, t.t.icon_xl);
+    for (m3w::Button* b : {&n.st_prev, &n.st_next}) {
+        lv_obj_set_style_text_color(b->icon, m3::col(t.c.on_surface), 0);
+        lv_obj_align(b->icon, LV_ALIGN_CENTER, 0, ST_NAME_Y + lh_title / 2 - (ST_Y + ST_ARROW / 2));
+    }
+    lv_obj_add_event_cb(n.st_prev.obj, tran_cb, LV_EVENT_CLICKED, (void*)(intptr_t)0);
+    lv_obj_add_event_cb(n.st_next.obj, tran_cb, LV_EVENT_CLICKED, (void*)(intptr_t)2);
+    n.st_name = m3w::text(n.station, t.t.headline, t.c.on_surface, "");
+    lv_obj_set_pos(n.st_name, ST_ARROW, ST_NAME_Y);
+    lv_obj_set_size(n.st_name, COL_W - 2 * ST_ARROW, lh_title);
+    lv_obj_set_style_text_align(n.st_name, LV_TEXT_ALIGN_CENTER, 0);
+    lv_label_set_long_mode(n.st_name, LV_LABEL_LONG_DOT);
+    for (int i = 0; i < N_PRE; i++) {
+        // On the cover's colour, as «Звук» is: on_surface at a tenth, a fifth while pressed.
+        lv_obj_t* p = uih::box(n.station, (i % PRE_COLS) * (PRE_W + PRE_GAP),
+                               PRE_Y + (i / PRE_COLS) * (PRE_H + PRE_GAP), PRE_W, PRE_H);
+        lv_obj_add_flag(p, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_set_style_radius(p, m3::shape::M, 0);
+        lv_obj_set_style_bg_color(p, m3::col(t.c.on_surface), 0);
+        lv_obj_set_style_bg_opa(p, LV_OPA_10, 0);
+        lv_obj_set_style_bg_opa(p, LV_OPA_20, LV_STATE_PRESSED);
+        lv_obj_set_style_border_width(p, PRE_LINE, 0);
+        lv_obj_set_style_border_color(p, m3::col(t.c.primary), 0);
+        lv_obj_set_style_border_opa(p, LV_OPA_TRANSP, 0);
+        lv_obj_add_event_cb(p, pre_cb, LV_EVENT_SHORT_CLICKED, (void*)(intptr_t)i);
+        lv_obj_add_event_cb(p, pre_cb, LV_EVENT_LONG_PRESSED, (void*)(intptr_t)i);
+        n.pre[i] = p;
+        n.pre_disc[i] = m3w::surface(p, PRE_PAD - PRE_LINE, (PRE_H - PRE_LOGO) / 2 - PRE_LINE, PRE_LOGO,
+                                     PRE_LOGO, t.c.surface_highest, m3::shape::FULL);
+        n.pre_mark[i] = m3w::text(n.pre_disc[i], t.t.label_m, t.c.on_surface_var, "");
+        lv_obj_center(n.pre_mark[i]);
+        n.pre_lbl[i] = m3w::text(p, t.t.label_s, t.c.on_surface, "");
+        lv_obj_set_x(n.pre_lbl[i], PRE_TEXT_X - PRE_LINE);
+        lv_obj_set_width(n.pre_lbl[i], PRE_TEXT_W);
+        lv_label_set_long_mode(n.pre_lbl[i], LV_LABEL_LONG_DOT);
+    }
+    uih::show(n.station, false);
+
     // ── spectrum: the strip under the tile ──
     n.spec = uih::spectrum(root, SPEC_X, SPEC_BASE, SPEC_H);
 
@@ -480,19 +579,24 @@ void place_row() {
 
 /// The line under the title and the codec after it: the line is as wide as its text, so the
 /// badge follows the artist, and never wider than leaves the badge on the page. The width is
-/// the text's own, measured, not the label's: a cut label is as wide as its cut.
+/// the text's own, measured, not the label's: a cut label is as wide as its cut. A track's line
+/// starts at the column's edge, under the title; a station's is centred, under its name.
 void place_meta() {
     const bool badge = !lv_obj_has_flag(n.badge, LV_OBJ_FLAG_HIDDEN);
-    int32_t room = COL_W;
+    int32_t room = COL_W, badge_w = 0;
     if (badge) {
         lv_obj_update_layout(n.badge);
-        room -= lv_obj_get_width(n.badge) + 12;
+        badge_w = lv_obj_get_width(n.badge);
+        room -= badge_w + 12;
     }
     lv_point_t sz;
     lv_text_get_size(&sz, n.sub_txt, m3::theme().t.body_l, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
     const int32_t w = sz.x < room ? sz.x : room;
     lv_obj_set_width(n.sub, w > 1 ? w : 1);
-    if (badge) lv_obj_set_x(n.badge, n.sub_txt[0] ? w + 12 : 0);
+    const int32_t text = n.sub_txt[0] ? w + (badge ? 12 : 0) : 0;
+    const int32_t x = n.face == PlayerFace::RADIO ? (COL_W - text - badge_w) / 2 : 0;
+    lv_obj_set_x(n.sub, x);
+    if (badge) lv_obj_set_x(n.badge, x + text);
 }
 
 /// The title, over the line under it: a title of one line sits on that line instead of leaving
@@ -540,6 +644,74 @@ void set_placeholder(const char* name) {
     lv_label_set_text(n.ph_lbl, b.label);
 }
 
+/// The logo a preset shows for its station: the generated stand-in (station_badge.h), as the
+/// panel keeps no station's logo but the playing one's, in the tile.
+station_badge::Badge logo_for(const radio_core::Station& st) { return station_badge::make(st.name); }
+
+/// The presets as the Stations page paints its own: the station's name — or «Порожньо», and
+/// «Зберегти сюди» while a tap would store — and the playing one outlined in the accent. A
+/// station's disc carries the first character of its label; an empty button's, its number.
+void paint_presets(const UiLvglModule::Snapshot& s, bool storable) {
+    const auto& t = m3::theme();
+    auto& list = radio_core::stations();
+    radio_core::Station st;
+    const int32_t lh = lv_font_get_line_height(t.t.label_s);
+    for (int i = 0; i < N_PRE; i++) {
+        const int idx = list.preset(i);
+        const bool have = idx >= 0 && list.at(idx, st);
+        lv_obj_set_style_border_opa(n.pre[i], have && idx == s.radio_station ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
+        const char* txt;
+        if (have) {
+            const station_badge::Badge b = logo_for(st);
+            lv_obj_set_style_bg_color(n.pre_disc[i], m3::col(b.rgb), 0);
+            lv_obj_set_style_text_font(n.pre_mark[i], t.t.title_m, 0);
+            lv_obj_set_style_text_color(n.pre_mark[i], m3::col(station_badge::INK), 0);
+            lv_label_set_text(n.pre_mark[i], b.first);
+            txt = st.name[0] ? st.name : "—";
+            lv_obj_set_style_text_color(n.pre_lbl[i], m3::col(t.c.on_surface), 0);
+        } else {
+            char num[4];
+            snprintf(num, sizeof(num), "%d", i + 1);
+            lv_obj_set_style_bg_color(n.pre_disc[i], m3::col(t.c.surface_highest), 0);
+            lv_obj_set_style_text_font(n.pre_mark[i], t.t.label_m, 0);
+            lv_obj_set_style_text_color(n.pre_mark[i], m3::col(t.c.on_surface_var), 0);
+            lv_label_set_text(n.pre_mark[i], num);
+            txt = tr(storable ? S::st_preset_store : S::st_preset_empty);
+            lv_obj_set_style_text_color(n.pre_lbl[i], m3::col(storable ? t.c.primary : t.c.on_surface_var), 0);
+        }
+        lv_label_set_text(n.pre_lbl[i], txt);
+        // one line or two, centred in the button either way
+        lv_point_t sz;
+        lv_text_get_size(&sz, txt, t.t.label_s, 0, 0, PRE_TEXT_W, LV_TEXT_FLAG_NONE);
+        const int32_t h = sz.y > lh ? 2 * lh : lh;
+        lv_obj_set_height(n.pre_lbl[i], h);
+        lv_obj_set_y(n.pre_lbl[i], (PRE_H - h) / 2 - PRE_LINE);
+    }
+}
+
+/// The station face's controls: ‹ and › while the list has a station to step to, and the presets
+/// once the list, the station or what a tap on an empty one does has changed. The list is read
+/// settled — an odd generation is a write under way — as the Stations page reads it.
+void refresh_station(const UiLvglModule::Snapshot& s) {
+    auto& list = radio_core::stations();
+    const int count = list.count();
+    const bool listed = s.radio_station >= 0 && s.radio_station < count;
+    const int8_t steps = count > (listed ? 1 : 0) ? 1 : 0;
+    if (steps != n.st_steps) {
+        n.st_steps = steps;
+        m3w::button_enable(n.st_prev, steps != 0);
+        m3w::button_enable(n.st_next, steps != 0);
+    }
+    const uint32_t gen = list.generation();
+    const int8_t storable = ui_preset_storable(s) ? 1 : 0;
+    if ((gen != n.pre_gen && !(gen & 1u)) || s.radio_station != n.pre_station || storable != n.pre_storable) {
+        n.pre_gen = gen;
+        n.pre_station = s.radio_station;
+        n.pre_storable = storable;
+        paint_presets(s, storable != 0);
+    }
+}
+
 /// The page's colour: the cover's (cover_backdrop), or the plain surface when there is no
 /// picture. The gradient itself is set once, in build().
 void set_backdrop(uint32_t rgb) {
@@ -581,13 +753,20 @@ void set_face(PlayerFace f, const UiLvglModule::Snapshot& s) {
     const bool empty = (f == PlayerFace::EMPTY);
     const bool radio = (f == PlayerFace::RADIO);
     const bool is_file = (s.source == AUDIO_SOURCE_FILE);
-    uih::show(n.transport, !empty);
+    uih::show(n.transport, f == PlayerFace::TRACK);
     n.vis_shown = -1;                             // the next refresh decides on «Увімкнути видимість»
     n.seek_drag = false;                          // a scrub of another source's track seeks nothing
     n.seek_to = -1;
     uih::show(n.pick.obj, empty);
     uih::show(n.prog, f == PlayerFace::TRACK);
-    uih::show(n.wave, radio);
+    // A station's block is its own: the name between ‹ and ›, the presets; its line goes under the
+    // name, and the next refresh paints the arrows and the presets.
+    uih::show(n.title, !radio);
+    uih::show(n.station, radio);
+    lv_obj_set_y(n.sub, radio ? n.now_y : n.sub_y);
+    lv_obj_set_y(n.badge, (radio ? n.now_y : n.sub_y) + n.badge_dy);
+    n.st_steps = -1;
+    n.pre_gen = 0xFFFFFFFF;
     uih::show(n.rep.obj, is_file);
     uih::show(n.shuf.obj, is_file);
     n.fmt_txt[0] = '\x01'; n.fmt_txt[1] = '\0';   // no text looks like this: the next refresh re-applies
@@ -653,7 +832,7 @@ void refresh(lv_obj_t*, UiCtx& c) {
     if (vis != n.vis_shown) {
         n.vis_shown = vis;
         uih::show(n.visible.obj, vis != 0);
-        uih::show(n.transport, face != PlayerFace::EMPTY && !vis);
+        uih::show(n.transport, face == PlayerFace::TRACK && !vis);
     }
     if (live != n.tran_live) {
         n.tran_live = live;
@@ -706,29 +885,19 @@ void refresh(lv_obj_t*, UiCtx& c) {
     uih::set_text(n.from_dev, n.dev_txt, sizeof(n.dev_txt), is_bt && s.bt_connected ? s.bt_peer : "");
 
     if (face == PlayerFace::RADIO) {
-        const bool playing = strcmp(s.radio_state, "playing") == 0;
-        // What is playing over who is playing it: the ICY title when the station sends one,
-        // the station's name until it does — and the state in words while it is not playing,
-        // rather than a blank line that reads as a fault.
-        const char* title = s.radio_now[0] ? s.radio_now : s.radio_name[0] ? s.radio_name : tr(S::src_radio);
-        const char* sub = s.radio_now[0] ? s.radio_name
-                        : strcmp(s.radio_state, "connecting") == 0   ? tr(S::now_connecting)
-                        : strcmp(s.radio_state, "buffering") == 0    ? tr(S::now_buffering)
-                        : strcmp(s.radio_state, "reconnecting") == 0 ? tr(S::now_reconnecting)
-                        : playing ? "" : tr(S::now_stopped);
-        set_title(title);
-        set_sub(sub);
+        // Who is playing between ‹ and ›, and under it what: the ICY title once the station
+        // plays, and until then the state in words rather than a blank line that reads as a fault.
+        const char* name = s.radio_name[0] ? s.radio_name : tr(S::src_radio);
+        uih::set_text(n.st_name, n.st_name_txt, sizeof(n.st_name_txt), name);
+        set_placeholder(name);
+        const char* st = s.radio_state;
+        set_sub(strcmp(st, "playing") == 0      ? s.radio_now
+              : strcmp(st, "connecting") == 0   ? tr(S::now_connecting)
+              : strcmp(st, "buffering") == 0    ? tr(S::now_buffering)
+              : strcmp(st, "reconnecting") == 0 ? tr(S::now_reconnecting)
+              : tr(S::now_stopped));
         set_fmt(s.radio_fmt);
-        set_placeholder(s.radio_name[0] ? s.radio_name : tr(S::src_radio));
-        // The buffer line: full and moving while the station plays, flat and still when not.
-        if (playing) n.phase += 0.3f;
-        const float fill = s.radio_buffer > 0 ? (float)s.radio_buffer / 100.0f : (playing ? 1.0f : 0.0f);
-        m3w::wave_set(n.wave, fill, n.phase, playing);
-        const int8_t pl = playing ? 1 : 0;
-        if (pl != n.playing) {
-            n.playing = pl;
-            lv_label_set_text(n.play.icon, pl ? UI_SYM_STOP : UI_SYM_PLAY);
-        }
+        refresh_station(s);
     } else if (face == PlayerFace::TRACK) {
         const char* title = s.play_title;
         char cur_name[player_core::Playlist::MAX_NAME];
@@ -833,7 +1002,7 @@ void refresh(lv_obj_t*, UiCtx& c) {
 
 const UiScreenDef UI_SCREEN_NOW = {"now", UI_SYM_MUSIC, build, refresh, nullptr, nullptr};
 
-void ui_now_play_pause() {
+void ui_now_press() {
     if (n.ctx) transport(n.ctx->s, 1);
 }
 

@@ -331,9 +331,9 @@ void ui_bt_preview(bool on);
 /// the page as it is with no cover — and false gives it back. Returns whether the page has a
 /// cover's colour to paint. Call with the LVGL lock held.
 bool ui_now_plain(bool plain);
-/// The Player's play button, for the knob's press on any page: what the source's transport does
-/// — play or pause, the radio's play or stop — and nothing where there is nobody to command.
-void ui_now_play_pause();
+/// The knob's press on any page, the Player's play button: play or pause for a track, the mute for
+/// a station, which does not pause; nothing where there is nobody to command.
+void ui_now_press();
 /// Bring the player screen up. Choosing the card as a source is choosing to listen to
 /// what is on it, so the list of it is where that choice should land.
 void ui_shell_show_player();
@@ -349,9 +349,17 @@ void ui_shell_show_radio();
 lv_obj_t* ui_station_tabs(lv_obj_t* parent, int on);
 /// The catalog page on tab 1 Топ, 2 Країни, 3 Жанри or 4 Пошук, each from its top.
 void ui_catalog_open(int tab);
+/// The six presets' gestures, as the Stations page has them (screen_radio.cpp) and the Player's
+/// station face repeats them: a tap tunes preset `slot` — and starts it when it is the station
+/// tuned but not playing — or, on an empty one, stores what plays; a long press stores what plays.
+void ui_preset_tap(int slot);
+void ui_preset_store(int slot);
+/// Something plays that a preset can keep: a station of the list, or one from the catalog.
+bool ui_preset_storable(const UiLvglModule::Snapshot& s);
 /// One encoder update: `delta` detents since the last call, `event` 0 none / 1 click / 2 hold.
 /// The knob has one job on every page, over every sheet and dialog: a turn is the volume, a
-/// press plays and pauses, a hold opens the menu. What is on the glass is chosen by touch.
+/// press plays and pauses (mutes a station), a hold opens the menu. What is on the glass is
+/// chosen by touch.
 /// Called from the LVGL refresh, which is the only place that may touch widgets.
 void ui_shell_encoder(int32_t delta, uint8_t event, UiCtx& c);
 

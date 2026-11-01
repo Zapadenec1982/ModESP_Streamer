@@ -3,10 +3,11 @@
  * @brief "Станції" — the six presets and every station there is. A tap tunes and goes back
  *        to the Player.
  *
- * The station that is playing, what it says is playing and the transport are the Player's
- * radio face; this page is the choice of station, opened from the Player's list button. The
- * presets sit at the top and scroll away with the list. They live here and not on the Source
- * page, which chooses a source, not a station.
+ * The station that is playing and what it says is playing are the Player's station face; this
+ * page is the choice of station, opened from the Player's list button. The presets sit at the
+ * top and scroll away with the list. They live here and on the Player's station face, where they
+ * work as they do here (ui_preset_tap and the rest, below), and not on the Source page, which
+ * chooses a source, not a station.
  *
  * A preset works the way a car radio's does: a tap tunes it, and a long press stores the
  * station that is playing in it. An empty preset says "Зберегти сюди" while the radio plays,
@@ -274,3 +275,8 @@ void shown(lv_obj_t*, UiCtx&) {
 }  // namespace
 
 const UiScreenDef UI_SCREEN_RADIO = {"radio", UI_SYM_RADIO, build, refresh, shown, nullptr};
+
+// The Player's station face has the same six buttons, and they do what these do.
+void ui_preset_tap(int slot)   { preset_tap(slot); }
+void ui_preset_store(int slot) { store(slot); }
+bool ui_preset_storable(const UiLvglModule::Snapshot& s) { return can_store(s); }

@@ -108,7 +108,7 @@ network sources: [docs/NETWORK.md](docs/NETWORK.md).
 | PCM5102A | Stereo DAC on I2S; the P4 is the clock master, no MCLK |
 | TPA3255 | Class-D amplifier |
 | ESP32 Bluetooth satellite | A2DP sink with its own firmware: [Bluetooth satellite](#bluetooth-satellite) |
-| Rotary encoder | Volume; its button plays and pauses, a hold opens the menu |
+| Rotary encoder | Volume; its button plays and pauses (mutes a station), a hold opens the menu |
 
 Pinout, signal path and the reasons behind them: [docs/CONCEPT.md](docs/CONCEPT.md) and
 [docs/AUDIO.md](docs/AUDIO.md); the panel's display, touch and encoder:

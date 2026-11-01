@@ -795,7 +795,6 @@ void UiLvglModule::mirror_state() {
     // to be inside SharedState at that instant, which is exactly what a busy link or a
     // finger on the screen produces.
     const int32_t radio_station = read_int("radio.station", 0);
-    const int32_t radio_buffer  = read_int("radio.buffer", 0);
     const int32_t backlight     = read_int("ui.backlight", 80);
     const int32_t standby_bl    = read_int("ui.standby_bl", 25);
     const float   lim_gr_db     = has_audio ? read_float("audio.lim_gr", 0.0f) : 0.0f;
@@ -849,7 +848,6 @@ void UiLvglModule::mirror_state() {
     strncpy(snap_.radio_fmt, radio_fmt, sizeof(snap_.radio_fmt) - 1);
     strncpy(snap_.radio_state, radio_state, sizeof(snap_.radio_state) - 1);
     snap_.radio_station = radio_station;
-    snap_.radio_buffer  = radio_buffer;
     strncpy(snap_.play_artist, play_artist, sizeof(snap_.play_artist) - 1);
     strncpy(snap_.play_album, play_album, sizeof(snap_.play_album) - 1);
     strncpy(snap_.play_fmt, play_fmt, sizeof(snap_.play_fmt) - 1);

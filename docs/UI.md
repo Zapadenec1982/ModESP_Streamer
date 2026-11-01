@@ -213,23 +213,24 @@ the Bluetooth pairing dialog; above everything, the touch ring (30 px, follows t
 Two more `ui.screen` values: `boot` until the screen is built (and for good without a panel) and
 `standby` for the duration of standby.
 
-**Player** (`screen_now.cpp`). One layout for every source: the cover tile on the left, the track
-block on the right, the spectrum strip at the bottom; above the block, where the sound comes from
-(source and device) and the "Sound" button; the background is the cover colour (`ui.cover_rgb`)
-fading into the surface. Without a picture the tile shows a glyph (the source's on the empty face,
-a note otherwise); a station shows its stand-in instead (`include/station_badge.h`, test
+**Player** (`screen_now.cpp`). One frame for every source: the cover tile on the left, the block on
+the right, the spectrum strip at the bottom; above the block, where the sound comes from (source
+and device) and the "Sound" button; the background is the cover colour (`ui.cover_rgb`) fading into
+the surface. Without a picture the tile shows a glyph (the source's on the empty face, a note
+otherwise); a station shows its stand-in instead (`include/station_badge.h`, test
 `tests/host/test_station_badge.cpp`): a 200 px disc in a colour taken from the station's name
 (FNV-1a of its bytes over a fixed palette of eight muted hues that white reads on) with a label —
 the name's first word that says something (leading numbers and frequencies and the word "radio"
 skipped) when it has at most five characters, otherwise the initials of its words, at most three:
 "KISS" for "106.5 Kiss FM", "DK" for "Deutschlandfunk Kultur"; capitals, Latin and Cyrillic.
-What does not apply to the source is greyed out, not hidden. The title takes up to two lines; a
-one-line title sits right above the line under it (the artist), the free space goes above the
-title. The codec badge and the USB line are in the language's units and decimal separator
+
+A track — the card's, a DLNA track, Bluetooth, AirPlay — has the title, the progress and the
+transport; what does not apply to the source is greyed out, not hidden. The title takes up to two
+lines; a one-line title sits right above the line under it (the artist), the free space goes above
+the title. The codec badge and the USB line are in the language's units and decimal separator
 (`i18n::badge`): "44.1 kHz 128 kbit/s", "LDAC 96 kHz"; two channels are not written, a whole number
 goes without ".0". Transport:
 
-- radio — `radio.cmd` (1 play, 2 stop, 3 next, 4 previous);
 - card — `player.cmd`; "Play" with no track open starts the track at the queue cursor;
 - a DLNA track, Bluetooth, AirPlay — `Req::TRANSPORT`, which the main loop routes to `dlna.cmd`,
   `bt.cmd` or `airplay.cmd`;
@@ -238,6 +239,20 @@ goes without ".0". Transport:
   phones cannot see the panel (the satellite's radio or its visibility is off), and the button
   turns both on;
 - tone, AUX, USB, output off — there is no transport.
+
+A station (`audio.source` = 5, `radio.mode` not `push`) has no transport and no progress: it does
+not pause, stopping it would only be the mute, and it stops by itself when another source is
+chosen. Its block, under the same row:
+
+- the station's name (`radio.name`) in one line between ‹ and ›, 64 px targets that send
+  `radio.cmd` 4 and 3 — the previous and the next station of the list — and are greyed while the
+  list has no other station to step to;
+- under it, centred, what it plays (`radio.now_playing`) and the codec badge; until it plays,
+  "Connecting…", "Buffering…" or "Reconnecting…", and "Stopped" while it is idle;
+- where the transport stands, the six presets: a 3×2 grid of 144×64 buttons, each with the
+  station's disc (40 px, the first character of its label) and its name in up to two lines, the
+  playing station outlined in the accent colour, an empty one with its number and "Empty" — "Store
+  here" while a tap would store. They are the Stations page's buttons, with its rules ("Lists").
 
 Seeking — the progress bar's knob under a finger moves the bar and the time; letting go writes
 `player.seek_s` (card) or `radio.seek_s` (a DLNA track, when `radio.seekable`) once. Repeat and
@@ -261,8 +276,9 @@ it gives now (phone, station, number of tracks). A tap sets `audio.source` and o
 | Connections | Wi-Fi (network · address), Bluetooth (phone · codec) |
 | Services | AirPlay (announcement switch; a tap picks the mode), DLNA (switch) |
 
-**Lists.** Stations — six buttons (presets) at the top (a tap tunes, a long press saves the current
-station, a tap on an empty one while playing saves too) and the whole list, where a station on a
+**Lists.** Stations — six buttons (presets) at the top, the same as on the Player's station face (a
+tap tunes, a long press saves the current station, a tap on an empty one while playing saves too;
+`ui_preset_tap`, `ui_preset_store` in `screen_radio.cpp`) and the whole list, where a station on a
 button has "button N" in its caption; a tap tunes (`radio.station`) and returns to the Player. The
 catalogue reads what the radio module got from Radio Browser (`radio_catalog_ui.h`), in pages of up
 to 12 rows; search uses the keyboard `src/ui_search_kb.cpp` (the panel language's letters and a
@@ -324,12 +340,12 @@ protocol 1.8 gives no settings — the phone and disconnecting remain.
 every page, over sheets, lists and dialogs (`ui_shell_encoder`):
 
 - rotation — `audio.volume` ±2 % per click (0…100); if mute is on, it is cleared;
-- a press shorter than 650 ms — the Player's play/pause button for the current source
-  (`ui_now_play_pause`);
+- a press shorter than 650 ms — the Player's play/pause for the current source (`ui_now_press`); on
+  a station, which does not pause, the mute (`audio.mute`) — a track DLNA pushed keeps play/pause;
 - a 650 ms hold — the menu (open/close), fires while the finger is still down; over a pick list, the
   "Sound" sheet or a dialog it does nothing;
-- in standby, a rotation or a press only wakes the screen: the volume does not move, play/pause and
-  the menu do not fire.
+- in standby, a rotation or a press only wakes the screen: the volume does not move, neither the
+  press's action nor the menu fires.
 
 Selection on the glass is by touch only.
 
@@ -516,7 +532,7 @@ the pairing dialog (`PairDialog.svelte`).
 
 | page | state | own endpoints |
 |---|---|---|
-| Player | `stores/now.js` (the source's face, as in `screen_now.cpp`), `audio.volume`, `audio.mute`, `audio.leveler`, transport `*.cmd`, `player.repeat/shuffle`, `*.seek_s`, `radio.fav_add` | `GET /api/cover?px=280` following `ui.cover` |
+| Player | `stores/now.js` (the source's face, as in `screen_now.cpp`, but for a station the web keeps play/stop, ⏮ ⏭ and the buffer line), `audio.volume`, `audio.mute`, `audio.leveler`, transport `*.cmd`, `player.repeat/shuffle`, `*.seek_s`, `radio.fav_add` | `GET /api/cover?px=280` following `ui.cover` |
 | Source | `audio.sources`, `audio.source` (the same cards and order as on the panel) | — |
 | Settings | `airplay.enabled/mode`, `dlna.enabled`, `radio.covers`, captions | `POST /api/restart` |
 | Tone and volume | `audio.bass_db`, `treble_db`, `loudness` (switched on: `loud_back`), `eq_enabled`, `vol_max`, `vol_start`; "Volume leveling": `lev_sched` and, while it is on, `lev_from`/`lev_to` as time fields (5-minute step) | `/api/eq` (presets, `lib/eq.js`) |

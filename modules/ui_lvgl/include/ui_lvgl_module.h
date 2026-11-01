@@ -102,7 +102,6 @@ public:
         char     radio_fmt[32]   = "";
         char     radio_state[16] = "";   ///< idle | connecting | buffering | playing | reconnecting
         int32_t  radio_station   = 0;
-        int32_t  radio_buffer    = 0;    ///< radio.buffer — the compressed buffer's fill, %
         bool     wifi_ok = false;
         char     wifi_ssid[33] = "";    ///< a whole SSID: the Wi-Fi page marks the list row by it
         char     wifi_ip[16]   = "";

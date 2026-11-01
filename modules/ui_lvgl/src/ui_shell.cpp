@@ -21,11 +21,10 @@
  * Volume is a moment, not a readout: a turn of the encoder brings up a slider for two
  * seconds, and the Player's loudspeaker button does the same.
  *
- * The knob has one job on every page:
- * a turn is the volume, a press plays and pauses, a hold opens the drawer. It used to walk each
- * page's rows with a ring, and set the volume where a page did not take it — what a turn did
- * depended on the page and on whether a ring was up: a mode, where people err. What is on the
- * glass is chosen by touch.
+ * The knob has one job on every page: a turn is the volume, a press plays and pauses (mutes a
+ * station), a hold opens the drawer. It used to walk each page's rows with a ring, and set the
+ * volume where a page did not take it — what a turn did depended on the page and on whether a
+ * ring was up: a mode, where people err. What is on the glass is chosen by touch.
  */
 
 #include "ui_common.h"
@@ -945,8 +944,8 @@ void ui_shell_encoder(int32_t delta, uint8_t event, UiCtx& c) {
         if (!ui_pick_shown() && !ui_sound_is_open() && !ui_shell_modal_open()) set_drawer(!g.drawer_open);
         return;
     }
-    if (event == 1) {                       // press: the Player's play button, from anywhere
-        ui_now_play_pause();
+    if (event == 1) {                       // press: the Player's play button (a station's mute), anywhere
+        ui_now_press();
         return;
     }
     if (!delta || !c.mod || c.s.volume < 0) return;

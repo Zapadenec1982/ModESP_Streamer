@@ -144,7 +144,7 @@ curl -u <user>:<password> -X POST http://<panel>/api/loglevel -d '{"tag":"UiLvgl
    frame buffer), `UiFlush: no PPA client`, `UiLvgl: touch init failed — continuing without touch`,
    `UiLvgl: panel init failed — screen disabled`.
 2. Knob: turning — `audio.volume` in `GET /api/state` changes by 2 per detent and the volume slider
-   appears; press — pause / play; hold — menu ([UI.md](UI.md), "Input").
+   appears; press — pause / play (on a station, the mute); hold — menu ([UI.md](UI.md), "Input").
 3. Touch: a 30 px ring follows the finger; `ui.touch_x` / `ui.touch_y` and the line `UiLvgl: touch x,y`;
    four corners — section "Orientation".
 4. Screenshot: `curl -u <user>:<password> -o shot.bmp http://<panel>/api/screenshot`.
