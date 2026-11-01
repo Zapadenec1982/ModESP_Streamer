@@ -79,6 +79,33 @@ inline bool authorized(httpd_req_t* req) {
     return false;
 }
 
+/// The request's whole body, req->content_len bytes, into `buf`, NUL-terminated — room for both
+/// is the caller's to check. The server's own policy for a body: a receive timeout is retried
+/// while bytes keep coming, and three in a row (recv_wait_timeout each) end the request, since a
+/// client that vanished without a FIN would otherwise hold the server's only task. A failure is
+/// answered 408 for the timeouts or 400 for a broken connection, unless `reply` is false — for a
+/// route with an error format of its own, such as a SOAP fault. False on failure either way.
+inline bool read_body(httpd_req_t* req, char* buf, bool reply = true) {
+    size_t got = 0;
+    int timeouts = 0;
+    while (got < req->content_len) {
+        const int r = httpd_req_recv(req, buf + got, req->content_len - got);
+        if (r <= 0) {
+            if (r == HTTPD_SOCK_ERR_TIMEOUT && ++timeouts < 3) continue;
+            if (reply) {
+                httpd_resp_send_err(req, r == HTTPD_SOCK_ERR_TIMEOUT ? HTTPD_408_REQ_TIMEOUT
+                                                                     : HTTPD_400_BAD_REQUEST,
+                                    "Receive error");
+            }
+            return false;
+        }
+        timeouts = 0;
+        got += (size_t)r;
+    }
+    buf[got] = '\0';
+    return true;
+}
+
 /// Room for eight. Four was meant as a smell threshold — a fifth subsystem wanting routes
 /// would mean the seam needed revisiting — and it was revisited when the player reached it
 /// (11.10.2026): DLNA, the station list, the screenshot, the EQ, Bluetooth and the user's
