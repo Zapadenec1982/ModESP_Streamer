@@ -406,8 +406,25 @@ function json(res, code, body) {
   res.end(typeof body === 'string' ? body : JSON.stringify(body));
 }
 
+// audio.transport as the panel routes it (components/audio_dsp/include/transport_route.h), roughly.
+function transport(v) {
+  const src = state['audio.source'];
+  if (src === 4) return ['player.cmd', v];
+  if (src === 3) return ['bt.cmd', v];
+  if (src === 6) return ['airplay.cmd', v];
+  if (src === 5 && state['radio.mode'] === 'push') {
+    return ['dlna.cmd', v === 6 ? (state['dlna.state'] === 'PLAYING' ? 3 : 1) : [0, 1, 3, 2, 4, 5][v]];
+  }
+  if (src === 5) {
+    const sounding = ['playing', 'buffering', 'connecting', 'reconnecting'].includes(state['radio.state']);
+    return ['radio.cmd', v === 6 ? (sounding ? 2 : 1) : [0, 1, 0, 2, 3, 4][v]];
+  }
+  return [null, 0];
+}
+
 // What a command does, roughly: enough to see the transport and the mini-player react.
 function command(key, v) {
+  if (key === 'audio.transport') [key, v] = transport(v);
   const out = {};
   if (key === 'radio.cmd') out['radio.state'] = v === 2 ? 'idle' : 'playing';
   if (key === 'radio.cmd' && (v === 3 || v === 4)) {
@@ -469,7 +486,7 @@ const server = createServer((req, res) => {
       try {
         for (const [k, v] of Object.entries(JSON.parse(body))) {
           if (k === 'dlna.browse_cmd') dlnaCommand(v);
-          else if (k.endsWith('.cmd')) Object.assign(delta, command(k, v));
+          else if (k.endsWith('.cmd') || k === 'audio.transport') Object.assign(delta, command(k, v));
           else { delta[k] = v; state[k] = v; Object.assign(delta, radioWrite(k, v)); Object.assign(state, delta); }
         }
       } catch {

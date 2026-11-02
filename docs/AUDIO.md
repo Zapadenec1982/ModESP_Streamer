@@ -165,6 +165,15 @@ interleaved stereo float between the producers and the audio task; lock-free on 
 - Who switches `audio.source` on their own: radio, DLNA, the player, AirPlay — when they are given
   something to play; USB — when the computer started playing and the panel did not (section "USB
   audio"). Bluetooth does not take the source on its own.
+- `audio.transport` is the transport of whatever plays, in `player.cmd`'s codes (1 play, 2 pause,
+  3 stop, 4 next, 5 previous, 6 play/pause): the glass, the web and MQTT send it, and the audio
+  module passes it to the source's own command key in that module's codes —
+  `components/audio_dsp/include/transport_route.h`, test `tests/host/test_transport_route.cpp`.
+  The card takes them all; a DLNA track (`radio.mode` = `push`) gets `dlna.cmd`; a station
+  `radio.cmd`, without pause, its toggle starting and stopping the stream; Bluetooth with a phone
+  `bt.cmd`, AirPlay with a remote `airplay.cmd`; the tone, AUX, USB and off take nothing.
+  `audio.transport_caps` says which codes the source takes now: bit `1 << code`, and bit 128 when
+  the position can be moved. A code the source does not take is dropped.
 
 ### Test tone
 

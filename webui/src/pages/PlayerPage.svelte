@@ -15,11 +15,12 @@
   // The faces, texts and commands are the panel's (stores/now.js after screen_now.cpp), and so is
   // the background: the shell tints the page with ui.cover_rgb.
   //
-  // A station is the glass's station face, not a track: no transport and no buffer line — it
-  // does not pause, stopping it is only the mute. The station's name between ‹ and ›, what it
-  // plays under it, and right there the six presets, the reason to own a radio, with the glass's
-  // rules: a tap tunes, a hold stores what plays, a tap on an empty one stores too. The picture
-  // takes the height the rest leaves, within bounds: the card fits one screen with the volume.
+  // A station is the glass's station face, not a track: no transport row and no buffer line — it
+  // does not pause; it starts and stops from the mini-player and the knob. The station's name
+  // between ‹ and ›, what it plays under it, and right there the six presets, the reason to own a
+  // radio, with the glass's rules: a tap tunes, a hold stores what plays, a tap on an empty one
+  // stores too. The picture takes the height the rest leaves, within bounds: the card fits one
+  // screen with the volume.
   import { onDestroy } from 'svelte';
   import { now, subLine } from '../stores/now.js';
   import { state } from '../stores/state.js';

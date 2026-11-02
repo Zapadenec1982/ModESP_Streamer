@@ -361,6 +361,10 @@ Only sources 3–7 have cards, and only those whose bit is in `audio.sources` ([
 
 - `*.cmd` keys are commands (`"command": true` in the manifest): a write is queued to the module
   (`BaseModule::post_command`, 8 commands), not to the store, and is not broadcast.
+- A control surface (the glass, the web, MQTT, a phone app) sends the transport as one command,
+  `audio.transport` in `player.cmd`'s codes; the audio module passes it to the command key of the
+  source that plays, and `audio.transport_caps` says which codes that source takes now
+  ([AUDIO.md](AUDIO.md), "Sources").
 - There is one volume: `audio.volume`, 0–100 %, `persist`. `audio.vol_max` (40–100 %) compresses the scale,
   `audio.vol_eff` is what the core applied. Bluetooth, AirPlay and USB translate the volume of the phone or
   computer into `audio.volume` while their source is selected. The volume law — [AUDIO.md](AUDIO.md).

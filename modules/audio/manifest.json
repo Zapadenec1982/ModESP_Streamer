@@ -271,6 +271,23 @@
       "default": 0,
       "description": "Бітова маска доступних джерел, біт = значення audio.source (0 вимк … 6 AirPlay, 7 USB) — залежить від bindings і вбудованих модулів"
     },
+    "audio.transport": {
+      "type": "int",
+      "command": true,
+      "access": "readwrite",
+      "default": 0,
+      "min": 0,
+      "max": 6,
+      "step": 1,
+      "mqtt_subscribe": true,
+      "description": "Транспорт того, що грає, кодами player.cmd: 1 грати, 2 пауза, 3 стоп, 4 наступний, 5 попередній, 6 пуск/пауза; модуль audio передає його джерелу (transport_route.h)"
+    },
+    "audio.transport_caps": {
+      "type": "int",
+      "access": "read",
+      "default": 0,
+      "description": "Які коди audio.transport джерело приймає зараз: біт (1 << код); біт 128 — позицію можна перемотати"
+    },
     "audio.state": {
       "type": "string",
       "access": "read",

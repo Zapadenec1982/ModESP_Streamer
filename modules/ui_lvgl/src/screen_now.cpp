@@ -39,7 +39,7 @@
  * The knob's press is this page's play button, from any page (ui_now_press): the knob has one
  * job everywhere — a turn is the volume, a press plays and pauses — rather than ringing this
  * page's buttons in turn, which would be a mode. A station does not pause, so there the press
- * is the mute.
+ * starts and stops the stream.
  */
 
 #include "ui_common.h"
@@ -269,22 +269,15 @@ void lev_cb(lv_event_t*)    { post(UiLvglModule::Req::LEVELER, -1); }
 void rep_cb(lv_event_t*)    { post(UiLvglModule::Req::REPEAT, -1); }
 void shuf_cb(lv_event_t*)   { post(UiLvglModule::Req::SHUFFLE, -1); }
 
-/// The transport speaks the source's language: player.cmd codes for a track (the module
-/// forwards them to the phone or the DLNA queue), radio.cmd codes for a station's ‹ and ›.
+/// The transport is audio.transport in player.cmd's codes, whatever plays: the audio module takes
+/// it to the source's own module and drops what the source does not take (transport_route.h).
 /// `which`: 0 prev, 1 play/pause, 2 next. Read from the snapshot, not this page's buttons: the
 /// knob's press comes here from every page, and only the page on the glass is refreshed. A
-/// station has no pause, and its "play/pause" — the knob's press — is the mute.
+/// station has no pause: its "play/pause" — the knob's press — starts and stops the stream.
 void transport(const UiLvglModule::Snapshot& s, int which) {
-    const PlayerFace face = ui_face(s);
-    if (face == PlayerFace::EMPTY) return;               // the tone, AUX, USB, off: nothing to command
-    // nobody to command: no phone; an AirPlay sender that gave no remote (refresh's "live")
-    if ((s.source == AUDIO_SOURCE_BT && !s.bt_connected) || (s.source == AUDIO_SOURCE_AIRPLAY && !s.ap_remote))
-        return;
-    if (face == PlayerFace::RADIO) {
-        if (which == 1) post(UiLvglModule::Req::MUTE, -1);
-        else            post(UiLvglModule::Req::RADIO_CMD, which == 0 ? 4 : 3);
-    } else if (which == 1 && s.source == AUDIO_SOURCE_FILE && strcmp(s.play_state, "playing") != 0 &&
-               strcmp(s.play_state, "paused") != 0) {
+    if (ui_face(s) == PlayerFace::EMPTY) return;         // the tone, AUX, USB, off: nothing to command
+    if (which == 1 && s.source == AUDIO_SOURCE_FILE && strcmp(s.play_state, "playing") != 0 &&
+        strcmp(s.play_state, "paused") != 0) {
         // Play on a card with nothing open: the toggle only pauses and resumes a track that is
         // open, so from idle it did nothing. Start the track the title shows — the cursor's.
         post(UiLvglModule::Req::PLAY_QUEUE, player_core::playlist().cursor());

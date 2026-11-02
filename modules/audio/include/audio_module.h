@@ -158,6 +158,9 @@ private:
     void send(CmdType t, int32_t v);
     /// Main loop: the settings to the audio task, each that changed (the .cpp says when).
     bool follow_settings();
+    /// Main loop: audio.transport to the module of what plays, and audio.transport_caps kept to
+    /// what that source takes now (transport_route.h). `moved`: the store changed since last time.
+    void follow_transport(bool moved);
     /// Switch to `src` now. Audio task only, and only once both gates are shut: the task loop
     /// holds a requested source in pend_source_ until they are.
     void apply_source(int32_t src);
@@ -348,6 +351,7 @@ private:
     audio_core::DspChain dsp_;
     audio_core::ToneGen  tone_;
     int32_t  source_ = SRC_OFF;
+    uint32_t transport_ver_ = 0;   ///< state_version() follow_transport() last read the store at
     bool     muted_  = false;
     bool     amp_on_ = false;
     /// The rate the output is clocked at, and the one a producer has asked for.

@@ -33,6 +33,10 @@ import { badge } from '../lib/numbers.js';
 const join = (...parts) => parts.filter((p) => p).join(' — ');
 const base = (path) => (path ? String(path).split('/').pop().replace(/\.[^.]+$/, '') : '');
 const cmd = (key, value) => ({ key, value });
+// audio.transport in player.cmd's codes, whatever plays: the panel takes it to the source's own
+// module (transport_route.h), as it does the glass's buttons.
+const transport = (code) => cmd('audio.transport', code);
+const TOGGLE = transport(6), PREV = transport(5), NEXT = transport(4);
 // the panel drops " 2 ch" from the format chip (screen_now.cpp:297-307)
 const compact = (f) => (f ? String(f).replace(' 2 ch', '') : '');
 
@@ -49,7 +53,7 @@ function face(s) {
       subtitle: join(s['player.artist'], s['player.album']) || (count ? `${(s['player.index'] || 0) + 1} / ${count}` : ''),
       format: compact(s['player.format']),
       playing, live: true,
-      toggle: cmd('player.cmd', 6), prev: cmd('player.cmd', 5), next: cmd('player.cmd', 4),
+      toggle: TOGGLE, prev: PREV, next: NEXT,
       progress: 'track', pos: s['player.pos_s'] || 0, dur: s['player.dur_s'] || 0, seekKey: 'player.seek_s',
       repeat: s['player.repeat'] || 0, shuffle: !!s['player.shuffle'],
     };
@@ -65,7 +69,7 @@ function face(s) {
       subtitle: join(s['dlna.artist'], s['dlna.album']),
       format: compact(s['radio.format']),
       playing, live: true,
-      toggle: cmd('dlna.cmd', playing ? 3 : 1), prev: cmd('dlna.cmd', 5), next: cmd('dlna.cmd', 4),
+      toggle: TOGGLE, prev: PREV, next: NEXT,
       progress: 'track', pos: s['radio.pos_s'] || 0, dur: s['radio.dur_s'] || 0,
       seekKey: s['radio.seekable'] ? 'radio.seek_s' : null,
       repeat: null, shuffle: null,
@@ -74,9 +78,9 @@ function face(s) {
 
   if (src === 5) {
     // The station face: who plays — the station — and under it what, the ICY title once it
-    // plays, the state in words until then. No progress; ‹ › are prev and next. No play/stop
-    // either: a station does not pause, and stopping it would only be the mute, which is the
-    // mini-player's button for it (MiniPlayer.svelte), as the knob's press is on the glass.
+    // plays, the state in words until then. No progress; ‹ › are prev and next. A station does
+    // not pause: its toggle starts and stops the stream (the mini-player's button, the knob's
+    // press on the glass).
     const sounding = ['playing', 'buffering', 'connecting', 'reconnecting'].includes(radioState);
     const name = s['radio.name'];
     const stateKey = {
@@ -90,7 +94,7 @@ function face(s) {
       subtitle: radioState === 'playing' ? s['radio.now_playing'] || null : null, subtitleKey: stateKey,
       format: compact(s['radio.format']),
       playing: sounding, live: true,
-      toggle: null, prev: cmd('radio.cmd', 4), next: cmd('radio.cmd', 3),
+      toggle: TOGGLE, prev: PREV, next: NEXT,
       progress: null, pos: 0, dur: 0, seekKey: null,
       repeat: null, shuffle: null,
     };
@@ -106,7 +110,7 @@ function face(s) {
       subtitle: join(s['bt.artist'], s['bt.album']) || null, subtitleKey: null,
       format: s['bt.codec'] ? s['bt.codec'] + rate : '',
       playing: s['bt.play_state'] === 'playing', live: phone,
-      toggle: cmd('bt.cmd', 6), prev: cmd('bt.cmd', 5), next: cmd('bt.cmd', 4),
+      toggle: TOGGLE, prev: PREV, next: NEXT,
       progress: 'track', pos: s['bt.pos_s'] || 0, dur: s['bt.dur_s'] || 0, seekKey: null,
       repeat: null, shuffle: null,
     };
@@ -121,7 +125,7 @@ function face(s) {
       subtitleArgs: { name: s['airplay.name'] || '…' },
       format: 'AirPlay',
       playing: s['airplay.state'] === 'playing', live: !!s['airplay.remote'],
-      toggle: cmd('airplay.cmd', 6), prev: cmd('airplay.cmd', 5), next: cmd('airplay.cmd', 4),
+      toggle: TOGGLE, prev: PREV, next: NEXT,
       progress: 'track', pos: s['airplay.pos_s'] || 0, dur: s['airplay.dur_s'] || 0, seekKey: null,
       repeat: null, shuffle: null,
     };

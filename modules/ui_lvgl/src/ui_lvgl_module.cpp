@@ -1167,26 +1167,9 @@ void UiLvglModule::apply_requests() {
             else          shell_sb_dirty_ = true;
             break;
         case Req::TRANSPORT:
-            if (read_int("audio.source",0)==AUDIO_SOURCE_RADIO) {
-                int cmd=it.value==2?3:it.value==3?2:it.value==4?4:it.value==5?5:0;
-                if(it.value==6) { char state[24]{}; read_string("dlna.state",state,sizeof(state)); cmd=!strcmp(state,"PLAYING")?3:1; }
-                if(cmd) post_command_to("dlna", "dlna.cmd", (int32_t)cmd);
-            } else if (read_int("audio.source",0)==AUDIO_SOURCE_BT) {
-                // Bluetooth takes the codes unchanged: bt.cmd is spelled in player.cmd's
-                // vocabulary for exactly this reason, and the toggle is resolved by the bt
-                // module, which is the side that knows what the phone is doing.
-                if (it.value >= 1 && it.value <= 6)
-                    post_command_to("bt", "bt.cmd", (int32_t)it.value);
-            } else if (read_int("audio.source",0)==AUDIO_SOURCE_AIRPLAY) {
-                // AirPlay takes the codes unchanged as well, and sends what it can over DACP
-                // to a sender that gave it a remote. One that gave none — a phone in
-                // AirPlay 2 mode, whose remote commands ride MRP (UPSTREAM.md) — gets nothing,
-                // and the press must not fall through either: the card player would take
-                // it, start the card and take the output away from the phone.
-                if (it.value >= 1 && it.value <= 6)
-                    post_command_to("airplay", "airplay.cmd", (int32_t)it.value);
-            } else if (it.value >= 2 && it.value <= 6)
-                post_command_to("player", "player.cmd", (int32_t)it.value);
+            // The audio module takes it to whatever plays, in that module's codes, and drops what
+            // the source does not take (transport_route.h).
+            post_command_to("audio", "audio.transport", it.value);
             break;
         case Req::REPEAT: {
             int32_t r = (it.value < 0) ? (read_int("player.repeat", 0) + 1) % 3 : it.value;

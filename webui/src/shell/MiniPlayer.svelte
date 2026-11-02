@@ -1,25 +1,20 @@
 <script>
   // What is playing, small, over the navigation: the source's glyph, the title and the line
-  // under it, and play/pause. A tap on the text opens the Player. A station does not pause, and
-  // stopping it would only be the silence the mute gives: its button is the mute, the Player's
-  // (audio.mute), as the knob's press is on the glass — a track DLNA pushed keeps play/pause.
-  import { onDestroy } from 'svelte';
+  // under it, and play/pause. A tap on the text opens the Player. A station does not pause: its
+  // button starts and stops the stream, as the knob's press does on the glass.
   import { now, subLine } from '../stores/now.js';
-  import { state } from '../stores/state.js';
   import { t, language } from '../stores/i18n.js';
   import { href } from '../stores/router.js';
   import { command } from '../lib/cmd.js';
-  import { createSettingSender } from '../lib/settings.js';
   import Icon from '../m3/Icon.svelte';
   import IconButton from '../m3/IconButton.svelte';
 
   $: np = $now;
   $: title = np.title ?? $t[np.titleKey];
   $: sub = subLine(np, $t, $language);
-
-  const mute = createSettingSender('audio.mute', { debounceMs: 0 });
-  onDestroy(() => mute.cleanup());
-  $: muted = !!$state['audio.mute'];
+  $: stops = np.kind === 'radio';
+  $: icon = np.playing ? (stops ? 'stop' : 'pause') : 'play_arrow';
+  $: label = !np.playing ? $t['transport.play'] : stops ? $t['transport.stop'] : $t['transport.pause'];
 </script>
 
 <div class="mini">
@@ -30,12 +25,8 @@
       {#if sub}<span class="s">{sub}</span>{/if}
     </span>
   </a>
-  {#if np.kind === 'radio'}
-    <IconButton icon={muted ? 'volume_off' : 'volume_up'} label={muted ? $t['volume.unmute'] : $t['volume.mute']}
-                selected={muted} on:click={() => mute.send(!muted)} />
-  {:else if np.toggle && np.live}
-    <IconButton icon={np.playing ? 'pause' : 'play_arrow'} label={np.playing ? $t['transport.pause'] : $t['transport.play']}
-                on:click={() => command(np.toggle.key, np.toggle.value)} />
+  {#if np.toggle && np.live}
+    <IconButton {icon} {label} on:click={() => command(np.toggle.key, np.toggle.value)} />
   {/if}
 </div>
 

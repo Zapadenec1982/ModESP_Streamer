@@ -9,6 +9,7 @@
 #include "eq_config.h"
 #include "eq_store.h"
 #include "out_caps.h"
+#include "transport_route.h"
 #include "eq_web.h"
 #include "spectrum.h"
 #include "i2s_clock.h"
@@ -996,8 +997,57 @@ bool AudioModule::follow_settings() {
     return tone_touched;
 }
 
+static_assert(audio_core::TS_BT == modesp::gen::AUDIO_SOURCE_BT &&
+              audio_core::TS_FILE == modesp::gen::AUDIO_SOURCE_FILE &&
+              audio_core::TS_RADIO == modesp::gen::AUDIO_SOURCE_RADIO &&
+              audio_core::TS_AIRPLAY == modesp::gen::AUDIO_SOURCE_AIRPLAY,
+              "transport_route.h names audio.source values");
+
+void AudioModule::follow_transport(bool moved) {
+    Command c;
+    bool asked = false;
+    int32_t codes[COMMAND_QUEUE_DEPTH];
+    size_t n = 0;
+    while (next_command(c)) {
+        if (strcmp(c.key, "audio.transport") == 0 && n < COMMAND_QUEUE_DEPTH) codes[n++] = c.value;
+        asked = true;
+    }
+    if (!moved && !asked) return;
+
+    // Read fresh for a command: the toggle depends on whether the stream sounds this moment.
+    audio_core::TransportInputs in;
+    in.source = read_int("audio.source", SRC_OFF);
+    char s[16] = {};
+    read_string("radio.mode", s, sizeof(s));
+    in.radio_push = strcmp(s, "push") == 0;
+    read_string("radio.state", s, sizeof(s));
+    in.sounding = strcmp(s, "playing") == 0 || strcmp(s, "buffering") == 0 ||
+                  strcmp(s, "connecting") == 0 || strcmp(s, "reconnecting") == 0;
+    read_string("dlna.state", s, sizeof(s));
+    in.dlna_playing = strcmp(s, "PLAYING") == 0;
+    in.seekable  = read_bool("radio.seekable", false);
+    read_string("bt.peer", s, sizeof(s));
+    in.bt_peer   = s[0] != '\0';
+    in.ap_remote = read_bool("airplay.remote", false);
+
+    state_set("audio.transport_caps", audio_core::transport_caps(in));
+    for (size_t i = 0; i < n; i++) {
+        const audio_core::TransportRoute r = audio_core::transport_route(in, codes[i]);
+        if (!r.module) {
+            ESP_LOGI(TAG, "transport %ld: source %ld does not take it", (long)codes[i], (long)in.source);
+        } else if (!post_command_to(r.module, r.key, r.code)) {
+            ESP_LOGW(TAG, "transport %ld: %s=%ld not queued", (long)codes[i], r.key, (long)r.code);
+        }
+    }
+}
+
 void AudioModule::on_update(uint32_t dt_ms) {
     own_eq();
+    // Before the gate below: the transport commands other modules, and its queue must not fill
+    // while the audio task is down.
+    const uint32_t tver = state_version();
+    follow_transport(tver == 0 || tver != transport_ver_);
+    transport_ver_ = tver;
     if (!main_ || !run_) return;
 
     // Bluetooth whose port or reader task would not start after audio.sources offered it: the

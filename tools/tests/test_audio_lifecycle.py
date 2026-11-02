@@ -349,6 +349,8 @@ struct AudioModule {
 
     static void meter_entry(void*) {}
     void own_eq() {}
+    uint32_t transport_ver_ = 0;
+    void follow_transport(bool) {}   // its own reads, apart from the settings counted here
     void send(CmdType t, int32_t v) { sent.push_back({t, v}); }
     void log_bass(const char*) {}
     bool source_on_offer(int32_t src) { return src != SRC_AUX; }
