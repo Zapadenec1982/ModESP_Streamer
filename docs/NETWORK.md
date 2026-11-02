@@ -318,15 +318,20 @@ Module routes (`http_routes`):
 
 - A server message is a text JSON object `{key: value,…}` in the `/api/state` format. After the
   handshake the client receives the whole state (needs ≥ 32 000 B of free internal RAM), then
-  every 1.5 s — only the changed keys, if there are any.
+  the changed keys as soon as they change, at most one message every 200 ms.
+- Keys starting with `_` are reserved for service messages and are never state keys. Every 5 s
+  the server sends each client a PING and a text frame `{"_hb":n}`: a page cannot see PINGs, and
+  without a message it cannot tell a quiet panel from a connection that is gone. The web drops a
+  socket that has carried a heartbeat and then stays silent for 15 s, and connects again.
 - Keys that modules write without a change flag (diagnostics: CPU, heap, limiter, satellite
   counters) do not get into the deltas; the web page with diagnostics, while visible, polls
   `/api/state` every 2 s (`webui/src/lib/live.js`).
-- Up to 3 clients. PING every 5 s; a client not heard from for 15 s (any frame, PONG too), or one
-  that missed a message, is closed. A fourth client takes the slot of one already due to be
-  closed, or receives CLOSE 1013 `busy`.
+- Up to 3 clients. A client not heard from for 15 s (any frame, PONG too), or one that missed a
+  message, is closed. A frame to a client goes out whole within 3 s, or the session is closed: the
+  httpd task serves all of HTTP and every client, and a slow phone must not hold it. A fourth
+  client takes the slot of one already due to be closed, or receives CLOSE 1013 `busy`.
 - Client text frames (up to 127 B) are read and discarded; commands go through
-  `POST /api/settings`.
+  `POST /api/settings`. A longer frame of any type closes the session.
 - Sending goes through `httpd_queue_work` in the httpd task: `httpd_ws_send_frame_async()` from
   another task races with its `recv()`.
 - The client is registered by `ws_post_handshake_cb`: IDF 5.5.5 does not call the `/ws` handler for

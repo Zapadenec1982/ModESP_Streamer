@@ -3,7 +3,7 @@
  * @brief WebSocket service for real-time state delta broadcast
  *
  * Registers a /ws endpoint on the HTTP server.
- * Periodically broadcasts only CHANGED state keys (delta) to all clients.
+ * Broadcasts only CHANGED state keys (delta) to all clients, at most every BROADCAST_MIN_GAP_MS.
  * New clients receive full state immediately on connect.
  *
  * Max 3 simultaneous WS clients. Every client is PINGed each HEARTBEAT_INTERVAL_MS, and one not
@@ -49,16 +49,30 @@ private:
     StaticSemaphore_t clients_mutex_buf_;
     SemaphoreHandle_t clients_mutex_ = nullptr;
 
-    // Delta broadcast timing (delta payloads ~200B → можна частіше)
+    // Deltas go out when a key changes, at most one per BROADCAST_MIN_GAP_MS: a change made on
+    // the glass or by another client reaches the page within that, and a burst of changes
+    // (a slider dragged, a track starting) is one message, not one per key.
     uint32_t broadcast_timer_ = 0;
-    static constexpr uint32_t BROADCAST_INTERVAL_MS = 1500;
+    static constexpr uint32_t BROADCAST_MIN_GAP_MS = 200;
 
     // Heartbeat: PING every client, close the ones gone silent. A browser answers a PING from
     // its network stack, hidden tab or not, so three unanswered intervals is a client that is
     // gone - asleep, out of range, lid shut - and not one that is merely idle.
+    // Each beat also sends a text frame {"_hb":n}: a page cannot see PINGs, and without a message
+    // it could not tell a quiet panel from a dead connection. Keys starting with '_' are never
+    // state keys (docs/NETWORK.md, "WebSocket /ws").
     uint32_t heartbeat_timer_ = 0;
+    uint32_t heartbeat_seq_ = 0;
     static constexpr uint32_t HEARTBEAT_INTERVAL_MS = 5000;
     static constexpr uint32_t STALE_AFTER_MS = 3 * HEARTBEAT_INTERVAL_MS;
+
+    // A frame to a client either goes out whole within this time or the session is closed. The
+    // httpd task is the only one serving HTTP and every client: a phone on weak Wi-Fi must not
+    // hold it for the server's 10 s send timeout, and a frame cut short must not be taken for
+    // sent - the client would read the next one from the middle of this. Long enough for a
+    // phone in Wi-Fi power save, which answers after hundreds of milliseconds.
+    static constexpr uint32_t SEND_TIMEOUT_MS = 3000;
+    static int send_whole(httpd_handle_t hd, int sockfd, const char* buf, size_t len, int flags);
 
     void register_ws_handler();
     void broadcast_state();          // Delta — тільки змінені ключі
@@ -68,6 +82,7 @@ private:
     bool has_client(int fd) const;
     void heard(int fd);          // any frame from fd: it is alive
     void mark_lost(int fd);      // fd missed a message: the next heartbeat closes it
+    void mark_all_lost();        // a delta was lost for everyone
 
     // Returns true if fd is still a valid WebSocket session
     bool is_ws_client(int fd) const;

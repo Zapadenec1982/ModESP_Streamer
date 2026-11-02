@@ -14,7 +14,9 @@
 #include "esp_timer.h"
 #include "sdkconfig.h"
 #include "sys/socket.h"
+#include "sys/time.h"
 
+#include <cerrno>
 #include <cstdio>
 #include <cstring>
 
@@ -44,15 +46,18 @@ struct WsSerCtx {
 
 /// A serialisation buffer, from PSRAM, allocated once and kept.
 ///
-/// It has to be 8 KB now (a `long` value is up to 256 characters rather than the 63 the old
-/// escape buffer allowed), and 8 KB of internal .bss would come out of the internal RAM that
-/// DMA needs (docs/CONCEPT.md, "Board constraints"). Nothing here is DMA: the send copies out
-/// of it. Allocated on first use rather than per request, so a request never pays for an
-/// allocation, and never on the stack - the tasks that reach this have 8 KB of it.
+/// It covers the aggregate of long values after worst-case escaping (a `long` value is up to 256
+/// characters), far more than internal .bss could spare from the RAM that DMA needs
+/// (docs/CONCEPT.md, "Board constraints"). Nothing here is DMA: the send copies out of it.
+/// Allocated on first use rather than per delta, and tried again after a failure: a buffer that
+/// was never allocated would stop every delta for good.
 static char* json_scratch(size_t bytes) {
-    static char* p = static_cast<char*>(heap_caps_calloc_prefer(
-        1, bytes, 2, MALLOC_CAP_SPIRAM  | MALLOC_CAP_8BIT,
-                     MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+    static char* p = nullptr;
+    if (!p) {
+        p = static_cast<char*>(heap_caps_calloc_prefer(
+            1, bytes, 2, MALLOC_CAP_SPIRAM  | MALLOC_CAP_8BIT,
+                         MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+    }
     return p;
 }
 
@@ -146,6 +151,15 @@ void WsService::mark_lost(int fd) {
     xSemaphoreGive(clients_mutex_);
 }
 
+void WsService::mark_all_lost() {
+    if (!clients_mutex_) return;
+    xSemaphoreTake(clients_mutex_, portMAX_DELAY);
+    for (size_t i = 0; i < MAX_WS_CLIENTS; i++) {
+        if (slots_[i].fd >= 0) slots_[i].lost = true;
+    }
+    xSemaphoreGive(clients_mutex_);
+}
+
 bool WsService::is_ws_client(int fd) const {
     if (!server_ || fd < 0) return false;
     return httpd_ws_get_fd_info(server_, fd) == HTTPD_WS_CLIENT_WEBSOCKET;
@@ -210,15 +224,51 @@ void WsService::heartbeat_cb(void* arg) {
         httpd_sess_trigger_close(self->server_, gone[i].fd);
     }
 
-    httpd_ws_frame_t frame = {};
-    frame.type = HTTPD_WS_TYPE_PING;
+    httpd_ws_frame_t ping_frame = {};
+    ping_frame.type = HTTPD_WS_TYPE_PING;
+
+    char hb[24];
+    const int hb_len = snprintf(hb, sizeof(hb), "{\"_hb\":%lu}",
+                                (unsigned long)++self->heartbeat_seq_);
+    httpd_ws_frame_t hb_frame = {};
+    hb_frame.type    = HTTPD_WS_TYPE_TEXT;
+    hb_frame.payload = reinterpret_cast<uint8_t*>(hb);
+    hb_frame.len     = static_cast<size_t>(hb_len);
+
     for (size_t i = 0; i < n_ping; i++) {
-        if (httpd_ws_send_frame_async(self->server_, ping[i], &frame) != ESP_OK &&
+        if ((httpd_ws_send_frame_async(self->server_, ping[i], &ping_frame) != ESP_OK ||
+             httpd_ws_send_frame_async(self->server_, ping[i], &hb_frame) != ESP_OK) &&
             self->remove_client(ping[i])) {
-            ESP_LOGW(TAG, "Ping failed fd=%d — closing", ping[i]);
+            ESP_LOGW(TAG, "Heartbeat failed fd=%d — closing", ping[i]);
             httpd_sess_trigger_close(self->server_, ping[i]);
         }
     }
+}
+
+// The send of every admitted client's session (httpd_sess_set_send_override): the whole buffer
+// within SEND_TIMEOUT_MS, or failure. httpd's own send makes one send() call and takes a short
+// count for success.
+int WsService::send_whole(httpd_handle_t hd, int sockfd, const char* buf, size_t len, int flags) {
+    (void)hd;
+    if (!buf) return HTTPD_SOCK_ERR_INVALID;
+    const int64_t deadline_us = esp_timer_get_time() + int64_t(SEND_TIMEOUT_MS) * 1000;
+    size_t sent = 0;
+    while (sent < len) {
+        const int64_t left_us = deadline_us - esp_timer_get_time();
+        if (left_us <= 0) return HTTPD_SOCK_ERR_TIMEOUT;
+        struct timeval tv = {};
+        tv.tv_sec  = static_cast<time_t>(left_us / 1000000);
+        tv.tv_usec = static_cast<suseconds_t>(left_us % 1000000);
+        setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+        const int n = send(sockfd, buf + sent, len - sent, flags);
+        if (n < 0) {
+            if (errno == EINTR) continue;
+            return (errno == EAGAIN || errno == EWOULDBLOCK) ? HTTPD_SOCK_ERR_TIMEOUT
+                                                             : HTTPD_SOCK_ERR_FAIL;
+        }
+        sent += static_cast<size_t>(n);
+    }
+    return static_cast<int>(sent);
 }
 
 // ── WS handler (static) ────────────────────────────────────────
@@ -262,6 +312,7 @@ esp_err_t WsService::on_handshake(httpd_req_t* req) {
         httpd_sess_trigger_close(req->handle, evicted.fd);
     }
     ESP_LOGI(TAG, "Client connected (fd=%d, slot=%d)", fd, adm.slot);
+    httpd_sess_set_send_override(req->handle, fd, send_whole);
 
     // Without the context (no memory) the heartbeat still notices the session going: httpd
     // stops reporting the fd as WebSocket.
@@ -308,13 +359,25 @@ esp_err_t WsService::ws_handler(httpd_req_t* req) {
     // We must consume the full frame for every type, otherwise leftover
     // bytes in the socket buffer corrupt the next frame parse.
 
+    // A frame longer than the buffer that would take it cannot be consumed, and its leftover
+    // bytes would be read as the next frame: the session is closed instead. Browsers send none
+    // of these; RFC 6455 caps a control frame's payload at 125 bytes.
+    constexpr size_t FRAME_BUF = 128;
+    if (ws_pkt.len >= FRAME_BUF) {
+        ESP_LOGW(TAG, "Frame type=%d of %d bytes from fd=%d — closing", (int)ws_pkt.type,
+                 (int)ws_pkt.len, httpd_req_to_sockfd(req));
+        self->remove_client(httpd_req_to_sockfd(req));
+        return ESP_FAIL;
+    }
+
     if (ws_pkt.type == HTTPD_WS_TYPE_PONG) {
         // PONG is the response to our server-initiated PING.
         // Consume any payload (usually empty) and discard.
         if (ws_pkt.len > 0) {
-            uint8_t discard[128];
+            uint8_t discard[FRAME_BUF];
             ws_pkt.payload = discard;
-            httpd_ws_recv_frame(req, &ws_pkt, sizeof(discard));
+            ret = httpd_ws_recv_frame(req, &ws_pkt, ws_pkt.len);
+            if (ret != ESP_OK) return ret;
         }
         ESP_LOGD(TAG, "PONG from fd=%d", httpd_req_to_sockfd(req));
         return ESP_OK;
@@ -322,8 +385,8 @@ esp_err_t WsService::ws_handler(httpd_req_t* req) {
 
     if (ws_pkt.type == HTTPD_WS_TYPE_PING) {
         // Read PING payload (if any) and reply with PONG
-        uint8_t ping_buf[128] = {};
-        if (ws_pkt.len > 0 && ws_pkt.len <= sizeof(ping_buf)) {
+        uint8_t ping_buf[FRAME_BUF] = {};
+        if (ws_pkt.len > 0) {
             ws_pkt.payload = ping_buf;
             ret = httpd_ws_recv_frame(req, &ws_pkt, ws_pkt.len);
             if (ret != ESP_OK) return ret;
@@ -336,8 +399,8 @@ esp_err_t WsService::ws_handler(httpd_req_t* req) {
         int fd = httpd_req_to_sockfd(req);
         ESP_LOGI(TAG, "CLOSE from fd=%d", fd);
         // Consume the close payload (status code + reason)
-        uint8_t close_buf[128] = {};
-        if (ws_pkt.len > 0 && ws_pkt.len <= sizeof(close_buf)) {
+        uint8_t close_buf[FRAME_BUF] = {};
+        if (ws_pkt.len > 0) {
             ws_pkt.payload = close_buf;
             httpd_ws_recv_frame(req, &ws_pkt, ws_pkt.len);
         }
@@ -355,11 +418,7 @@ esp_err_t WsService::ws_handler(httpd_req_t* req) {
     // ── Handle data frames (TEXT / BINARY / CONTINUE) ──
 
     if (ws_pkt.len > 0 && ws_pkt.type == HTTPD_WS_TYPE_TEXT) {
-        char payload[128];
-        if (ws_pkt.len >= sizeof(payload)) {
-            ESP_LOGW(TAG, "WS payload too large: %d bytes", (int)ws_pkt.len);
-            return ESP_FAIL;
-        }
+        char payload[FRAME_BUF];
         ws_pkt.payload = reinterpret_cast<uint8_t*>(payload);
         ret = httpd_ws_recv_frame(req, &ws_pkt, ws_pkt.len);
         if (ret != ESP_OK) return ret;
@@ -369,10 +428,10 @@ esp_err_t WsService::ws_handler(httpd_req_t* req) {
         // Future: parse commands from client
     } else if (ws_pkt.len > 0) {
         // Non-TEXT data frame — consume and discard to keep stream aligned
-        uint8_t discard[128];
+        uint8_t discard[FRAME_BUF];
         ws_pkt.payload = discard;
-        size_t to_read = ws_pkt.len < sizeof(discard) ? ws_pkt.len : sizeof(discard);
-        httpd_ws_recv_frame(req, &ws_pkt, to_read);
+        ret = httpd_ws_recv_frame(req, &ws_pkt, ws_pkt.len);
+        if (ret != ESP_OK) return ret;
         ESP_LOGD(TAG, "Discarded non-TEXT frame type=%d len=%d", (int)ws_pkt.type, (int)ws_pkt.len);
     }
 
@@ -387,14 +446,11 @@ void WsService::broadcast_state() {
     // Delta broadcast: серіалізуємо тільки змінені ключі
     // for_each_changed_and_clear() атомарно ітерує + очищує changed list
     //
-    // Static (not stack), for the reason http_service.cpp gives at handle_post_devices():
-    // this is 4 KB of an 8 KB stack, and the stack it was on is `main` — the one task that
-    // also runs every module's on_update(). broadcast_state() has exactly one caller,
-    // on_update() below, so a shared static buffer has no second writer to race.
-    // Cover the aggregate of long values after worst-case JSON escaping.
+    // A shared buffer, not the stack: broadcast_state() has exactly one caller, on_update()
+    // below on `main`, so it has no second writer to race.
     constexpr size_t BUF_SIZE = 81920;
     char* buf = json_scratch(BUF_SIZE);
-    if (!buf) return;
+    if (!buf) return;  // the changes stay marked; the next tick tries again
     WsSerCtx ctx = {buf, BUF_SIZE, 0, true, false};
     ctx.pos += snprintf(buf, BUF_SIZE, "{");
 
@@ -403,7 +459,10 @@ void WsService::broadcast_state() {
     if (!had_changes) return;  // Нічого не змінилось — skip
 
     if (ctx.failed || ctx.remaining() < 2) {
+        // The change marks are cleared already: every client now misses these keys, and only a
+        // reconnect with its fresh snapshot puts that right.
         ESP_LOGE(TAG, "Delta state exceeds serialization buffer");
+        mark_all_lost();
         return;
     }
     buf[ctx.pos++] = '}';
@@ -444,6 +503,7 @@ void WsService::send_full_state_to(int fd) {
     if (ctx.failed || ctx.remaining() < 2) {
         ESP_LOGE(TAG, "Full state exceeds serialization buffer");
         heap_caps_free(buf);
+        mark_lost(fd);
         return;
     }
     buf[ctx.pos++] = '}';
@@ -522,19 +582,13 @@ void WsService::async_send_cb(void* arg) {
 }
 
 void WsService::send_to_all(const char* data, size_t len) {
-    // BUG-021: snapshot fds під mutex, queue work поза mutex
+    // BUG-021: snapshot fds під mutex, queue work поза mutex. Whether a session is still
+    // WebSocket is asked in the httpd task, by async_send_cb(): httpd's session table is not
+    // locked against this one.
     int fds[MAX_WS_CLIENTS];
     if (clients_mutex_) {
         xSemaphoreTake(clients_mutex_, portMAX_DELAY);
-        for (size_t i = 0; i < MAX_WS_CLIENTS; i++) {
-            int fd = slots_[i].fd;
-            if (fd != -1 && !is_ws_client(fd)) {
-                ESP_LOGD(TAG, "fd=%d no longer WS, removing (slot=%d)", fd, (int)i);
-                slots_[i] = net::WsSlot{};
-                fd = -1;
-            }
-            fds[i] = fd;
-        }
+        for (size_t i = 0; i < MAX_WS_CLIENTS; i++) fds[i] = slots_[i].fd;
         xSemaphoreGive(clients_mutex_);
     } else {
         return;
@@ -643,13 +697,13 @@ bool WsService::on_init() {
 void WsService::on_update(uint32_t dt_ms) {
     if (!server_ || !state_) return;
 
-    // Delta broadcast: перевіряємо changed_keys_ замість version counter
-    broadcast_timer_ += dt_ms;
-    if (broadcast_timer_ >= BROADCAST_INTERVAL_MS) {
+    // Delta broadcast: as soon as something changed, once BROADCAST_MIN_GAP_MS has passed since
+    // the last one. The timer stops counting at the gap, so a change after a quiet spell goes out
+    // on the next tick.
+    if (broadcast_timer_ < BROADCAST_MIN_GAP_MS) broadcast_timer_ += dt_ms;
+    if (broadcast_timer_ >= BROADCAST_MIN_GAP_MS && state_->has_changes()) {
         broadcast_timer_ = 0;
-        if (state_->has_changes()) {
-            broadcast_state();
-        }
+        broadcast_state();
     }
 
     // Heartbeat: PINGs, and the close of clients gone silent, made in the httpd thread

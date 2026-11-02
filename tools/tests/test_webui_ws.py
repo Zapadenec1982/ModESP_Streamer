@@ -171,3 +171,31 @@ check(!get(wsBusy), 'old firmware: not busy before 3 s of silence');
 advance(1);
 check(get(wsBusy), 'old firmware: an open socket silent for 3 s reads as busy');
 """)
+
+
+def test_heartbeat_is_not_state_and_its_silence_drops_the_socket():
+    run(f"""
+const {{ createWebSocket }} = await import({lib("lib/websocket.js")});
+const events = [];
+createWebSocket((d) => events.push(d));
+sockets[0].open();
+sockets[0].send({{ a: 1 }});
+advance(60000);
+check(sockets.length === 1, 'no heartbeat yet (older firmware): never timed out');
+
+sockets[0].send({{ _hb: 1 }});
+check(!events.some((e) => '_hb' in e), 'the heartbeat is not passed on as state');
+advance(14000);
+sockets[0].send({{ b: 2 }});
+advance(14000);
+check(!sockets[0].closedByClient, 'any message keeps it alive');
+advance(1000);
+check(sockets[0].closedByClient, '15 s silent after a heartbeat: dropped');
+check(events.at(-1)._ws_connected === false, 'and reported as disconnected');
+advance(1000);
+check(sockets.length === 2, 'then reconnects with the usual backoff');
+sockets[1].open();
+show(false);
+advance(60000);
+check(sockets.length === 2, 'a released socket is not timed out into a reconnect');
+""")

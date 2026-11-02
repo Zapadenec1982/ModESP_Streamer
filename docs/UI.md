@@ -596,11 +596,13 @@ mini-player's button for a station is the mute.
 **Reading.**
 
 1. Start: `GET /api/ui` (the generated `ui.json`), `GET /api/state` (the whole state).
-2. WebSocket `/ws`: a full snapshot on connect, then every 1.5 s a delta of the changed keys
-   (`stores/state.js` merges them into the `state` store). The server holds up to three clients; a
-   fourth, while three are alive, is closed with code 1013, and the web shows that the panel is busy
-   and tries every 5 s. Otherwise it reconnects with a 1 → 30 s delay. A hidden tab lets go of the
-   socket and reconnects as soon as it is shown.
+2. WebSocket `/ws`: a full snapshot on connect, then a delta of the changed keys as they change,
+   at most every 200 ms (`stores/state.js` merges them into the `state` store). The panel's
+   heartbeat `{"_hb":n}` every 5 s is not state; a socket that has carried one and then stays
+   silent for 15 s is dropped and opened again (`lib/websocket.js`). The server holds up to three
+   clients; a fourth, while three are alive, is closed with code 1013, and the web shows that the
+   panel is busy and tries every 5 s. Otherwise it reconnects with a 1 → 30 s delay. A hidden tab
+   lets go of the socket and reconnects as soon as it is shown.
 3. Keys that modules write without a change mark (`track_change = false`: levels, CPU and the audio
    limiter, heap, satellite link counters) do not get into the deltas. Pages that show them poll
    `GET /api/state` every 2 s while visible (`lib/live.js`); settings come from the WebSocket,

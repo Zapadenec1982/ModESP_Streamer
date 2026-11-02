@@ -46,7 +46,7 @@
   $: s = $state;
   $: station = np.kind === 'radio';
 
-  // ── position between the panel's deltas (every 1.5 s): count on while playing. The anchor moves
+  // ── position between the device's position reports: count on while playing. The anchor moves
   //    only when the device reports a different position or the play state turns, never because
   //    some other key changed — that would pull the bar back.
   let anchor = { pos: 0, at: Date.now() };
