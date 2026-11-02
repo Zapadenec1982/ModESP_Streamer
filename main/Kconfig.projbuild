@@ -20,6 +20,17 @@ menu "ModESP Configuration"
             bool "Mosquitto (self-hosted MQTT)"
             depends on MODESP_NET_ENABLE
     endchoice
+
+    config MODESP_MQTT_REMOTE_ADMIN
+        bool "The broker may flash the firmware and rewrite the MQTT settings"
+        depends on MODESP_CLOUD_MQTT
+        default y
+        help
+            The MQTT commands _ota (flash an image from the URL in the payload),
+            _set_mqtt_creds and _set_tenant, for a fleet run from its broker.
+            Anyone who can publish to the broker can use them, with no HTTP
+            login. Home Assistant needs none of them; a device on a home broker
+            turns this off, and the three are then unknown keys.
 endmenu
 
 # Per-driver enable/disable toggles live in components/modesp_hal/Kconfig,

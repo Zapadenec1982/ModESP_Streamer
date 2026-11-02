@@ -103,6 +103,12 @@ CONFIG_MODESP_BLE_ENABLE=n
 # The ModESP framework's board/devices/modules/journal/scanner routes: no registry, no journal
 # source, no bus discovery here (docs/NETWORK.md, "REST API").
 CONFIG_MODESP_HTTP_FRAMEWORK_ROUTES=n
+# No restart for Wi-Fi time lost: a router that drops now and then would cut the music, and a C6
+# that stops answering on SDIO already restarts the panel through ESP-Hosted
+# (CONFIG_ESP_HOSTED_HOST_TRANSPORT_RESTART_ON_FAILURE). The broker may not flash the panel or
+# rewrite its MQTT settings: Home Assistant needs neither.
+CONFIG_MODESP_WIFI_RESTART_ON_LONG_DISCONNECT=n
+CONFIG_MODESP_MQTT_REMOTE_ADMIN=n
 # MQTT reaches its broker over mqtt:// or mqtts://, never over a WebSocket.
 CONFIG_MQTT_TRANSPORT_WEBSOCKET=n
 CONFIG_MQTT_TRANSPORT_WEBSOCKET_SECURE=n

@@ -26,6 +26,21 @@ menu "ModESP Network"
             otherwise not leave through the hosted interface. Harmless on
             targets with native Wi-Fi.
 
+    config MODESP_WIFI_RESTART_ON_LONG_DISCONNECT
+        bool "Restart after 10 minutes without Wi-Fi in total"
+        depends on MODESP_NET_ENABLE
+        default y
+        help
+            In station mode, the time without a connection is added up, and an
+            hour connected without a break clears it; at 10 minutes the device
+            restarts. Meant for a radio that stopped answering. A router that
+            drops for half a minute now and then reaches it in a few hours, and
+            the restart then cuts whatever the device was doing. With Wi-Fi on
+            an ESP-Hosted co-processor, ESP-Hosted itself restarts the host
+            when the co-processor stops answering on the bus
+            (ESP_HOSTED_HOST_TRANSPORT_RESTART_ON_FAILURE), and this is not
+            needed.
+
     config MODESP_HTTP_FRAMEWORK_ROUTES
         bool "ModESP framework routes: board, devices, modules, journal, bus scanners"
         depends on MODESP_NET_ENABLE

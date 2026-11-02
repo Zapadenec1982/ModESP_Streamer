@@ -629,6 +629,7 @@ void MqttService::handle_incoming(const char* topic, int topic_len,
 
     const char* key = cmd_marker + 5;  // skip "/cmd/"
 
+#if CONFIG_MODESP_MQTT_REMOTE_ADMIN
     // Special command: _ota (JSON payload — не поміщається в val_buf[32])
     // Обробляємо ДО копіювання в val_buf, бо payload може бути 200+ байт
     if (strcmp(key, "_ota") == 0) {
@@ -685,6 +686,7 @@ void MqttService::handle_incoming(const char* topic, int topic_len,
         }
         return;
     }
+#endif  // CONFIG_MODESP_MQTT_REMOTE_ADMIN
 
     // Копіюємо payload в null-terminated буфер (потрібно для _set_tenant та звичайних команд)
     char val_buf[32];
@@ -709,6 +711,7 @@ void MqttService::handle_incoming(const char* topic, int topic_len,
         return;
     }
 
+#if CONFIG_MODESP_MQTT_REMOTE_ADMIN
     // Special command: _set_mqtt_creds (JSON: {"user":"...","pass":"..."})
     // Cloud sends this BEFORE _set_tenant — save creds but don't reconnect yet.
     // The subsequent _set_tenant triggers reconnect with new credentials.
@@ -786,6 +789,7 @@ void MqttService::handle_incoming(const char* topic, int topic_len,
         reconnect();
         return;
     }
+#endif  // CONFIG_MODESP_MQTT_REMOTE_ADMIN
 
     // Валідація: ключ має бути в STATE_META як writable
     const auto* meta = gen::find_state_meta(key);

@@ -338,6 +338,7 @@ void WiFiService::on_update(uint32_t dt_ms) {
     }
 
     // STA Watchdog: рестарт при тривалому disconnect
+#if CONFIG_MODESP_WIFI_RESTART_ON_LONG_DISCONNECT
     if (!ap_mode_) {
         if (connected_) {
             stable_timer_ms_ += dt_ms;
@@ -356,6 +357,7 @@ void WiFiService::on_update(uint32_t dt_ms) {
             }
         }
     }
+#endif
 }
 
 // ── Credentials ─────────────────────────────────────────────────

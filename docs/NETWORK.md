@@ -111,8 +111,12 @@ without it — access point.
 - `esp_netif_set_default_netif()` on STA (`CONFIG_MODESP_NET_SET_DEFAULT_NETIF`, default for P4):
   without it, unbound UDP sockets (SNTP) do not go out through the ESP-Hosted interface.
 - Disconnect: three retries after 2, 4 and 8 s; another 16 s without an address — access point.
-- 10 min without a connection in total — `esp_restart()`; an hour of stable connection resets the
-  counter.
+- No restart for lost Wi-Fi time (`CONFIG_MODESP_WIFI_RESTART_ON_LONG_DISCONNECT=n`; the
+  framework's default restarts after 10 min without a connection in total). A router that is off
+  sends the panel to its access point, and the panel goes back when the router returns. A C6 that
+  stops answering on SDIO restarts the panel through ESP-Hosted
+  (`CONFIG_ESP_HOSTED_HOST_TRANSPORT_RESTART_ON_FAILURE`), and the restart resets the C6
+  (GPIO 54).
 
 **Access point.** SSID `ModESP-XXXX` (the last two bytes of the base MAC) or `wifi/ap_ssid`;
 password `wifi/ap_pass` of 8–63 characters → WPA2 (a longer stored one is cut to its first 63,
@@ -323,8 +327,8 @@ Module routes (`http_routes`):
   `400 {"error":"board_mismatch","running","incoming"}`.
 - Three receive timeouts in a row (~90 s) — `408`: a client that vanished without FIN would
   otherwise hold the only httpd task.
-- One update at a time, shared with the MQTT `_ota` command: while one is being written the
-  other is refused (here `409`), and a written image keeps the slot until the restart.
+- One update at a time, shared with the MQTT `_ota` command where it is built: while one is being
+  written the other is refused (here `409`), and a written image keeps the slot until the restart.
 - Writes to the next slot (`ota_0` / `ota_1`), makes it bootable, stops the modules,
   restarts.
 - Within 60 s the new image must get Wi-Fi and the HTTP server, `audio.state` ≠ `error` and a
@@ -846,9 +850,12 @@ default choice with `MODESP_NET_ENABLE`), disabled at runtime: NVS `mqtt/enabled
 - `<prefix>/heartbeat` — every 30 s `{"proto":1,"fw","up","heap","rssi":0}`.
 - Commands — subscription `<prefix>/cmd/+`: any writable key of type int, float or bool from
   `state_meta` (the range is clamped, a command key goes to the module's queue). String keys
-  (`radio.play_url`) are not applied through MQTT. Retained commands are ignored. Service commands:
-  `_ota` (`{"url","version","checksum":"sha256:…"}` — firmware download over HTTP or HTTPS,
-  verification and writing to an OTA slot), `_request_full_state`, `_set_mqtt_creds`, `_set_tenant`.
+  (`radio.play_url`) are not applied through MQTT. Retained commands are ignored. Service command:
+  `_request_full_state`. The framework's broker administration — `_ota`
+  (`{"url","version","checksum":"sha256:…"}`: a firmware download, verified and written to an OTA
+  slot), `_set_mqtt_creds`, `_set_tenant` — is off on the player
+  (`CONFIG_MODESP_MQTT_REMOTE_ADMIN=n`): anyone who can publish to the broker could use it, with
+  no login, and Home Assistant needs none of it.
 - Reconnection: 5 s, doubling up to 5 min. The client's network steps have a 3 s timeout, and the
   old client is stopped by the `mqtt_stop` task: `esp_mqtt_client_stop()` can wait out a whole
   connection attempt, while the main loop feeds a 5-second watchdog.
