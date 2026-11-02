@@ -211,7 +211,7 @@ python tools/run_host_tests.py --no-cpp    # лише Python-набір
 ### На працюючій панелі
 
 - Логування постачається на рівні WARN. Щоб відкрити його до наступного перезапуску:
-  `curl -u <user>:<password> -X POST http://<panel>/api/loglevel -d '{"tag":"*","level":"info"}'`
+  `curl -u <user>:<password> -X POST -H 'Content-Type: application/json' http://<panel>/api/loglevel -d '{"tag":"*","level":"info"}'`
   (HTTP API просить Basic auth, поки вона ввімкнена, а типово вона ввімкнена).
 - Консоль — USB-Serial/JTAG самого P4, а DTR — його лінія скидання: `idf.py monitor`
   перезапускає панель щоразу, як підключається. Щоб спостерігати за працюючою панеллю,

@@ -251,12 +251,23 @@ HTTP Basic, realm `ModESP`. NVS-простір `auth`: `user`, `pass`, `enabled`
 
 ### REST API
 
+Для всіх маршрутів:
+- `POST` мусить нести `Content-Type: application/json` (`application/octet-stream` для
+  завантаження OTA); з будь-яким іншим або без нього — `415 {"error":"content_type"}`. Сторінка
+  чужого сайту може змусити браузер без запиту надіслати лише типи вмісту форми, а ці два
+  змушують його спершу спитати preflight-запитом, якого сервер ніколи не схвалює. Контрольних URL
+  UPnP це не стосується: вони не під `/api/`. З curl: `-H 'Content-Type: application/json'`.
+- Тіло, що не вміщується в буфер маршруту, відхиляється з `413` до читання; тіло читається цілим,
+  скількома б TCP-сегментами воно не прийшло.
+- Шлях `/api/`, який ніхто не обслуговує, отримує `404 {"error":"not_found"}` (`application/json`)
+  для будь-якого методу; власні шляхи вебу й далі отримують `index.html`.
+
 Маршрути фреймворку (`http_service.cpp`):
 
 | Маршрут | Що |
 |---|---|
 | `GET /api/state` | увесь SharedState одним JSON-об'єктом (буфер 80 КБ у PSRAM; не вмістився — 500) |
-| `POST /api/settings` | `{ключ: значення,…}`: лише відомі writable-ключі з `generated/state_meta.h`, кожен зі значенням свого типу з маніфесту (рядок, число, `true`/`false`) — решта відхиляється, а запит отримує `400`, коли з нього не взято нічого; число поза діапазоном маніфесту обрізається з WARN у лозі; command-ключ (`"command": true`) іде в чергу модуля-власника, не в сховище. Тіло ≤ 511 Б, до 15 пар |
+| `POST /api/settings` | `{ключ: значення,…}`: лише відомі writable-ключі з `generated/state_meta.h`, кожен зі значенням свого типу з маніфесту (рядок, число, `true`/`false`) — решта відхиляється, а запит отримує `400`, коли з нього не взято нічого; число поза діапазоном маніфесту обрізається з WARN у лозі; command-ключ (`"command": true`) іде в чергу модуля-власника, не в сховище. Тіло ≤ 1023 Б, до 15 пар |
 | `GET /api/ui` | `ui.json` |
 | `GET /api/board`, `GET`/`POST /api/bindings`, `GET`/`POST /api/devices`, `GET /api/modules` | конфігурація плати й модулів ModESP |
 | `POST /api/wifi` | `{"ssid","password"}`, SSID 1–32 байти, пароль ≤ 64 (інакше `400`) — лише зберегти (діє після перезапуску); з `"join":true` — `try_connect()` (`409 {"error":"busy"}` під час іншої спроби); `{"forget":true}` — забути мережу, точка доступу. Тіло ≤ 255 Б |
@@ -674,7 +685,7 @@ Windows.
 ### Перевірка
 
 ```
-curl -u <user>:<pass> -X POST http://<panel>/api/loglevel -d '{"tag":"Dlna","level":"info"}'
+curl -u <user>:<pass> -X POST -H 'Content-Type: application/json' http://<panel>/api/loglevel -d '{"tag":"Dlna","level":"info"}'
 curl http://<panel>/rootDesc.xml     # XML опису; HTML вебу — маршрути стали після wildcard
 ```
 

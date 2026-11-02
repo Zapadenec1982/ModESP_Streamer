@@ -214,7 +214,7 @@ one.
 ### On a running panel
 
 - Logging ships at WARN. To open it up until the next reboot:
-  `curl -u <user>:<password> -X POST http://<panel>/api/loglevel -d '{"tag":"*","level":"info"}'`
+  `curl -u <user>:<password> -X POST -H 'Content-Type: application/json' http://<panel>/api/loglevel -d '{"tag":"*","level":"info"}'`
   (the HTTP API asks for Basic auth while it is enabled, which is the default).
 - The console is the P4's USB-Serial/JTAG, and DTR is its reset line: `idf.py monitor` restarts
   the panel each time it attaches. To watch a running panel, open the port with DTR and RTS

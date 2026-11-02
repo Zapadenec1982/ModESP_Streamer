@@ -4,6 +4,7 @@
  */
 
 #include "modesp/net/http_service.h"
+#include "modesp/net/http_routes.h"
 #include "modesp/shared_state.h"
 #include "modesp/module_manager.h"
 #include "modesp/app.h"                // MODESP_WDT_TIMEOUT_MS
@@ -42,6 +43,8 @@
 #include <cstdio>
 #include <cstring>
 #include <ctime>
+#include <initializer_list>
+#include <strings.h>
 #include <new>
 #include <sys/time.h>
 #include <sys/stat.h>
@@ -79,7 +82,33 @@ void HttpService::save_auth_to_nvs() {
     ESP_LOGI(TAG, "Auth saved (user='%s', enabled=%d)", s_auth_user, s_auth_enabled);
 }
 
+// A page on another site can make the browser POST here without reading the answer, but only
+// with the content types an HTML form can send (a CORS "simple" request) or with none at all -
+// enough to reset or reflash the panel while the login is off. So a POST must name
+// application/json, or application/octet-stream (the OTA upload): with either the browser asks
+// first with a preflight, which this server never grants. Answered 415 here when it does not.
+static bool post_type_ok(httpd_req_t* req) {
+    if (req->method != HTTP_POST) return true;
+    char type[40] = {};
+    const esp_err_t err = httpd_req_get_hdr_value_str(req, "Content-Type", type, sizeof(type));
+    if (err == ESP_OK || err == ESP_ERR_HTTPD_RESULT_TRUNC) {
+        for (const char* ok : {"application/json", "application/octet-stream"}) {
+            const size_t n = strlen(ok);
+            if (strncasecmp(type, ok, n) == 0 &&
+                (type[n] == '\0' || type[n] == ';' || type[n] == ' ')) {
+                return true;
+            }
+        }
+    }
+    ESP_LOGW(TAG, "POST %s refused: Content-Type '%s'", req->uri, type);
+    http_routes::send_json(req, "415 Unsupported Media Type", "{\"error\":\"content_type\"}");
+    return false;
+}
+
 bool HttpService::check_auth(httpd_req_t* req) {
+    // Every route that changes something comes through here first, the login or not.
+    if (!post_type_ok(req)) return false;
+
     // Якщо auth вимкнено — пропускаємо
     if (!s_auth_enabled) return true;
 
@@ -693,15 +722,11 @@ esp_err_t HttpService::handle_post_settings(httpd_req_t* req) {
     if (!check_auth(req)) return ESP_OK;
     auto* self = static_cast<HttpService*>(req->user_ctx);
 
-    // 512B: один ключ до 32 chars + float = ~40B → вміщує до ~12 пар за раз.
-    // 32 tokens: 1 об'єкт + 2 tokens/пара × 15 пар = 31 tokens — з запасом.
-    char buf[512];
-    int len = httpd_req_recv(req, buf, sizeof(buf) - 1);
-    if (len <= 0) {
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Empty body");
-        return ESP_FAIL;
-    }
-    buf[len] = '\0';
+    // 1 KB: up to 15 pairs (32 tokens: the object + 2 per pair) even with long string values -
+    // a station preset (four radio.web_* keys and the command) is ~420 B.
+    char buf[1024];
+    const int len = http_routes::read_small_body(req, buf, sizeof(buf));
+    if (len < 0) return ESP_FAIL;
 
     // Parse with jsmn
     jsmn_parser parser;
@@ -809,12 +834,8 @@ esp_err_t HttpService::handle_post_wifi(httpd_req_t* req) {
     auto* self = static_cast<HttpService*>(req->user_ctx);
 
     char buf[256];
-    int len = httpd_req_recv(req, buf, sizeof(buf) - 1);
-    if (len <= 0) {
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Empty body");
-        return ESP_FAIL;
-    }
-    buf[len] = '\0';
+    const int len = http_routes::read_small_body(req, buf, sizeof(buf));
+    if (len < 0) return ESP_FAIL;
 
     jsmn_parser parser;
     jsmntok_t tokens[8];
@@ -1030,12 +1051,8 @@ esp_err_t HttpService::handle_get_wifi_ap(httpd_req_t* req) {
 esp_err_t HttpService::handle_post_wifi_ap(httpd_req_t* req) {
     if (!check_auth(req)) return ESP_OK;
     char buf[256];
-    int len = httpd_req_recv(req, buf, sizeof(buf) - 1);
-    if (len <= 0) {
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Empty body");
-        return ESP_FAIL;
-    }
-    buf[len] = '\0';
+    const int len = http_routes::read_small_body(req, buf, sizeof(buf));
+    if (len < 0) return ESP_FAIL;
 
     jsmn_parser parser;
     jsmntok_t tokens[12];
@@ -1247,12 +1264,8 @@ esp_err_t HttpService::handle_post_restore(httpd_req_t* req) {
     auto* self = static_cast<HttpService*>(req->user_ctx);
 
     char buf[2048];
-    int len = httpd_req_recv(req, buf, sizeof(buf) - 1);
-    if (len <= 0) {
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Empty body");
-        return ESP_FAIL;
-    }
-    buf[len] = '\0';
+    const int len = http_routes::read_small_body(req, buf, sizeof(buf));
+    if (len < 0) return ESP_FAIL;
 
     // Парсимо JSON — шукаємо об'єкт "keys"
     jsmn_parser parser;
@@ -1610,12 +1623,8 @@ esp_err_t HttpService::handle_post_time(httpd_req_t* req) {
     set_cors_headers(req);
 
     char buf[256];
-    int len = httpd_req_recv(req, buf, sizeof(buf) - 1);
-    if (len <= 0) {
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Empty body");
-        return ESP_FAIL;
-    }
-    buf[len] = '\0';
+    const int len = http_routes::read_small_body(req, buf, sizeof(buf));
+    if (len < 0) return ESP_FAIL;
 
     jsmn_parser parser;
     jsmntok_t tokens[12];
@@ -2028,7 +2037,27 @@ static const char* get_content_type(const char* path) {
     return "application/octet-stream";
 }
 
+// An API path nothing serves is answered in JSON, never with the web page: a client asking for a
+// route this firmware does not have (or one lost to a full handler table) gets a status it can
+// act on, not a 200 that fails to parse.
+static bool is_api_path(const char* uri) {
+    return strncmp(uri, "/api/", 5) == 0;
+}
+
+static esp_err_t send_api_not_found(httpd_req_t* req) {
+    return http_routes::send_json(req, "404 Not Found", "{\"error\":\"not_found\"}");
+}
+
+// Any method: a POST to a path with no handler at all reaches httpd's 404, not the wildcard.
+static esp_err_t handle_not_found(httpd_req_t* req, httpd_err_code_t err) {
+    if (is_api_path(req->uri)) send_api_not_found(req);
+    else httpd_resp_send_err(req, err, nullptr);
+    return ESP_FAIL;   // the body, if any, is unread: the connection cannot carry another request
+}
+
 esp_err_t HttpService::handle_static(httpd_req_t* req) {
+    if (is_api_path(req->uri)) return send_api_not_found(req);
+
     // Copy URI to local fixed-size buffer (silences -Wformat-truncation)
     char uri[52];
     strlcpy(uri, req->uri, sizeof(uri));
@@ -2122,12 +2151,8 @@ esp_err_t HttpService::handle_post_auth(httpd_req_t* req) {
     set_cors_headers(req);
 
     char buf[384];
-    int len = httpd_req_recv(req, buf, sizeof(buf) - 1);
-    if (len <= 0) {
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Empty body");
-        return ESP_FAIL;
-    }
-    buf[len] = '\0';
+    const int len = http_routes::read_small_body(req, buf, sizeof(buf));
+    if (len < 0) return ESP_FAIL;
 
     // Parse JSON: enabled, username, current_pass, new_pass, reset
     jsmn_parser parser;
@@ -2415,6 +2440,7 @@ bool HttpService::start_server() {
     }
 
     register_api_handlers();
+    httpd_register_err_handler(server_, HTTPD_404_NOT_FOUND, handle_not_found);
     // NOTE: register_static_handler() must be called from main.cpp
     // AFTER all other handlers (WS, etc.) to avoid wildcard shadowing.
 

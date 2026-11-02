@@ -5,6 +5,7 @@
 
 #include "modesp/net/mqtt_service.h"
 #include "modesp/net/http_service.h"
+#include "modesp/net/http_routes.h"
 #include "modesp/net/json_escape.h"
 #include "modesp/net/ota_handler.h"
 #include "modesp/shared_state.h"
@@ -961,12 +962,8 @@ esp_err_t MqttService::handle_post_mqtt(httpd_req_t* req) {
     auto* self = static_cast<MqttService*>(req->user_ctx);
 
     char buf[384];
-    int len = httpd_req_recv(req, buf, sizeof(buf) - 1);
-    if (len <= 0) {
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Empty body");
-        return ESP_FAIL;
-    }
-    buf[len] = '\0';
+    const int len = http_routes::read_small_body(req, buf, sizeof(buf));
+    if (len < 0) return ESP_FAIL;
 
     // Parse JSON з jsmn
     jsmn_parser parser;

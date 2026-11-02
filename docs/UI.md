@@ -471,7 +471,7 @@ To open them without reflashing (`-u <user>:<password>` while the HTTP API's Bas
 a reboot, and only for later events):
 
 ```
-curl -u <user>:<password> -X POST http://<panel>/api/loglevel -d '{"tag":"UiLvgl","level":"info"}'
+curl -u <user>:<password> -X POST -H 'Content-Type: application/json' http://<panel>/api/loglevel -d '{"tag":"UiLvgl","level":"info"}'
 ```
 
 ## Web interface (`webui/`)

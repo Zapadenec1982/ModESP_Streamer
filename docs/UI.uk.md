@@ -459,7 +459,7 @@ theme …`, `heap before/after …`, `touch x,y`, `backlight N%`, `standby on/of
 перезавантаження, і лише для подальших подій):
 
 ```
-curl -u <логін>:<пароль> -X POST http://<панель>/api/loglevel -d '{"tag":"UiLvgl","level":"info"}'
+curl -u <логін>:<пароль> -X POST -H 'Content-Type: application/json' http://<панель>/api/loglevel -d '{"tag":"UiLvgl","level":"info"}'
 ```
 
 ## Веб-інтерфейс (`webui/`)

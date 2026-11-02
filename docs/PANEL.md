@@ -128,7 +128,7 @@ start-up lines are visible only on a build with `CONFIG_LOG_DEFAULT_LEVEL_INFO` 
 On a running panel the tag opens without reflashing, but only for later events:
 
 ```
-curl -u <user>:<password> -X POST http://<panel>/api/loglevel -d '{"tag":"UiLvgl","level":"info"}'
+curl -u <user>:<password> -X POST -H 'Content-Type: application/json' http://<panel>/api/loglevel -d '{"tag":"UiLvgl","level":"info"}'
 ```
 
 1. Start:

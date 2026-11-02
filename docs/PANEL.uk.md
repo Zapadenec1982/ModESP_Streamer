@@ -128,7 +128,7 @@ P4 має один контролер SDMMC на два слоти: слот 1 �
 тег відкривається без перепрошивки, але лише для подальших подій:
 
 ```
-curl -u <логін>:<пароль> -X POST http://<панель>/api/loglevel -d '{"tag":"UiLvgl","level":"info"}'
+curl -u <логін>:<пароль> -X POST -H 'Content-Type: application/json' http://<панель>/api/loglevel -d '{"tag":"UiLvgl","level":"info"}'
 ```
 
 1. Старт:

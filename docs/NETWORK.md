@@ -257,12 +257,23 @@ before writing.
 
 ### REST API
 
+For every route:
+- A `POST` must carry `Content-Type: application/json` (`application/octet-stream` for the OTA
+  upload); anything else, or none, gets `415 {"error":"content_type"}`. A page on another site can
+  make a browser send only a form's content types without asking first, and these two make it ask
+  with a preflight, which the server never grants. UPnP control URLs are not under `/api/` and
+  are not affected. With curl: `-H 'Content-Type: application/json'`.
+- A body that does not fit the route's buffer is refused with `413` before it is read; a body is
+  read whole, however many TCP segments it comes in.
+- An `/api/` path nothing serves gets `404 {"error":"not_found"}` (`application/json`), for any
+  method; the web's own paths still get `index.html`.
+
 Framework routes (`http_service.cpp`):
 
 | Route | What |
 |---|---|
 | `GET /api/state` | the whole SharedState as one JSON object (80 KB buffer in PSRAM; does not fit — 500) |
-| `POST /api/settings` | `{key: value,…}`: only known writable keys from `generated/state_meta.h`, each with a value of its manifest type (a string, a number, `true`/`false`) — anything else is refused, and the request gets `400` when nothing in it was taken; a number outside the manifest's range is clamped with a WARN in the log; a command key (`"command": true`) goes to the owning module's queue, not to the store. Body ≤ 511 B, up to 15 pairs |
+| `POST /api/settings` | `{key: value,…}`: only known writable keys from `generated/state_meta.h`, each with a value of its manifest type (a string, a number, `true`/`false`) — anything else is refused, and the request gets `400` when nothing in it was taken; a number outside the manifest's range is clamped with a WARN in the log; a command key (`"command": true`) goes to the owning module's queue, not to the store. Body ≤ 1023 B, up to 15 pairs |
 | `GET /api/ui` | `ui.json` |
 | `GET /api/board`, `GET`/`POST /api/bindings`, `GET`/`POST /api/devices`, `GET /api/modules` | ModESP board and module configuration |
 | `POST /api/wifi` | `{"ssid","password"}`, SSID 1–32 bytes, password ≤ 64 (otherwise `400`) — save only (takes effect after a restart); with `"join":true` — `try_connect()` (`409 {"error":"busy"}` during another attempt); `{"forget":true}` — forget the network, access point. Body ≤ 255 B |
@@ -690,7 +701,7 @@ the contract is keys only.
 ### Verification
 
 ```
-curl -u <user>:<pass> -X POST http://<panel>/api/loglevel -d '{"tag":"Dlna","level":"info"}'
+curl -u <user>:<pass> -X POST -H 'Content-Type: application/json' http://<panel>/api/loglevel -d '{"tag":"Dlna","level":"info"}'
 curl http://<panel>/rootDesc.xml     # the description XML; the web's HTML means the routes went in after the wildcard
 ```
 

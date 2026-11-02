@@ -106,6 +106,22 @@ inline bool read_body(httpd_req_t* req, char* buf, bool reply = true) {
     return true;
 }
 
+/// read_body() into a fixed buffer of `size` bytes. An empty body is refused with 400 and one that
+/// does not fit with its NUL with 413, both before a byte of it is read. Returns the body's length,
+/// or -1 when the request has been answered already.
+inline int read_small_body(httpd_req_t* req, char* buf, size_t size) {
+    if (req->content_len == 0) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Empty body");
+        return -1;
+    }
+    if (req->content_len >= size) {
+        httpd_resp_send_err(req, HTTPD_413_CONTENT_TOO_LARGE, "Body too large");
+        return -1;
+    }
+    if (!read_body(req, buf)) return -1;
+    return static_cast<int>(req->content_len);
+}
+
 /// A JSON answer: `status` as httpd takes it ("200 OK"), the body a NUL-terminated string. Never
 /// cached — what a route answers is the state of the moment.
 inline esp_err_t send_json(httpd_req_t* req, const char* status, const char* body) {

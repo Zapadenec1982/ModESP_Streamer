@@ -308,6 +308,16 @@ int httpd_resp_sendstr(httpd_req_t* req, const char* s) { req->resp = s; return 
 int httpd_resp_send(httpd_req_t* req, const char* s, long n) {
   req->resp.assign(s, n < 0 ? strlen(s) : (size_t)n); return ESP_OK;
 }
+// http_routes.h's read_small_body() against this server: the whole body, or 400 / 413 unread.
+namespace modesp::http_routes {
+inline int read_small_body(httpd_req_t* req, char* buf, size_t size) {
+  if (req->body.empty()) { httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Empty body"); return -1; }
+  if (req->body.size() >= size) { httpd_resp_send_err(req, 413, "Body too large"); return -1; }
+  const int n = httpd_req_recv(req, buf, req->body.size());
+  buf[n] = '\0';
+  return n;
+}
+}
 """
 
 SETTINGS_STUBS = r"""
