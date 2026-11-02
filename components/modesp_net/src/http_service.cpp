@@ -2055,7 +2055,7 @@ static esp_err_t send_api_not_found(httpd_req_t* req) {
     return http_routes::send_json(req, "404 Not Found", "{\"error\":\"not_found\"}");
 }
 
-// Any method: a POST to a path with no handler at all reaches httpd's 404, not the wildcard.
+// A path no handler takes under any method: only while the GET wildcard is off (http_routes.h).
 static esp_err_t handle_not_found(httpd_req_t* req, httpd_err_code_t err) {
     if (is_api_path(req->uri)) send_api_not_found(req);
     else httpd_resp_send_err(req, err, nullptr);

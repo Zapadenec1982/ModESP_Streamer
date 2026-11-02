@@ -265,8 +265,9 @@ For every route:
   are not affected. With curl: `-H 'Content-Type: application/json'`.
 - A body that does not fit the route's buffer is refused with `413` before it is read; a body is
   read whole, however many TCP segments it comes in.
-- An `/api/` path nothing serves gets `404 {"error":"not_found"}` (`application/json`), for any
-  method; the web's own paths still get `index.html`.
+- A `GET` of an `/api/` path nothing serves gets `404 {"error":"not_found"}` (`application/json`);
+  the web's own paths still get `index.html`. Another method on such a path gets httpd's `405`:
+  the static files' wildcard takes every `GET` path, so httpd counts the path as known.
 
 Framework routes (`http_service.cpp`):
 
