@@ -462,7 +462,8 @@ Control plane — форк [ModESP_Framework](https://github.com/Zapadenec1982/M
   (кількість записів генерується з маніфестів): ключ до 32 байт; значення int32, float, bool
   або рядок до 64 байт (ключі з `"long": true` — до 256). Доступ під м'ютексом; змінені ключі
   йдуть дельтою у WebSocket. `PersistService` пише ключі з `persist` у NVS (простір `persist`) із
-  затримкою 5 с і відновлює їх на старті.
+  затримкою 5 с, дописує те, що чекає, на кожному `esp_restart()` (shutdown handler) і відновлює
+  їх на старті.
 - **Хто читає і пише ключі.** Панель (`ui_lvgl`), вебінтерфейс (Svelte, `data/www/`) через HTTP
   REST і WebSocket `/ws`, MQTT з Home Assistant discovery (`components/modesp_mqtt`, типово
   вимкнений) — усі працюють з тими самими ключами; запис перевіряється за `state_meta.h` одним

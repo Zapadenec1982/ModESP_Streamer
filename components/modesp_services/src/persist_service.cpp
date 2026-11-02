@@ -51,6 +51,7 @@
 #include "modesp/services/nvs_helper.h"
 #include "state_meta.h"
 #include "esp_log.h"
+#include "esp_system.h"
 
 #include <cstdio>
 #include <cstring>
@@ -100,6 +101,16 @@ int PersistService::erase_legacy_keys(nvs_handle_t h) {
     return erased;
 }
 
+// player-fork: every esp_restart() writes what is pending. The routes that restart flushed by
+// hand and the rest did not: a setting changed in the seconds before an update over HTTP (until
+// it flushed too), an MQTT update, ESP-Hosted's own restart when the C6 stops answering, or the
+// Wi-Fi restart was lost with it. A shutdown handler runs on every esp_restart(), whoever calls it;
+// a panic does not run them, and has nothing a flush could be trusted with anyway.
+static PersistService* s_restart_flush = nullptr;
+static void flush_on_restart() {
+    if (s_restart_flush) s_restart_flush->flush_now();
+}
+
 bool PersistService::on_init() {
     if (!ext_state_) {
         ESP_LOGE(TAG, "SharedState не встановлений — викличте set_state() перед init");
@@ -111,6 +122,12 @@ bool PersistService::on_init() {
 
     // Реєструємо persist callback
     ext_state_->set_persist_callback(on_state_changed, this);
+
+    s_restart_flush = this;
+    if (esp_register_shutdown_handler(flush_on_restart) != ESP_OK) {
+        ESP_LOGW(TAG, "no shutdown handler: a restart may lose the last %lu ms of settings",
+                 (unsigned long)DEBOUNCE_MS);
+    }
 
     ESP_LOGI(TAG, "Initialized (debounce=%lu ms)", DEBOUNCE_MS);
     return true;

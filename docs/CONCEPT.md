@@ -462,7 +462,8 @@ The control plane is a fork of [ModESP_Framework](https://github.com/Zapadenec19
   (the number of entries is generated from the manifests): key up to 32 bytes; value int32, float, bool
   or a string up to 64 bytes (keys with `"long": true` — up to 256). Access is under a mutex; changed keys
   go as a delta over WebSocket. `PersistService` writes the `persist` keys to NVS (namespace `persist`) with
-  a 5 s delay and restores them at startup.
+  a 5 s delay, writes what is pending on every `esp_restart()` (a shutdown handler), and restores
+  them at startup.
 - **Who reads and writes the keys.** The panel (`ui_lvgl`), the web interface (Svelte, `data/www/`) over HTTP
   REST and WebSocket `/ws`, MQTT with Home Assistant discovery (`components/modesp_mqtt`, off by
   default) — all work with the same keys; a write is validated against `state_meta.h` by one rule
