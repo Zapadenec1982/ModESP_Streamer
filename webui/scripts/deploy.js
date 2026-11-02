@@ -21,6 +21,7 @@ import { pipeline } from 'stream/promises';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const dist = join(__dirname, '..', 'dist');
+const pub = join(__dirname, '..', 'public');
 const i18n = join(__dirname, '..', 'src', 'i18n');
 const www = join(__dirname, '..', '..', 'data', 'www');
 const LANGS = ['en', 'de', 'pl'];
@@ -38,6 +39,13 @@ async function gz(src, dst) {
   console.log(`  data/www/${rel}  ${statSync(dst).size} B`);
 }
 
+// A watch build (npm run dev, the dev server) is unminified and carries source maps: deployed, it
+// about doubles bundle.js.gz. Only a production build (npx rollup -c) has no map.
+if (existsSync(join(dist, 'bundle.js.map'))) {
+  console.error('dist/ is a development build (it has bundle.js.map). Run: rm -rf dist && npx rollup -c');
+  process.exit(1);
+}
+
 console.log('Deploying to data/www');
 // chunks from an earlier build that this one no longer makes
 for (const f of readdirSync(www)) {
@@ -53,8 +61,10 @@ for (const lang of LANGS) {
   await gz(join(i18n, `${lang}.json`), join(www, 'lang', `${lang}.json.gz`));
 }
 
-const indexSrc = join(dist, 'index.html');
-if (existsSync(indexSrc)) copyFileSync(indexSrc, join(www, 'index.html'));
+// The page itself is not built: rollup writes only the scripts and styles it loads.
+const indexSrc = join(pub, 'index.html');
+copyFileSync(indexSrc, join(www, 'index.html'));
+manifest.push(`${createHash('sha256').update(readFileSync(indexSrc)).digest('hex').slice(0, 16)}  index.html`);
 
 writeFileSync(join(www, 'build.txt'), manifest.join('\n') + '\n');
 console.log('Done.');
