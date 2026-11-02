@@ -278,7 +278,9 @@ For every route:
   with a preflight, which the server never grants. UPnP control URLs are not under `/api/` and
   are not affected. With curl: `-H 'Content-Type: application/json'`.
 - A body that does not fit the route's buffer is refused with `413` before it is read; a body is
-  read whole, however many TCP segments it comes in.
+  read whole, however many TCP segments it comes in. Its length must come as `Content-Length`:
+  httpd does not read a chunked body (`Transfer-Encoding: chunked`), and such a POST arrives empty
+  — `400` (dart:io sends chunked unless the length is set).
 - A `GET` of an `/api/` path nothing serves gets `404 {"error":"not_found"}` (`application/json`);
   the web's own paths still get `index.html`. Another method on such a path gets httpd's `405`:
   the static files' wildcard takes every `GET` path, so httpd counts the path as known.
