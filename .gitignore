@@ -7,6 +7,7 @@ tests/host/build/
 # === Generated (regenerated on every build) ===
 /generated/
 data/ui.json
+data/ui.json.gz
 data/board.json
 data/bindings.json
 # Runtime device registry — written by the device to /data/devices.json at runtime, NEVER a

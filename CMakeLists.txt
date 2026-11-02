@@ -193,6 +193,18 @@ if(Python3_FOUND)
     if(NOT GEN_RESULT EQUAL 0)
         message(FATAL_ERROR "generate_ui.py failed (exit code ${GEN_RESULT})")
     endif()
+    # GET /api/ui sends ui.json.gz (HttpService::handle_get_ui): the schema is ~86 KB as written
+    # and ~12 KB packed, and every page load and every start of the phone app asks for it.
+    # mtime=0, so the same schema packs to the same bytes and data.bin does not change for nothing.
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} -c
+            "import gzip, sys; open(sys.argv[2], 'wb').write(gzip.compress(open(sys.argv[1], 'rb').read(), 9, mtime=0))"
+            "${CMAKE_SOURCE_DIR}/data/ui.json" "${CMAKE_SOURCE_DIR}/data/ui.json.gz"
+        RESULT_VARIABLE GZ_RESULT
+    )
+    if(NOT GZ_RESULT EQUAL 0)
+        message(FATAL_ERROR "packing data/ui.json failed (exit code ${GZ_RESULT})")
+    endif()
 else()
     message(FATAL_ERROR "Python3 not found — cannot generate UI. Install Python 3.")
 endif()
@@ -298,6 +310,7 @@ littlefs_create_partition_image(data data FLASH_IN_PROJECT
     DEPENDS "${CMAKE_SOURCE_DIR}/data/board.json"
             "${CMAKE_SOURCE_DIR}/data/bindings.json"
             "${CMAKE_SOURCE_DIR}/data/ui.json"
+            "${CMAKE_SOURCE_DIR}/data/ui.json.gz"
             "${CMAKE_SOURCE_DIR}/data/www/build.txt"             # every bundle, chunk and language
                                                                  # file webui deployed, with hashes
                                                                  # (webui/scripts/deploy.js)

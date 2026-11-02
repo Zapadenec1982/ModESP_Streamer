@@ -206,10 +206,15 @@ and the WebSocket broadcast. Handler buffers over a few kilobytes are in PSRAM o
 ### Static files
 
 The wildcard `/*` serves `/data/www/` from the `data` partition — the web bundle sits in
-`data.bin`, not in the app image. `<path>.gz` takes precedence (`Content-Encoding: gzip`,
-`Cache-Control: no-store`), otherwise the file as is (`no-cache`); an unknown path — `index.html`
-(SPA routes). A URI longer than 51 characters — 404, `..` in the path — 400. `/radio.html`
-redirects to `/#/stations/top`.
+`data.bin`, not in the app image. `<path>.gz` takes precedence (`Content-Encoding: gzip`),
+otherwise the file as is; an unknown path — `index.html` (SPA routes). A URI longer than 51
+characters — 404, `..` in the path — 400. `/radio.html` redirects to `/#/stations/top`.
+
+Every file from the partition (`send_file()`, `GET /api/ui` too) goes with `Cache-Control:
+no-cache` and an `ETag`, the CRC-32 of the file, worked out at its first request after boot (up to
+64 files). A request with that tag in `If-None-Match` gets `304` with no body, so a reload costs a
+round trip per file, and a flash of the web reaches an open tab at its next load. Files go out in
+4 KB pieces from one PSRAM buffer.
 
 ### Route order
 

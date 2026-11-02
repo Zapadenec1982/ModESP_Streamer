@@ -34,6 +34,7 @@
 #include "freertos/task.h"
 #include "freertos/semphr.h"
 #include "esp_heap_caps.h"
+#include "esp_rom_crc.h"
 
 #include "state_meta.h"
 #include "jsmn.h"
@@ -400,8 +401,103 @@ esp_err_t HttpService::handle_get_board(httpd_req_t* req) {
     return rc;
 }
 
+// ── Files from the data partition ───────────────────────────────
+//
+// Sent in 4 KB pieces, each piece being three send() calls (httpd's chunked encoding), and
+// validated: the answer carries an ETag and `Cache-Control: no-cache`, so a browser or the phone
+// app asks again every time and gets 304 with no body while the file is the one it holds. The
+// files change only with a flash of the partition, which restarts the panel, so a file's tag is
+// worked out once per boot.
+
+static constexpr size_t FILE_CHUNK = 4096;
+static constexpr size_t MAX_FILE_TAGS = 64;
+struct FileTag { uint32_t path_hash; uint32_t crc; };
+static FileTag s_file_tags[MAX_FILE_TAGS];
+static size_t s_file_tag_count = 0;
+
+/// A file's chunk buffer: PSRAM, allocated on first use. Only the httpd task sends files, one
+/// request at a time, so one buffer serves them all; null when PSRAM is out.
+static char* file_chunk() {
+    static char* p = nullptr;
+    if (!p) {
+        p = static_cast<char*>(heap_caps_malloc_prefer(FILE_CHUNK, 2, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT,
+                                                       MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+    }
+    return p;
+}
+
+static uint32_t path_hash(const char* path) {
+    uint32_t h = 2166136261u;   // FNV-1a
+    for (; *path; ++path) h = (h ^ static_cast<uint8_t>(*path)) * 16777619u;
+    return h;
+}
+
+/// The CRC-32 of the file's contents, read through `buf` and rewound; from the table after the
+/// first time. False when the file could not be read whole, or the table is full and the file
+/// is not in it — the answer then goes out without a tag.
+static bool file_tag(const char* path, FILE* f, char* buf, size_t size, uint32_t& crc) {
+    const uint32_t h = path_hash(path);
+    for (size_t i = 0; i < s_file_tag_count; i++) {
+        if (s_file_tags[i].path_hash == h) { crc = s_file_tags[i].crc; return true; }
+    }
+    if (s_file_tag_count >= MAX_FILE_TAGS) return false;
+    crc = 0;
+    size_t n;
+    while ((n = fread(buf, 1, size, f)) > 0) crc = esp_rom_crc32_le(crc, reinterpret_cast<uint8_t*>(buf), n);
+    const bool whole = !ferror(f);
+    rewind(f);
+    if (!whole) return false;
+    s_file_tags[s_file_tag_count++] = {h, crc};
+    return true;
+}
+
+/// Send the open file `f` (closed here) as the answer: 304 when the client already holds it,
+/// otherwise the whole file, gzip-encoded when `gz`. The caller has set the content type.
+static esp_err_t send_file(httpd_req_t* req, FILE* f, const char* path, bool gz) {
+    char small[512];
+    char* buf = file_chunk();
+    const size_t size = buf ? FILE_CHUNK : sizeof(small);
+    if (!buf) buf = small;
+
+    char etag[12] = {};
+    uint32_t crc;
+    if (file_tag(path, f, buf, size, crc)) snprintf(etag, sizeof(etag), "\"%08lx\"", (unsigned long)crc);
+    httpd_resp_set_hdr(req, "Cache-Control", "no-cache");
+    if (etag[0]) {
+        httpd_resp_set_hdr(req, "ETag", etag);
+        char held[48];
+        if (httpd_req_get_hdr_value_str(req, "If-None-Match", held, sizeof(held)) == ESP_OK &&
+            strstr(held, etag)) {
+            fclose(f);
+            httpd_resp_set_status(req, "304 Not Modified");
+            return httpd_resp_send(req, nullptr, 0);
+        }
+    }
+    if (gz) httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
+
+    size_t n;
+    while ((n = fread(buf, 1, size, f)) > 0) {
+        if (httpd_resp_send_chunk(req, buf, n) != ESP_OK) {
+            fclose(f);
+            httpd_resp_send_chunk(req, nullptr, 0);
+            return ESP_FAIL;
+        }
+    }
+    fclose(f);
+    return httpd_resp_send_chunk(req, nullptr, 0);
+}
+
 esp_err_t HttpService::handle_get_ui(httpd_req_t* req) {
-    FILE* f = fopen("/data/ui.json", "r");
+    // The build writes ui.json.gz beside ui.json (CMakeLists.txt): about 12 KB for 86, on the
+    // load of every page and every start of the phone app.
+    const char* path = "/data/ui.json.gz";
+    bool gz = true;
+    FILE* f = fopen(path, "r");
+    if (!f) {
+        path = "/data/ui.json";
+        gz = false;
+        f = fopen(path, "r");
+    }
     if (!f) {
         httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "ui.json not found");
         return ESP_FAIL;
@@ -409,20 +505,7 @@ esp_err_t HttpService::handle_get_ui(httpd_req_t* req) {
 
     set_cors_headers(req);
     httpd_resp_set_type(req, "application/json");
-
-    // Стрімінг файлу чанками — ui.json може бути >4KB
-    char buf[512];
-    size_t read_bytes;
-    while ((read_bytes = fread(buf, 1, sizeof(buf), f)) > 0) {
-        if (httpd_resp_send_chunk(req, buf, read_bytes) != ESP_OK) {
-            fclose(f);
-            httpd_resp_send_chunk(req, nullptr, 0);
-            return ESP_FAIL;
-        }
-    }
-    fclose(f);
-    httpd_resp_send_chunk(req, nullptr, 0);
-    return ESP_OK;
+    return send_file(req, f, path, gz);
 }
 
 esp_err_t HttpService::handle_get_bindings(httpd_req_t* req) {
@@ -2104,31 +2187,14 @@ esp_err_t HttpService::handle_static(httpd_req_t* req) {
             return ESP_FAIL;
         }
         snprintf(filepath, sizeof(filepath), "/data/www/index.html");
+        actual_path = filepath;
         use_gz = false;
     }
 
     httpd_resp_set_type(req, get_content_type(filepath));
-    if (use_gz) {
-        httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
-        // no-store: браузер завжди запитує свіжу версію (важливо при OTA/flash)
-        httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-    } else {
-        httpd_resp_set_hdr(req, "Cache-Control", "no-cache");
-    }
-
-    // Stream file in chunks
-    char buf[512];
-    size_t read_bytes;
-    while ((read_bytes = fread(buf, 1, sizeof(buf), f)) > 0) {
-        if (httpd_resp_send_chunk(req, buf, read_bytes) != ESP_OK) {
-            fclose(f);
-            httpd_resp_send_chunk(req, nullptr, 0);
-            return ESP_FAIL;
-        }
-    }
-    fclose(f);
-    httpd_resp_send_chunk(req, nullptr, 0);
-    return ESP_OK;
+    // Validated on every load rather than kept (no-cache + ETag, send_file()): a flash of the
+    // web must reach an open tab at its next load, and an unchanged file costs a 304.
+    return send_file(req, f, actual_path, use_gz);
 }
 
 // ── Auth settings (GET + POST) ──────────────────────────────────
