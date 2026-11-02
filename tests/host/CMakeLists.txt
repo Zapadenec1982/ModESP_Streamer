@@ -179,6 +179,7 @@ set(TEST_SOURCES
     "${CMAKE_SOURCE_DIR}/test_shared_state.cpp"
     "${CMAKE_SOURCE_DIR}/test_json_escape.cpp"
     "${CMAKE_SOURCE_DIR}/test_state_json.cpp"        # modesp/net/state_json.h — the state as JSON
+    "${CMAKE_SOURCE_DIR}/test_key_write.cpp"         # modesp/net/key_write.h — a key written from outside
     "${CMAKE_SOURCE_DIR}/test_jsmn_util.cpp"         # components/jsmn_util — key_is, span, unescape, Appender
     "${CMAKE_SOURCE_DIR}/test_utf8.cpp"              # modesp/utf8.h — cutting text on a character boundary
     "${CMAKE_SOURCE_DIR}/test_ws_slots.cpp"          # modesp/net/ws_slots.h — WsService's slot rules

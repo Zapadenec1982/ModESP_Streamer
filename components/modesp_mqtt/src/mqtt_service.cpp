@@ -7,6 +7,7 @@
 #include "modesp/net/http_service.h"
 #include "modesp/net/http_routes.h"
 #include "modesp/net/json_escape.h"
+#include "modesp/net/key_write.h"
 #include "modesp/net/ota_handler.h"
 #include "modesp/shared_state.h"
 #include "modesp/services/nvs_helper.h"
@@ -799,51 +800,24 @@ void MqttService::handle_incoming(const char* topic, int topic_len,
 
     ESP_LOGI(TAG, "CMD: %s = %s", key, val_buf);
 
-    // Парсимо значення за типом з meta
-    if (strcmp(meta->type, "float") == 0) {
-        char* end = nullptr;
-        float f = strtof(val_buf, &end);
-        if (end == val_buf) {
-            ESP_LOGW(TAG, "Invalid float: %s", val_buf);
-            return;
-        }
-        // Валідація min/max. A clamp is never silent: the range comes from the manifest, and a
-        // request outside it is either a client bug or a manifest that lags the code (an
-        // audio.source of 4 landed on 3 for a while because the options stopped at Bluetooth).
-        const float f_req = f;
-        if (f < meta->min_val) f = meta->min_val;
-        if (f > meta->max_val) f = meta->max_val;
-        if (f != f_req) {
-            ESP_LOGW(TAG, "CMD %s: %g is outside [%g..%g], clamped to %g",
-                     key, (double)f_req, (double)meta->min_val, (double)meta->max_val, (double)f);
-        }
-        state_set(key, f);
-    } else if (strcmp(meta->type, "int") == 0) {
-        char* end = nullptr;
-        long v = strtol(val_buf, &end, 10);
-        if (end == val_buf) {
-            ESP_LOGW(TAG, "Invalid int: %s", val_buf);
-            return;
-        }
-        const long v_req = v;
-        if (v < static_cast<long>(meta->min_val)) v = static_cast<long>(meta->min_val);
-        if (v > static_cast<long>(meta->max_val)) v = static_cast<long>(meta->max_val);
-        if (v != v_req) {
-            ESP_LOGW(TAG, "CMD %s: %ld is outside [%ld..%ld], clamped to %ld",
-                     key, v_req, (long)meta->min_val, (long)meta->max_val, v);
-        }
-        // A command key is an event for the module that owns it, not a value in the
-        // store: it goes to that module's queue after the same range check above. See
-        // STATE_COMMANDS in the generated state_meta.h.
+    // The one rule for a value written from outside (key_write.h): its manifest type, its range,
+    // "true"/"false" or "1"/"0" for a bool; MQTT applies no string keys.
+    const net::KeyWrite w = net::key_write(*meta, key, val_buf, net::ValueFrom::MQTT_TEXT, "MQTT");
+    switch (w.kind) {
+    case net::KeyWrite::INT:
+        // A command key is an event for the module that owns it, not a value in the store: it
+        // goes to that module's queue after the same range check. See STATE_COMMANDS in the
+        // generated state_meta.h.
         if (const auto* cmd = gen::find_state_command(key)) {
-            if (!post_command_to(cmd->module, key, static_cast<int32_t>(v)))
+            if (!post_command_to(cmd->module, key, w.i))
                 ESP_LOGW(TAG, "CMD %s: %s did not take it", key, cmd->module);
         } else {
-            state_set(key, static_cast<int32_t>(v));
+            state_set(key, w.i);
         }
-    } else if (strcmp(meta->type, "bool") == 0) {
-        bool b = (strcmp(val_buf, "true") == 0 || strcmp(val_buf, "1") == 0);
-        state_set(key, b);
+        break;
+    case net::KeyWrite::FLOAT: state_set(key, w.f); break;
+    case net::KeyWrite::BOOL:  state_set(key, w.b); break;
+    default:                   break;   // refused, said by key_write(); no string keys here
     }
 }
 

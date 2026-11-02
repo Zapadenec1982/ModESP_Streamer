@@ -465,7 +465,8 @@ The control plane is a fork of [ModESP_Framework](https://github.com/Zapadenec19
   a 5 s delay and restores them at startup.
 - **Who reads and writes the keys.** The panel (`ui_lvgl`), the web interface (Svelte, `data/www/`) over HTTP
   REST and WebSocket `/ws`, MQTT with Home Assistant discovery (`components/modesp_mqtt`, off by
-  default) — all work with the same keys; a write is validated against `state_meta.h`.
+  default) — all work with the same keys; a write is validated against `state_meta.h` by one rule
+  for HTTP, a restore and MQTT (`modesp/net/key_write.h`).
   [NETWORK.md](NETWORK.md), [UI.md](UI.md).
 - **Files.** The `data` partition (LittleFS) carries the build output: `board.json`, `bindings.json`,
   `ui.json`, the web interface, the factory `eq.json`. User files — `eq.json`,

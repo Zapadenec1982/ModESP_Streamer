@@ -40,6 +40,7 @@
 #include "jsmn.h"
 #include "jsmn_util.h"           // player-fork: span(), a value stepped over whole
 #include "modesp/net/json_escape.h"
+#include "modesp/net/key_write.h"
 #include "modesp/net/state_json.h"
 
 #include <cstdio>
@@ -225,26 +226,6 @@ static int read_file_to_buf(const char* path, char* buf, size_t buf_size) {
     return len;
 }
 
-// A value outside the manifest range is clamped, never silently: the range is the manifest's
-// word, and a request past it is either a client bug or a manifest that lags the code (an
-// audio.source of 4 landed on 3 for a while because the options stopped at Bluetooth).
-static void log_clamp(const char* where, const char* key, double requested, double clamped,
-                      const gen::StateMeta* meta) {
-    ESP_LOGW(TAG, "%s: %s=%g is outside [%g..%g], clamped to %g",
-             where, key, requested, (double)meta->min_val, (double)meta->max_val, clamped);
-}
-
-// player-fork: a JSON value of the type the key's manifest declares. The store takes any type
-// for any key, so a string or a true/false written over a number changed what the key holds —
-// its readers fell back to their default until a reboot — and a command posted as "2" was
-// stored instead of being run.
-static bool value_fits(const gen::StateMeta* meta, const jsmntok_t& tok, const char* val) {
-    if (strcmp(meta->type, "string") == 0) return tok.type == JSMN_STRING;
-    if (tok.type != JSMN_PRIMITIVE) return false;
-    if (strcmp(meta->type, "bool") == 0) return strcmp(val, "true") == 0 || strcmp(val, "false") == 0;
-    return val[0] == '-' || (val[0] >= '0' && val[0] <= '9');          // "int", "float"
-}
-
 /// Deliver a write to a command key to the module the manifest says owns it. Returns false
 /// when the key is an ordinary state key, and the caller stores it as before.
 static bool post_if_command(modesp::ModuleManager* modules, const char* key, int32_t value) {
@@ -262,6 +243,32 @@ static bool post_if_command(modesp::ModuleManager* modules, const char* key, int
     if (!m->post_command(key, value))
         ESP_LOGW(TAG, "command '%s' dropped: %s is not keeping up", key, cmd->module);
     return true;
+}
+
+/// How a jsmn value token reaches key_write(). False for an object or an array: no key takes one,
+/// and the keys inside it are not settings.
+static bool json_value_from(const jsmntok_t& tok, net::ValueFrom& from) {
+    if (tok.type == JSMN_STRING)    { from = net::ValueFrom::JSON_STRING;    return true; }
+    if (tok.type == JSMN_PRIMITIVE) { from = net::ValueFrom::JSON_PRIMITIVE; return true; }
+    return false;
+}
+
+/// Store what key_write() made of a value — or, with `commands`, post it when the key is a
+/// command. False when it was refused.
+static bool store_write(SharedState* state, ModuleManager* modules, const char* key,
+                        const net::KeyWrite& w, bool commands) {
+    switch (w.kind) {
+    case net::KeyWrite::INT:
+        // A command key is an event for a module, not a value in the store: it goes to that
+        // module's queue after the same range check (STATE_COMMANDS, BaseModule::post_command()).
+        if (commands && post_if_command(modules, key, w.i)) return true;
+        state->set(key, w.i);
+        return true;
+    case net::KeyWrite::FLOAT:  state->set(key, w.f); return true;
+    case net::KeyWrite::BOOL:   state->set(key, w.b); return true;
+    case net::KeyWrite::STRING: state->set(key, w.s); return true;
+    default:                    return false;
+    }
 }
 
 // ── API Handlers ────────────────────────────────────────────────
@@ -757,8 +764,8 @@ esp_err_t HttpService::handle_post_settings(httpd_req_t* req) {
     // player-fork: each value stepped over whole (jsmn_util::span), as /api/restore does. Two
     // tokens per key fitted only plain values: past an object or an array the walk took the keys
     // inside it for settings of their own ({"x":["audio.volume",7]} set the volume to 7). Such a
-    // value is refused with its key (value_fits() takes no object or array); a key jsmn let close
-    // with no value, as in {"a":}, is refused alone.
+    // value is refused with its key (json_value_from() takes no object or array); a key jsmn let
+    // close with no value, as in {"a":}, is refused alone.
     for (int i = 1, next = 1; i < r; i = next) {
         const bool has_value = tokens[i].size == 1 && i + 1 < r;
         next = has_value ? i + 1 + jsmn_util::span(tokens, r, i + 1) : i + 1;
@@ -774,7 +781,6 @@ esp_err_t HttpService::handle_post_settings(httpd_req_t* req) {
         // Null-terminate key and value in-place
         buf[tokens[i].end] = '\0';
         buf[val_tok.end] = '\0';
-        const char* val_str = buf + val_tok.start;
 
         // Валідація через state_meta — тільки відомі writable ключі
         const auto* meta = gen::find_state_meta(key_str);
@@ -783,50 +789,18 @@ esp_err_t HttpService::handle_post_settings(httpd_req_t* req) {
             rejected++;
             continue;
         }
-        if (!value_fits(meta, val_tok, val_str)) {
-            ESP_LOGW(TAG, "POST /settings: rejected '%s' (not a %s)", key_str, meta->type);
+        net::ValueFrom from;
+        if (!json_value_from(val_tok, from)) {
+            ESP_LOGW(TAG, "POST /settings: rejected '%s' (an object or an array)", key_str);
             rejected++;
             continue;
         }
-        // player-fork: jsmn hands a string over as it stands in the body, escapes and all, so a
-        // catalog station called Radio "Rock" was stored as Radio \"Rock\", in stations.json too.
-        if (val_tok.type == JSMN_STRING && !net::json_unescape(buf + val_tok.start)) {
-            ESP_LOGW(TAG, "POST /settings: rejected '%s' (an escape that cannot be stored)", key_str);
-            rejected++;
-            continue;
-        }
-
-        if (val_tok.type == JSMN_PRIMITIVE) {
-            // BUG-023 fix: використовуємо meta->type замість евристики з крапкою.
-            // JavaScript може відправити "5" (без крапки) для float параметра,
-            // що ламало persist (etl::get_if<float> на int32_t = nullptr).
-            if (strcmp(meta->type, "bool") == 0) {
-                self->state_->set(key_str, val_str[0] == 't');
-                accepted++;
-            } else if (strcmp(meta->type, "float") == 0) {
-                float fval = static_cast<float>(atof(val_str));
-                const float f_req = fval;
-                if (fval < meta->min_val) fval = meta->min_val;
-                if (fval > meta->max_val) fval = meta->max_val;
-                if (fval != f_req) log_clamp("POST /settings", key_str, (double)f_req, (double)fval, meta);
-                self->state_->set(key_str, fval);
-                accepted++;
-            } else {
-                int32_t ival = static_cast<int32_t>(atoi(val_str));
-                const int32_t i_req = ival;
-                if (static_cast<float>(ival) < meta->min_val) ival = static_cast<int32_t>(meta->min_val);
-                if (static_cast<float>(ival) > meta->max_val) ival = static_cast<int32_t>(meta->max_val);
-                if (ival != i_req) log_clamp("POST /settings", key_str, (double)i_req, (double)ival, meta);
-                // A command key is an event for a module, not a value in the store: it goes
-                // to that module's queue after the same range check. See STATE_COMMANDS in
-                // the generated state_meta.h, and BaseModule::post_command().
-                if (post_if_command(self->modules_, key_str, ival)) { accepted++; continue; }
-                self->state_->set(key_str, ival);
-                accepted++;
-            }
-        } else {                                                    // a string key (value_fits)
-            self->state_->set(key_str, val_str);
+        if (store_write(self->state_, self->modules_, key_str,
+                        net::key_write(*meta, key_str, buf + val_tok.start, from, "POST /settings"),
+                        true)) {
             accepted++;
+        } else {
+            rejected++;
         }
     }
 
@@ -1323,8 +1297,8 @@ esp_err_t HttpService::handle_post_restore(httpd_req_t* req) {
     // player-fork: each value stepped over whole, as above. Two tokens per key fitted only plain
     // values: past an object or an array the walk read keys out of it (a backup with
     // "x":["audio.volume",5] restored the volume to 5) and never reached the keys after it. Such a
-    // value is skipped with its key (value_fits() takes no object or array); a key with no value
-    // is skipped alone.
+    // value is skipped with its key (json_value_from() takes no object or array); a key with no
+    // value is skipped alone.
     int j = keys_tok + 1;
     for (int k = 0, next = j; k < key_count && j < r; k++, j = next) {
         const bool has_value = tokens[j].size == 1 && j + 1 < r;
@@ -1338,7 +1312,6 @@ esp_err_t HttpService::handle_post_restore(httpd_req_t* req) {
         buf[tokens[j].end] = '\0';
         buf[tokens[j + 1].end] = '\0';
         const char* key_str = buf + tokens[j].start;
-        const char* val_str = buf + tokens[j + 1].start;
 
         // Валідація: тільки persist ключі
         const auto* meta = gen::find_state_meta(key_str);
@@ -1346,39 +1319,18 @@ esp_err_t HttpService::handle_post_restore(httpd_req_t* req) {
             skipped++;
             continue;
         }
-        // player-fork: of the key's type, as POST /api/settings takes it. A true for an int key (a
-        // hand-edited backup) was answered "restored" while PersistService had no int to write,
-        // and a null went in as 0. No persist key is a string (generate_ui.py refuses one), so
-        // nothing restored here needs unescaping.
-        if (!value_fits(meta, tokens[j + 1], val_str)) {
-            ESP_LOGW(TAG, "POST /restore: skipped '%s' (not a %s)", key_str, meta->type);
+        // player-fork: of the key's type, as POST /api/settings takes it (key_write()). A true for
+        // an int key (a hand-edited backup) was answered "restored" while PersistService had no
+        // int to write, and a null went in as 0.
+        net::ValueFrom from;
+        if (json_value_from(tokens[j + 1], from) &&
+            store_write(self->state_, self->modules_, key_str,
+                        net::key_write(*meta, key_str, buf + tokens[j + 1].start, from,
+                                       "POST /restore"),
+                        false)) {
+            restored++;
+        } else {
             skipped++;
-            continue;
-        }
-
-        if (tokens[j + 1].type == JSMN_PRIMITIVE) {
-            if (strcmp(meta->type, "bool") == 0) {
-                self->state_->set(key_str, val_str[0] == 't');
-                restored++;
-            } else if (strcmp(meta->type, "float") == 0) {
-                float fval = static_cast<float>(atof(val_str));
-                const float f_req = fval;
-                if (fval < meta->min_val) fval = meta->min_val;
-                if (fval > meta->max_val) fval = meta->max_val;
-                if (fval != f_req) log_clamp("POST /restore", key_str, (double)f_req, (double)fval, meta);
-                self->state_->set(key_str, fval);
-                restored++;
-            } else {
-                int32_t ival = static_cast<int32_t>(atoi(val_str));
-                const int32_t i_req = ival;
-                if (static_cast<float>(ival) < meta->min_val)
-                    ival = static_cast<int32_t>(meta->min_val);
-                if (static_cast<float>(ival) > meta->max_val)
-                    ival = static_cast<int32_t>(meta->max_val);
-                if (ival != i_req) log_clamp("POST /restore", key_str, (double)i_req, (double)ival, meta);
-                self->state_->set(key_str, ival);
-                restored++;
-            }
         }
     }
 

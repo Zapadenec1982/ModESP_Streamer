@@ -465,7 +465,8 @@ Control plane — форк [ModESP_Framework](https://github.com/Zapadenec1982/M
   затримкою 5 с і відновлює їх на старті.
 - **Хто читає і пише ключі.** Панель (`ui_lvgl`), вебінтерфейс (Svelte, `data/www/`) через HTTP
   REST і WebSocket `/ws`, MQTT з Home Assistant discovery (`components/modesp_mqtt`, типово
-  вимкнений) — усі працюють з тими самими ключами; запис перевіряється за `state_meta.h`.
+  вимкнений) — усі працюють з тими самими ключами; запис перевіряється за `state_meta.h` одним
+  правилом для HTTP, відновлення й MQTT (`modesp/net/key_write.h`).
   [NETWORK.uk.md](NETWORK.uk.md), [UI.uk.md](UI.uk.md).
 - **Файли.** Розділ `data` (LittleFS) несе вихід збірки: `board.json`, `bindings.json`,
   `ui.json`, вебінтерфейс, заводський `eq.json`. Файли користувача — `eq.json`,

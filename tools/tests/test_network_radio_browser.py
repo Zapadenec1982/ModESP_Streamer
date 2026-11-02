@@ -320,8 +320,10 @@ inline int read_small_body(httpd_req_t* req, char* buf, size_t size) {
 }
 """
 
-SETTINGS_STUBS = r"""
-namespace etl { template <class T, class V> auto get_if(V* v) { return std::get_if<T>(v); } }
+# The manifest as key_write.h reads it (#include "state_meta.h"), written beside the harness.
+STATE_META_STUB = r"""
+#pragma once
+#include <cstring>
 namespace modesp {
 namespace gen {
 struct StateMeta { const char* key; const char* type; bool writable; bool persist; float min_val; float max_val; };
@@ -339,6 +341,13 @@ inline const StateMeta* find_state_meta(const char* key) {
   return nullptr;
 }
 }  // namespace gen
+}  // namespace modesp
+"""
+
+SETTINGS_STUBS = r"""
+namespace etl { template <class T, class V> auto get_if(V* v) { return std::get_if<T>(v); } }
+#include "modesp/net/key_write.h"
+namespace modesp {
 using Value = std::variant<int32_t, float, bool, std::string>;
 struct SharedState {
   std::map<std::string, Value> kv;
@@ -358,7 +367,6 @@ static bool post_if_command(ModuleManager* m, const char* key, int32_t value) {
   m->posted += std::string(key) + "=" + std::to_string(value) + ";";
   return true;
 }
-static void log_clamp(const char*, const char*, double, double, const gen::StateMeta*) {}
 struct PersistService { int flushes = 0; void flush_now() { ++flushes; } };
 struct HttpService {
   SharedState* state_ = nullptr;
@@ -376,7 +384,8 @@ struct HttpService {
 def test_settings_take_a_value_of_the_keys_type_unescaped(tmp_path):
     source = (ROOT / "components/modesp_net/src/http_service.cpp").read_text(encoding="utf-8")
     handlers = "\n".join(extract(source, signature) for signature in (
-        "static bool value_fits(",
+        "static bool json_value_from(",
+        "static bool store_write(",
         "esp_err_t HttpService::handle_post_settings(",
         "esp_err_t HttpService::handle_get_backup(",
     ))
@@ -437,13 +446,21 @@ int main() {
   return 0;
 }
 """
-    build_and_run(tmp_path, harness, HTTPD_INCLUDES)
+    build_and_run(tmp_path, harness, settings_includes(tmp_path))
+
+
+def settings_includes(tmp_path):
+    """The handlers' includes, and the stand-ins key_write.h reaches for beside the harness."""
+    (tmp_path / "state_meta.h").write_text(STATE_META_STUB, encoding="utf-8")
+    (tmp_path / "esp_log.h").write_text("#pragma once\n", encoding="utf-8")   # the harness's macros
+    return [tmp_path] + HTTPD_INCLUDES
 
 
 def test_restore_takes_a_value_of_the_keys_type(tmp_path):
     source = (ROOT / "components/modesp_net/src/http_service.cpp").read_text(encoding="utf-8")
     handlers = "\n".join(extract(source, signature) for signature in (
-        "static bool value_fits(",
+        "static bool json_value_from(",
+        "static bool store_write(",
         "esp_err_t HttpService::handle_post_restore(",
     ))
     harness = HTTPD_STUBS + SETTINGS_STUBS + r"""
@@ -495,7 +512,7 @@ int main() {
   return 0;
 }
 """
-    build_and_run(tmp_path, harness, HTTPD_INCLUDES)
+    build_and_run(tmp_path, harness, settings_includes(tmp_path))
 
 
 def test_auth_reads_back_a_name_with_quotes_as_json(tmp_path):
