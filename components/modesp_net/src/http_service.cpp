@@ -1570,9 +1570,16 @@ esp_err_t HttpService::handle_post_ota(httpd_req_t* req) {
     httpd_resp_set_type(req, "application/json");
     httpd_resp_sendstr(req, "{\"status\":\"ok\",\"message\":\"Firmware updated. Restarting...\"}");
 
-    // Graceful shutdown: flush log sources to flash
+    // The same shutdown as handle_post_restart(): the debounced settings are written before and
+    // after the module stop, or a setting changed in the last seconds is lost with the restart.
     auto* self = static_cast<HttpService*>(req->user_ctx);
+    if (self->persist_) {
+        self->persist_->flush_now();
+    }
     stop_modules_on_main(self->modules_);
+    if (self->persist_) {
+        self->persist_->flush_now();
+    }
 
     // Дати HTTP response дійти до клієнта перед restart
     vTaskDelay(pdMS_TO_TICKS(1000));
