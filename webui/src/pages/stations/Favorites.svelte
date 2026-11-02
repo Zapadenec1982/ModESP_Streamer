@@ -46,8 +46,14 @@
   onMount(reload);
 
   // radio.list_rev is the store's generation: when it is not the one we hold, the list moved.
+  // Read once for each generation the state names: reload() replaces `list`, which runs this
+  // again, and with the state's generation stuck (no WebSocket) it would read the list for ever.
   $: rev = $state['radio.list_rev'];
-  $: if (list && rev !== undefined && rev !== list.rev && !saving) reload();
+  let readFor;
+  $: if (list && rev !== undefined && rev !== list.rev && rev !== readFor && !saving) {
+    readFor = rev;
+    reload();
+  }
   $: if (waitRev !== null && rev !== undefined && rev !== waitRev) settle();
   onDestroy(() => clearTimeout(waitTimer));
 
