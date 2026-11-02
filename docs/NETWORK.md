@@ -75,6 +75,11 @@ the I2S descriptors and everything that asks for DMA ([CONCEPT.md](CONCEPT.md), 
 - The task stacks of the radio, DLNA, the media server browser and covers are in PSRAM. An internal
   stack belongs to the tasks that write to flash (`ap_start`: HAP keys in NVS) and to the SSDP
   task: a task with its stack in PSRAM cannot run while the flash cache is disabled.
+- The HTTP routes' buffers of a kilobyte and more are in PSRAM, allocated at a route's first
+  request and kept (`http_routes::scratch()`), and so are the two 80 KB buffers the state is
+  written to as JSON, one for the httpd task and one for the main task
+  (`modesp/net/state_json.h`). mDNS keeps its records in PSRAM
+  (`CONFIG_MDNS_MEMORY_ALLOC_SPIRAM`).
 
 ### lwIP
 

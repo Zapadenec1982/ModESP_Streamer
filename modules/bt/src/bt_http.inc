@@ -22,11 +22,13 @@ using modesp::http_routes::send_json;
 esp_err_t bt_get(httpd_req_t* req) {
     if (!modesp::http_routes::authorized(req)) return ESP_OK;
     static bt_settings::View view;
-    static char json[BT_HTTP_MAX];
+    static char* json_slot = nullptr;       // PSRAM, kept (http_routes::scratch())
+    char* json = modesp::http_routes::scratch(json_slot, BT_HTTP_MAX);
+    if (!json) return send_json(req, "503 Service Unavailable", "{\"error\":\"no_memory\"}");
     bt_settings::snapshot(view);
     bt_settings::Pairing pairing;
     bt_settings::pairing(pairing);
-    if (!bt_web::json(view, pairing, bt_settings::confirmer(), json, sizeof(json))) {
+    if (!bt_web::json(view, pairing, bt_settings::confirmer(), json, BT_HTTP_MAX)) {
         return send_json(req, "500 Internal Server Error", "{\"error\":\"too_large\"}");
     }
     return send_json(req, "200 OK", json);

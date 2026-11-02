@@ -60,6 +60,7 @@ include_directories(
 set(CORE_SOURCES
     "${ROOT}/components/modesp_core/src/shared_state.cpp"
     "${ROOT}/components/modesp_core/src/base_module.cpp"
+    "${ROOT}/components/modesp_net/src/state_json.cpp"       # GET /api/state and the WebSocket's JSON
     "${CMAKE_SOURCE_DIR}/module_manager_host.cpp"
     "${CMAKE_SOURCE_DIR}/driver_manager_host.cpp"
 )
@@ -177,6 +178,7 @@ set(TEST_SOURCES
     "${CMAKE_SOURCE_DIR}/test_module_manager.cpp"    # request_stop_all(): on_stop() on the update_all() task
     "${CMAKE_SOURCE_DIR}/test_shared_state.cpp"
     "${CMAKE_SOURCE_DIR}/test_json_escape.cpp"
+    "${CMAKE_SOURCE_DIR}/test_state_json.cpp"        # modesp/net/state_json.h — the state as JSON
     "${CMAKE_SOURCE_DIR}/test_jsmn_util.cpp"         # components/jsmn_util — key_is, span, unescape, Appender
     "${CMAKE_SOURCE_DIR}/test_utf8.cpp"              # modesp/utf8.h — cutting text on a character boundary
     "${CMAKE_SOURCE_DIR}/test_ws_slots.cpp"          # modesp/net/ws_slots.h — WsService's slot rules

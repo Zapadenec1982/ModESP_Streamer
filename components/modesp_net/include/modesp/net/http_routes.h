@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "esp_heap_caps.h"
 #include "esp_http_server.h"
 #include <cstddef>
 
@@ -120,6 +121,18 @@ inline int read_small_body(httpd_req_t* req, char* buf, size_t size) {
     }
     if (!read_body(req, buf)) return -1;
     return static_cast<int>(req->content_len);
+}
+
+/// A route's own buffer: `size` bytes from PSRAM, allocated on its first request and kept in
+/// `slot`. The server has one task and runs one handler at a time, so a route needs one buffer,
+/// and the internal RAM that DMA and the Wi-Fi link live on (docs/CONCEPT.md, "Board
+/// constraints") does not pay for it as a static would. Null when there is no memory: answer 503.
+inline char* scratch(char*& slot, size_t size) {
+    if (!slot) {
+        slot = static_cast<char*>(heap_caps_malloc_prefer(size, 2, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT,
+                                                          MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+    }
+    return slot;
 }
 
 /// A JSON answer: `status` as httpd takes it ("200 OK"), the body a NUL-terminated string. Never

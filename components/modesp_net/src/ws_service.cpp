@@ -6,7 +6,7 @@
 #include "modesp/net/ws_service.h"
 #include "modesp/shared_state.h"
 #include "modesp/types.h"
-#include "modesp/net/json_escape.h"
+#include "modesp/net/state_json.h"
 
 #include "esp_heap_caps.h"
 #include "esp_idf_version.h"
@@ -32,69 +32,6 @@ static const char* TAG = "WS";
 #endif
 
 namespace modesp {
-
-// ── Serialization (same format as HTTP /api/state) ──────────────
-
-struct WsSerCtx {
-    char* buf;
-    size_t size;
-    size_t pos;
-    bool first;
-    bool failed;
-    size_t remaining() const { return (pos < size) ? size - pos : 0; }
-};
-
-/// A serialisation buffer, from PSRAM, allocated once and kept.
-///
-/// It covers the aggregate of long values after worst-case escaping (a `long` value is up to 256
-/// characters), far more than internal .bss could spare from the RAM that DMA needs
-/// (docs/CONCEPT.md, "Board constraints"). Nothing here is DMA: the send copies out of it.
-/// Allocated on first use rather than per delta, and tried again after a failure: a buffer that
-/// was never allocated would stop every delta for good.
-static char* json_scratch(size_t bytes) {
-    static char* p = nullptr;
-    if (!p) {
-        p = static_cast<char*>(heap_caps_calloc_prefer(
-            1, bytes, 2, MALLOC_CAP_SPIRAM  | MALLOC_CAP_8BIT,
-                         MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
-    }
-    return p;
-}
-
-static void ws_serialize_entry(const StateKey& key, const StateValue& value,
-                               const char* text, void* ud) {
-    auto* ctx = static_cast<WsSerCtx*>(ud);
-    if (ctx->failed) return;
-
-    const char* sep = ctx->first ? "" : ",";
-    int n = -1;
-
-    if (etl::holds_alternative<float>(value)) {
-        n = snprintf(ctx->buf + ctx->pos, ctx->remaining(),
-                             "%s\"%s\":%.2f", sep, key.c_str(),
-                             static_cast<double>(etl::get<float>(value)));
-    } else if (etl::holds_alternative<int32_t>(value)) {
-        n = snprintf(ctx->buf + ctx->pos, ctx->remaining(),
-                             "%s\"%s\":%ld", sep, key.c_str(),
-                             (long)etl::get<int32_t>(value));
-    } else if (etl::holds_alternative<bool>(value)) {
-        n = snprintf(ctx->buf + ctx->pos, ctx->remaining(),
-                             "%s\"%s\":%s", sep, key.c_str(),
-                             etl::get<bool>(value) ? "true" : "false");
-    } else if (etl::holds_alternative<StringValue>(value)) {
-        // See the same spot in http_service.cpp: `text` is the whole value, the variant is
-        // only as much of it as fits inline.
-        char escaped[net::json_escaped_capacity(MODESP_MAX_LONG_STRING_LENGTH)];
-        if (!net::json_escape(escaped, sizeof(escaped), text ? text : "")) {
-            ctx->failed = true;
-            return;
-        }
-        n = snprintf(ctx->buf + ctx->pos, ctx->remaining(),
-                             "%s\"%s\":\"%s\"", sep, key.c_str(), escaped);
-    }
-    if (n < 0 || static_cast<size_t>(n) >= ctx->remaining()) ctx->failed = true;
-    else { ctx->pos += static_cast<size_t>(n); ctx->first = false; }
-}
 
 // ── Client management (BUG-021: all access under clients_mutex_) ──
 
@@ -446,27 +383,22 @@ void WsService::broadcast_state() {
     // Delta broadcast: серіалізуємо тільки змінені ключі
     // for_each_changed_and_clear() атомарно ітерує + очищує changed list
     //
-    // A shared buffer, not the stack: broadcast_state() has exactly one caller, on_update()
-    // below on `main`, so it has no second writer to race.
-    constexpr size_t BUF_SIZE = 81920;
-    char* buf = json_scratch(BUF_SIZE);
+    // The main task's buffer: broadcast_state() has exactly one caller, on_update() below.
+    char* buf = net::state_json_buffer_main();
     if (!buf) return;  // the changes stay marked; the next tick tries again
-    WsSerCtx ctx = {buf, BUF_SIZE, 0, true, false};
-    ctx.pos += snprintf(buf, BUF_SIZE, "{");
+    net::StateJson ctx = net::state_json_begin(buf, net::STATE_JSON_SIZE);
 
-    bool had_changes = state_->for_each_changed_and_clear(ws_serialize_entry, &ctx);
+    bool had_changes = state_->for_each_changed_and_clear(net::state_json_entry, &ctx);
 
     if (!had_changes) return;  // Нічого не змінилось — skip
 
-    if (ctx.failed || ctx.remaining() < 2) {
+    if (!net::state_json_end(ctx)) {
         // The change marks are cleared already: every client now misses these keys, and only a
         // reconnect with its fresh snapshot puts that right.
         ESP_LOGE(TAG, "Delta state exceeds serialization buffer");
         mark_all_lost();
         return;
     }
-    buf[ctx.pos++] = '}';
-    buf[ctx.pos] = '\0';
 
     ESP_LOGD(TAG, "Delta broadcast: %d bytes", (int)ctx.pos);
     send_to_all(buf, ctx.pos);
@@ -484,36 +416,29 @@ void WsService::send_full_state_to(int fd) {
         return;
     }
 
-    // Серіалізуємо повний state для нового клієнта (heap, не stack!)
-    static constexpr size_t BUF_SIZE = 81920;
-    char* buf = static_cast<char*>(heap_caps_malloc_prefer(
-        BUF_SIZE, 2, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT,
-                     MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+    // The httpd task's buffer, shared with GET /api/state: this runs in the httpd task too
+    // (on_handshake), one request at a time.
+    char* buf = net::state_json_buffer_httpd();
     if (!buf) {
         ESP_LOGW(TAG, "No memory for serialize buf to fd=%d", fd);
         mark_lost(fd);
         return;
     }
-
-    WsSerCtx ctx = {buf, BUF_SIZE, 0, true, false};
-    ctx.pos += snprintf(buf, BUF_SIZE, "{");
-
-    state_->for_each(ws_serialize_entry, &ctx);
-
-    if (ctx.failed || ctx.remaining() < 2) {
+    net::StateJson ctx = net::state_json_begin(buf, net::STATE_JSON_SIZE);
+    state_->for_each(net::state_json_entry, &ctx);
+    if (!net::state_json_end(ctx)) {
         ESP_LOGE(TAG, "Full state exceeds serialization buffer");
-        heap_caps_free(buf);
         mark_lost(fd);
         return;
     }
-    buf[ctx.pos++] = '}';
-    buf[ctx.pos] = '\0';
 
-    auto* send_ctx = static_cast<AsyncSendCtx*>(
-        malloc(sizeof(AsyncSendCtx) + ctx.pos));
+    // Queued, not sent from here: a delta queued before it must reach the client first. The
+    // copy goes to PSRAM where it can - lwIP copies it out - and keeps ~5 KB off internal RAM.
+    auto* send_ctx = static_cast<AsyncSendCtx*>(heap_caps_malloc_prefer(
+        sizeof(AsyncSendCtx) + ctx.pos, 2, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT,
+                                           MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
     if (!send_ctx) {
         ESP_LOGW(TAG, "No memory for initial state to fd=%d", fd);
-        heap_caps_free(buf);
         mark_lost(fd);
         return;
     }
@@ -523,7 +448,6 @@ void WsService::send_full_state_to(int fd) {
     send_ctx->type   = HTTPD_WS_TYPE_TEXT;
     send_ctx->len    = ctx.pos;
     memcpy(send_ctx->data, buf, ctx.pos);
-    heap_caps_free(buf);
 
     if (httpd_queue_work(server_, async_send_cb, send_ctx) != ESP_OK) {
         ESP_LOGW(TAG, "Queue full for initial state fd=%d", fd);

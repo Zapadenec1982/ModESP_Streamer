@@ -7,7 +7,8 @@ if(CONFIG_MODESP_NET_ENABLE)
          "src/wifi_service.cpp"
          "src/mdns_guard.cpp"
          "src/http_service.cpp"
-         "src/ws_service.cpp")
+         "src/ws_service.cpp"
+         "src/state_json.cpp")
 endif()
 
 set(net_reqs modesp_core modesp_services modesp_hal

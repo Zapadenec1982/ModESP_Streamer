@@ -40,6 +40,7 @@
 #include "jsmn.h"
 #include "jsmn_util.h"           // player-fork: span(), a value stepped over whole
 #include "modesp/net/json_escape.h"
+#include "modesp/net/state_json.h"
 
 #include <cstdio>
 #include <cstring>
@@ -244,33 +245,8 @@ static bool value_fits(const gen::StateMeta* meta, const jsmntok_t& tok, const c
     return val[0] == '-' || (val[0] >= '0' && val[0] <= '9');          // "int", "float"
 }
 
-// Context for SharedState serialization
-struct SerCtx {
-    char* buf;
-    size_t size;
-    size_t pos;
-    bool first;
-    bool failed;
-
-    size_t remaining() const { return (pos < size) ? size - pos : 0; }
-};
-
 /// Deliver a write to a command key to the module the manifest says owns it. Returns false
 /// when the key is an ordinary state key, and the caller stores it as before.
-/// A serialisation buffer, from PSRAM, allocated once and kept.
-///
-/// It has to be 8 KB now (a `long` value is up to 256 characters rather than the 63 the old
-/// escape buffer allowed), and 8 KB of internal .bss would come out of the internal RAM that
-/// DMA needs (docs/CONCEPT.md, "Board constraints"). Nothing here is DMA: the send copies out
-/// of it. Allocated on first use rather than per request, so a request never pays for an
-/// allocation, and never on the stack - the tasks that reach this have 8 KB of it.
-static char* json_scratch(size_t bytes) {
-    static char* p = static_cast<char*>(heap_caps_calloc_prefer(
-        1, bytes, 2, MALLOC_CAP_SPIRAM  | MALLOC_CAP_8BIT,
-                     MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
-    return p;
-}
-
 static bool post_if_command(modesp::ModuleManager* modules, const char* key, int32_t value) {
     const auto* cmd = gen::find_state_command(key);
     if (!cmd) return false;
@@ -288,73 +264,27 @@ static bool post_if_command(modesp::ModuleManager* modules, const char* key, int
     return true;
 }
 
-static void serialize_state_entry(const StateKey& key, const StateValue& value,
-                                  const char* text, void* ud) {
-    auto* ctx = static_cast<SerCtx*>(ud);
-    if (ctx->failed) return;
-
-    const char* sep = ctx->first ? "" : ",";
-    int n = -1;
-
-    if (etl::holds_alternative<float>(value)) {
-        n = snprintf(ctx->buf + ctx->pos, ctx->remaining(),
-                             "%s\"%s\":%.2f", sep, key.c_str(),
-                             static_cast<double>(etl::get<float>(value)));
-    } else if (etl::holds_alternative<int32_t>(value)) {
-        n = snprintf(ctx->buf + ctx->pos, ctx->remaining(),
-                             "%s\"%s\":%ld", sep, key.c_str(),
-                             (long)etl::get<int32_t>(value));
-    } else if (etl::holds_alternative<bool>(value)) {
-        n = snprintf(ctx->buf + ctx->pos, ctx->remaining(),
-                             "%s\"%s\":%s", sep, key.c_str(),
-                             etl::get<bool>(value) ? "true" : "false");
-    } else if (etl::holds_alternative<StringValue>(value)) {
-        // AUDIT-004: ескейпимо string значення для коректного JSON
-        // From `text`, not from the variant: for a long key the variant holds the inline
-        // prefix only. The buffer is the side table's capacity plus room for the escapes,
-        // so a track path reaches the browser whole — it used to stop at 63 characters.
-        char escaped[net::json_escaped_capacity(MODESP_MAX_LONG_STRING_LENGTH)];
-        if (!net::json_escape(escaped, sizeof(escaped), text ? text : "")) {
-            ctx->failed = true;
-            return;
-        }
-        n = snprintf(ctx->buf + ctx->pos, ctx->remaining(),
-                             "%s\"%s\":\"%s\"", sep, key.c_str(), escaped);
-    }
-    if (n < 0 || static_cast<size_t>(n) >= ctx->remaining()) ctx->failed = true;
-    else { ctx->pos += static_cast<size_t>(n); ctx->first = false; }
-}
-
 // ── API Handlers ────────────────────────────────────────────────
 
 esp_err_t HttpService::handle_get_state(httpd_req_t* req) {
     if (!check_auth(req)) return ESP_OK;
     auto* self = static_cast<HttpService*>(req->user_ctx);
 
-    // Room for every declared long value even when every byte needs six JSON bytes,
-    // plus the short keys. Overflow is still an explicit 500, never partial JSON.
-    // The HTTP server has one task; json_scratch() keeps this buffer in PSRAM.
-    constexpr size_t BUF_SIZE = 81920;
-    char* buf = json_scratch(BUF_SIZE);
+    char* buf = net::state_json_buffer_httpd();
     if (!buf) {
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Out of memory");
         return ESP_FAIL;
     }
-    SerCtx ctx = {buf, BUF_SIZE, 0, true, false};
-    ctx.pos += snprintf(buf, BUF_SIZE, "{");
-
-    self->state_->for_each(serialize_state_entry, &ctx);
-
-    if (ctx.failed || ctx.remaining() < 2) {
+    net::StateJson ctx = net::state_json_begin(buf, net::STATE_JSON_SIZE);
+    self->state_->for_each(net::state_json_entry, &ctx);
+    if (!net::state_json_end(ctx)) {
         // Say so rather than send half an object: whoever added the key that overflowed it
         // needs to see this line, not a JSON error in a browser console.
         ESP_LOGE(TAG, "GET /api/state: %u keys did not fit %u bytes",
-                 (unsigned)self->state_->size(), (unsigned)BUF_SIZE);
+                 (unsigned)self->state_->size(), (unsigned)net::STATE_JSON_SIZE);
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "state too large");
         return ESP_FAIL;
     }
-    buf[ctx.pos++] = '}';
-    buf[ctx.pos] = '\0';
 
     set_cors_headers(req);
     httpd_resp_set_type(req, "application/json");
@@ -1068,22 +998,25 @@ esp_err_t HttpService::handle_get_wifi_scan(httpd_req_t* req) {
     // Serialize to JSON.
     // player-fork: twenty names escaped (up to six bytes for one) do not fit the 2 KB this had,
     // and a name with " in it broke the whole list, so the names are escaped and every entry
-    // goes in whole or not at all. Static: the server runs one handler at a time, and this is
-    // more than its stack should carry.
-    static char buf[64 + WiFiService::MAX_SCAN_RESULTS * (net::json_escaped_capacity(32) + 48)];
-    size_t pos = (size_t)snprintf(buf, sizeof(buf), "{\"ok\":true,\"networks\":[");
+    // goes in whole or not at all. In PSRAM (http_routes::scratch()): more than the stack
+    // should carry, and more than internal RAM should keep for a page opened now and then.
+    constexpr size_t BUF_SIZE = 64 + WiFiService::MAX_SCAN_RESULTS * (net::json_escaped_capacity(32) + 48);
+    static char* buf_slot = nullptr;
+    char* buf = http_routes::scratch(buf_slot, BUF_SIZE);
+    if (!buf) return http_routes::send_json(req, "503 Service Unavailable", "{\"error\":\"no_memory\"}");
+    size_t pos = (size_t)snprintf(buf, BUF_SIZE, "{\"ok\":true,\"networks\":[");
 
     for (int i = 0; i < count; i++) {
         char ssid[net::json_escaped_capacity(sizeof(results[i].ssid) - 1)];
         if (!net::json_escape(ssid, sizeof(ssid), results[i].ssid)) continue;
-        const size_t room = sizeof(buf) - pos - 3;          // "]}" and the NUL stay free
+        const size_t room = BUF_SIZE - pos - 3;             // "]}" and the NUL stay free
         const int w = snprintf(buf + pos, room, "%s{\"ssid\":\"%s\",\"rssi\":%d,\"auth\":\"%s\"}",
                                i == 0 ? "" : ",", ssid, results[i].rssi,
                                wifi_auth_name(results[i].authmode));
         if (w < 0 || (size_t)w >= room) break;
         pos += (size_t)w;
     }
-    pos += (size_t)snprintf(buf + pos, sizeof(buf) - pos, "]}");
+    pos += (size_t)snprintf(buf + pos, BUF_SIZE - pos, "]}");
 
     set_cors_headers(req);
     httpd_resp_set_type(req, "application/json");

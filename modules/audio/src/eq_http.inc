@@ -24,9 +24,11 @@ esp_err_t eq_get(httpd_req_t* req) {
     audio_core::EqStore& st = audio_core::eq_store();
     if (!st.loaded()) return send_json(req, "503 Service Unavailable", "{\"error\":\"not_loaded\"}");
     static audio_core::EqDoc doc;
-    static char json[EQ_HTTP_MAX];
+    static char* json_slot = nullptr;       // PSRAM, kept (http_routes::scratch())
+    char* json = modesp::http_routes::scratch(json_slot, EQ_HTTP_MAX);
+    if (!json) return send_json(req, "503 Service Unavailable", "{\"error\":\"no_memory\"}");
     const uint32_t rev = st.get(doc);
-    if (!audio_core::eq_web_json(doc, rev, audio_core::fs_hz(), json, sizeof(json))) {
+    if (!audio_core::eq_web_json(doc, rev, audio_core::fs_hz(), json, EQ_HTTP_MAX)) {
         return send_json(req, "500 Internal Server Error", "{\"error\":\"too_large\"}");
     }
     return send_json(req, "200 OK", json);
@@ -39,7 +41,9 @@ esp_err_t eq_post(httpd_req_t* req) {
     if (req->content_len <= 0 || (size_t)req->content_len >= EQ_HTTP_MAX) {
         return send_json(req, "413 Content Too Large", "{\"error\":\"size\"}");
     }
-    static char body[EQ_HTTP_MAX];
+    static char* body_slot = nullptr;       // PSRAM, kept (http_routes::scratch())
+    char* body = modesp::http_routes::scratch(body_slot, EQ_HTTP_MAX);
+    if (!body) return send_json(req, "503 Service Unavailable", "{\"error\":\"no_memory\"}");
     if (!modesp::http_routes::read_body(req, body)) return ESP_FAIL;
     const size_t got = req->content_len;
 
