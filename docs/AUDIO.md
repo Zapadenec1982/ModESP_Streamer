@@ -452,7 +452,7 @@ For ported speakers. Web: the port calibration page (address `system/service/cal
 (`webui/src/pages/speakers/Wizard.svelte`). Only a person saves what was found ("Apply" /
 "Accept" / "Save"): `audio.port_hz` (30…80), `audio.port_src` and `audio.spk_type` = 1.
 
-**With the panel's microphone** (`audio.port_meas` = true, ~45 s; task `port_meter`, core 0):
+**With the streamer's microphone** (`audio.port_meas` = true, ~45 s; task `port_meter`, core 0):
 
 1. The microphone is at the panel's top edge. That edge is 0.5–1 cm from the centre of one
    speaker's large driver, not touching; better with the grille off; the room quiet.

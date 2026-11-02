@@ -621,12 +621,12 @@ DLNA, має картку треку) — це обличчя станції з�
 шукають власний код):
 
 - повідомлення браузера про обрив (`Failed to fetch` і відповідники Firefox і Safari,
-  `Connection error` завантаження) → «Немає зв'язку з панеллю» (`app.error`);
+  `Connection error` завантаження) → «Немає зв'язку зі стрімером» (`app.error`);
 - слова статусу `lib/api.js` (`Bad request`, `Invalid value`, `Not found`, `Too large`,
   `Server error`) і коди панелі `{"error": code}` (`busy`, `LVGL busy`, `no_memory`, `too_large`,
   `size`, `bad_request`, `write`) → `err.*` і `common.no_memory`;
-- інший код або HTTP-статус без слова → «Панель відповіла: {code}» (`err.code`), 503 →
-  «Панель зайнята — спробуйте за мить» (`err.busy`);
+- інший код або HTTP-статус без слова → «Стрімер відповів: {code}» (`err.code`), 503 →
+  «Стрімер зайнятий — спробуйте за мить» (`err.busy`);
 - текст, який сторінка вже дала словами, — як є.
 
 **Довгий хвіст.** Згенеровані сторінки `ui.json` окремо не показуються. `lib/longtail.js` веде три

@@ -636,12 +636,12 @@ panel's login is locked (`429` for 30 s after five wrong attempts), the login sa
 response for pages that look for a code of their own):
 
 - the browser's message about a dropped connection (`Failed to fetch` and its Firefox and Safari
-  equivalents, the upload's `Connection error`) → "Cannot reach the panel" (`app.error`);
+  equivalents, the upload's `Connection error`) → "Cannot reach the streamer" (`app.error`);
 - the `lib/api.js` status words (`Bad request`, `Invalid value`, `Not found`, `Too large`,
   `Server error`) and the panel's codes `{"error": code}` (`busy`, `LVGL busy`, `no_memory`,
   `too_large`, `size`, `bad_request`, `write`) → `err.*` and `common.no_memory`;
-- any other code, or an HTTP status without a word → "The panel answered: {code}" (`err.code`),
-  503 → "The panel is busy — try again in a moment" (`err.busy`);
+- any other code, or an HTTP status without a word → "The streamer answered: {code}" (`err.code`),
+  503 → "The streamer is busy — try again in a moment" (`err.busy`);
 - a text the page has already put into words — shown as is.
 
 **The long tail.** The generated `ui.json` pages are not shown as such. `lib/longtail.js` keeps three
