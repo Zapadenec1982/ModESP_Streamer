@@ -99,6 +99,19 @@ CONFIG_EH_HOST_PORT_DMA_PREFER_SPIRAM=y
 # ── BLE stays off (hosted HCI to the C6 is a later stage) ──
 CONFIG_MODESP_BLE_ENABLE=n
 
+# ── What the player does not use, out of the build ──
+# The ModESP framework's board/devices/modules/journal/scanner routes: no registry, no journal
+# source, no bus discovery here (docs/NETWORK.md, "REST API").
+CONFIG_MODESP_HTTP_FRAMEWORK_ROUTES=n
+# MQTT reaches its broker over mqtt:// or mqtts://, never over a WebSocket.
+CONFIG_MQTT_TRANSPORT_WEBSOCKET=n
+CONFIG_MQTT_TRANSPORT_WEBSOCKET_SECURE=n
+# mDNS only announces the panel (its name, AirPlay, the web): nothing browses, and there is no
+# console. Its records go to PSRAM, off the internal RAM the Wi-Fi link needs.
+CONFIG_MDNS_ENABLE_CONSOLE_CLI=n
+CONFIG_MDNS_ENABLE_BROWSE=n
+CONFIG_MDNS_MEMORY_ALLOC_SPIRAM=y
+
 # ── LVGL 9 UI (modules/ui_lvgl) ──
 # LVGL's own examples and demos are built into every image because nothing overrides the
 # component's defaults (both default to y outside LV_CONF_MINIMAL, and neither appeared in

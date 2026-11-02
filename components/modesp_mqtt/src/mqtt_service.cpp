@@ -856,12 +856,6 @@ void MqttService::set_cors_headers(httpd_req_t* req) {
     httpd_resp_set_hdr(req, "Access-Control-Allow-Headers", "Content-Type, Authorization");
 }
 
-esp_err_t MqttService::handle_options(httpd_req_t* req) {
-    set_cors_headers(req);
-    httpd_resp_send(req, nullptr, 0);
-    return ESP_OK;
-}
-
 void MqttService::set_http_server(httpd_handle_t server) {
     if (server_ == server && http_registered_) return;
     server_ = server;
@@ -886,14 +880,6 @@ void MqttService::register_http_handlers() {
     post_mqtt.handler  = handle_post_mqtt;
     post_mqtt.user_ctx = this;
     httpd_register_uri_handler(server_, &post_mqtt);
-
-    // OPTIONS для CORS preflight
-    httpd_uri_t options = {};
-    options.uri      = "/api/mqtt";
-    options.method   = HTTP_OPTIONS;
-    options.handler  = handle_options;
-    options.user_ctx = this;
-    httpd_register_uri_handler(server_, &options);
 
     http_registered_ = true;
     ESP_LOGI(TAG, "HTTP handlers registered (GET/POST /api/mqtt)");

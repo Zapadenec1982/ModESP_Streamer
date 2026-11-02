@@ -251,8 +251,8 @@ HTTP Basic, realm `ModESP`. NVS namespace `auth`: `user`, `pass`, `enabled`; def
 - Development builds: `CONFIG_UI_SCREENSHOT_OPEN` (default `n`) removes the login from
   `/api/screenshot`, `/api/ui/frames`, `/api/i18n/overflow`; `CONFIG_UI_SCROLL_BENCH` (default `n`)
   adds `/api/ui/scrollbench` without login. Both log a WARN about themselves at every boot.
-- CORS: there is no `Access-Control-Allow-Origin` header — a page from another origin cannot read
-  the response; `OPTIONS` on the framework routes answers empty.
+- CORS: there is no `Access-Control-Allow-Origin` header and no `OPTIONS` route — a page from
+  another origin cannot read a response, and a preflight it needs for a JSON POST fails.
 - The web keeps the credentials in the tab's `sessionStorage` and asks for them on `401`.
 
 `POST /api/auth`: `{"username","enabled","current_pass","new_pass","reset"}`. `new_pass` (4–63
@@ -280,20 +280,21 @@ Framework routes (`http_service.cpp`):
 |---|---|
 | `GET /api/state` | the whole SharedState as one JSON object (80 KB buffer in PSRAM; does not fit — 500) |
 | `POST /api/settings` | `{key: value,…}`: only known writable keys from `generated/state_meta.h`, each with a value of its manifest type (a string, a number, `true`/`false`) — anything else is refused, and the request gets `400` when nothing in it was taken; a number outside the manifest's range is clamped with a WARN in the log; a command key (`"command": true`) goes to the owning module's queue, not to the store. Body ≤ 1023 B, up to 15 pairs |
-| `GET /api/ui` | `ui.json` |
-| `GET /api/board`, `GET`/`POST /api/bindings`, `GET`/`POST /api/devices`, `GET /api/modules` | ModESP board and module configuration |
+| `GET /api/ui` | `ui.json` gzip-encoded: the build packs `data/ui.json.gz` beside it (~12 KB for ~86 KB); `ETag`, `304` |
+| `GET`/`POST /api/bindings` | the board's bindings |
+| `GET /api/board`, `GET`/`POST /api/devices`, `GET /api/modules` | ModESP board, device registry and modules — only with `CONFIG_MODESP_HTTP_FRAMEWORK_ROUTES` (`n` on the player) |
 | `POST /api/wifi` | `{"ssid","password"}`, SSID 1–32 bytes, password ≤ 64 (otherwise `400`) — save only (takes effect after a restart); with `"join":true` — `try_connect()` (`409 {"error":"busy"}` during another attempt); `{"forget":true}` — forget the network, access point. Body ≤ 255 B |
 | `GET /api/wifi/scan` | `{"ok","networks":[{"ssid","rssi","auth"}]}` |
 | `GET`/`POST /api/wifi/ap` | `{"ssid","channel","password_set"}` / `{"ssid","password","channel"}`: SSID 1–32 bytes, password empty or 8–63; takes effect after a restart |
 | `GET`/`POST /api/time` | `{"time","date","ntp_enabled","timezone","synced","unix"}` / `{"mode":"ntp"\|"manual","time":<unix>,"timezone"}` |
 | `GET`/`POST /api/auth` | `{"enabled","username"}` / see "Authentication" |
 | `GET`/`POST /api/loglevel` | log levels: `{"tag","level"}`, `level` — `none`, `error`, `warn` or `info`, not above the build's ceiling (INFO); not persisted |
-| `GET /api/log`, `GET /api/log/summary` | ModESP journal history; `project.json` has no source module, so the response is 500 |
+| `GET /api/log`, `GET /api/log/summary` | ModESP journal history — only with `CONFIG_MODESP_HTTP_FRAMEWORK_ROUTES`; the player has no journal source |
 | `GET /api/backup`, `POST /api/restore` | persist keys (numbers and bool), `{"modesp_backup":1,"keys":{…}}`, ≤ 2 KB; a restore skips a key that is not a persist key or whose value is not of its manifest type, answers `{"ok":true,"restored":N,"skipped":M}` and restarts the panel |
 | `POST /api/restart` | saving settings, stopping the modules in the main loop (≤ 2 s), restart |
 | `POST /api/factory-reset` | erases NVS (Wi-Fi, login, settings, AirPlay keys) and restarts; does not touch the `userdata` partition |
 | `GET`/`POST /api/ota` | see "OTA" |
-| `GET /api/onewire/scan`, `GET /api/drivers/scan`, `GET /api/ble/scan` | ModESP bus scanners |
+| `GET /api/onewire/scan`, `GET /api/drivers/scan`, `GET /api/ble/scan` | ModESP bus scanners — only with `CONFIG_MODESP_HTTP_FRAMEWORK_ROUTES` |
 
 Module routes (`http_routes`):
 

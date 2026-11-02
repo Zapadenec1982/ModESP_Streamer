@@ -247,8 +247,8 @@ HTTP Basic, realm `ModESP`. NVS-простір `auth`: `user`, `pass`, `enabled`
 - Збірки для розробки: `CONFIG_UI_SCREENSHOT_OPEN` (типово `n`) знімає логін з `/api/screenshot`,
   `/api/ui/frames`, `/api/i18n/overflow`; `CONFIG_UI_SCROLL_BENCH` (типово `n`) додає
   `/api/ui/scrollbench` без логіну. Обидва пишуть про себе WARN на кожному старті.
-- CORS: заголовка `Access-Control-Allow-Origin` немає — сторінка з іншого origin відповіді не
-  прочитає; `OPTIONS` на маршрути фреймворку відповідає порожньо.
+- CORS: заголовка `Access-Control-Allow-Origin` і маршрутів `OPTIONS` немає — сторінка з іншого
+  origin не прочитає відповіді, а preflight, потрібний їй для JSON POST, не пройде.
 - Веб тримає облікові дані в `sessionStorage` вкладки і питає їх на `401`.
 
 `POST /api/auth`: `{"username","enabled","current_pass","new_pass","reset"}`. `new_pass` (4–63
@@ -276,20 +276,21 @@ HTTP Basic, realm `ModESP`. NVS-простір `auth`: `user`, `pass`, `enabled`
 |---|---|
 | `GET /api/state` | увесь SharedState одним JSON-об'єктом (буфер 80 КБ у PSRAM; не вмістився — 500) |
 | `POST /api/settings` | `{ключ: значення,…}`: лише відомі writable-ключі з `generated/state_meta.h`, кожен зі значенням свого типу з маніфесту (рядок, число, `true`/`false`) — решта відхиляється, а запит отримує `400`, коли з нього не взято нічого; число поза діапазоном маніфесту обрізається з WARN у лозі; command-ключ (`"command": true`) іде в чергу модуля-власника, не в сховище. Тіло ≤ 1023 Б, до 15 пар |
-| `GET /api/ui` | `ui.json` |
-| `GET /api/board`, `GET`/`POST /api/bindings`, `GET`/`POST /api/devices`, `GET /api/modules` | конфігурація плати й модулів ModESP |
+| `GET /api/ui` | `ui.json` у gzip: збірка пакує `data/ui.json.gz` поряд (~12 КБ замість ~86 КБ); `ETag`, `304` |
+| `GET`/`POST /api/bindings` | прив'язки плати |
+| `GET /api/board`, `GET`/`POST /api/devices`, `GET /api/modules` | плата, реєстр пристроїв і модулі ModESP — лише з `CONFIG_MODESP_HTTP_FRAMEWORK_ROUTES` (у плеєрі `n`) |
 | `POST /api/wifi` | `{"ssid","password"}`, SSID 1–32 байти, пароль ≤ 64 (інакше `400`) — лише зберегти (діє після перезапуску); з `"join":true` — `try_connect()` (`409 {"error":"busy"}` під час іншої спроби); `{"forget":true}` — забути мережу, точка доступу. Тіло ≤ 255 Б |
 | `GET /api/wifi/scan` | `{"ok","networks":[{"ssid","rssi","auth"}]}` |
 | `GET`/`POST /api/wifi/ap` | `{"ssid","channel","password_set"}` / `{"ssid","password","channel"}`: SSID 1–32 байти, пароль порожній або 8–63; діє після перезапуску |
 | `GET`/`POST /api/time` | `{"time","date","ntp_enabled","timezone","synced","unix"}` / `{"mode":"ntp"\|"manual","time":<unix>,"timezone"}` |
 | `GET`/`POST /api/auth` | `{"enabled","username"}` / див. «Автентифікація» |
 | `GET`/`POST /api/loglevel` | рівні логів: `{"tag","level"}`, `level` — `none`, `error`, `warn` або `info`, не вище стелі збірки (INFO); не зберігається |
-| `GET /api/log`, `GET /api/log/summary` | історія журналу ModESP; у `project.json` немає модуля-джерела, тож відповідь — 500 |
+| `GET /api/log`, `GET /api/log/summary` | історія журналу ModESP — лише з `CONFIG_MODESP_HTTP_FRAMEWORK_ROUTES`; у плеєра немає джерела журналу |
 | `GET /api/backup`, `POST /api/restore` | persist-ключі (числа й bool), `{"modesp_backup":1,"keys":{…}}`, ≤ 2 КБ; відновлення пропускає ключ, що не є persist-ключем або чиє значення не має типу з маніфесту, відповідає `{"ok":true,"restored":N,"skipped":M}` і перезапускає панель |
 | `POST /api/restart` | запис налаштувань, зупинка модулів у головному циклі (≤ 2 с), перезапуск |
 | `POST /api/factory-reset` | стирає NVS (Wi-Fi, логін, налаштування, ключі AirPlay) і перезапускає; розділ `userdata` не чіпає |
 | `GET`/`POST /api/ota` | див. «OTA» |
-| `GET /api/onewire/scan`, `GET /api/drivers/scan`, `GET /api/ble/scan` | сканери шин ModESP |
+| `GET /api/onewire/scan`, `GET /api/drivers/scan`, `GET /api/ble/scan` | сканери шин ModESP — лише з `CONFIG_MODESP_HTTP_FRAMEWORK_ROUTES` |
 
 Маршрути модулів (`http_routes`):
 

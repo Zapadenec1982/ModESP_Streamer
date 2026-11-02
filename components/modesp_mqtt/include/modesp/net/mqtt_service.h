@@ -130,7 +130,6 @@ private:
     // HTTP handlers
     static esp_err_t handle_get_mqtt(httpd_req_t* req);
     static esp_err_t handle_post_mqtt(httpd_req_t* req);
-    static esp_err_t handle_options(httpd_req_t* req);
     static void set_cors_headers(httpd_req_t* req);
 };
 

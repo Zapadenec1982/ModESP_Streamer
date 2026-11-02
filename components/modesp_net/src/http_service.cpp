@@ -214,12 +214,6 @@ void HttpService::set_cors_headers(httpd_req_t* req) {
     (void)req;
 }
 
-esp_err_t HttpService::handle_options(httpd_req_t* req) {
-    set_cors_headers(req);
-    httpd_resp_send(req, nullptr, 0);
-    return ESP_OK;
-}
-
 // Helper: read a file from LittleFS into buffer, return bytes read or -1
 static int read_file_to_buf(const char* path, char* buf, size_t buf_size) {
     FILE* f = fopen(path, "r");
@@ -368,6 +362,7 @@ esp_err_t HttpService::handle_get_state(httpd_req_t* req) {
     return ESP_OK;
 }
 
+#if CONFIG_MODESP_HTTP_FRAMEWORK_ROUTES   // the ModESP framework's routes (Kconfig)
 esp_err_t HttpService::handle_get_board(httpd_req_t* req) {
     if (!check_auth(req)) return ESP_OK;
     FILE* f = fopen("/data/board.json", "rb");
@@ -400,6 +395,7 @@ esp_err_t HttpService::handle_get_board(httpd_req_t* req) {
     heap_caps_free(buf);
     return rc;
 }
+#endif  // CONFIG_MODESP_HTTP_FRAMEWORK_ROUTES
 
 // ── Files from the data partition ───────────────────────────────
 //
@@ -615,6 +611,7 @@ esp_err_t HttpService::handle_post_bindings(httpd_req_t* req) {
     return ESP_OK;
 }
 
+#if CONFIG_MODESP_HTTP_FRAMEWORK_ROUTES   // the ModESP framework's routes (Kconfig)
 // Runtime device registry (/data/devices.json). User-subscribed remote devices (BLE by MAC
 // today; transport-generic) — the runtime-writable sibling of board.json remote_devices. GET/POST
 // mirror the bindings handlers; ConfigService merges the file into the device inventory at boot
@@ -747,8 +744,10 @@ esp_err_t HttpService::handle_post_devices(httpd_req_t* req) {
     httpd_resp_sendstr(req, "{\"ok\":true,\"needs_restart\":true}");
     return ESP_OK;
 }
+#endif  // CONFIG_MODESP_HTTP_FRAMEWORK_ROUTES
 
 // Callback context for module serialization
+#if CONFIG_MODESP_HTTP_FRAMEWORK_ROUTES   // the ModESP framework's routes (Kconfig)
 struct ModSerCtx {
     char* buf;
     size_t size;
@@ -800,6 +799,7 @@ esp_err_t HttpService::handle_get_modules(httpd_req_t* req) {
     httpd_resp_send(req, buf, (ssize_t)ctx.pos);
     return ESP_OK;
 }
+#endif  // CONFIG_MODESP_HTTP_FRAMEWORK_ROUTES
 
 esp_err_t HttpService::handle_post_settings(httpd_req_t* req) {
     if (!check_auth(req)) return ESP_OK;
@@ -1779,6 +1779,7 @@ esp_err_t HttpService::handle_post_time(httpd_req_t* req) {
     return ESP_OK;
 }
 
+#if CONFIG_MODESP_HTTP_FRAMEWORK_ROUTES   // the ModESP framework's routes (Kconfig)
 // ── OneWire Scan Handler ────────────────────────────────────────
 
 esp_err_t HttpService::handle_get_ow_scan(httpd_req_t* req) {
@@ -2012,6 +2013,7 @@ esp_err_t HttpService::handle_get_log_summary(httpd_req_t* req) {
     httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Serialize failed");
     return ESP_FAIL;
 }
+#endif  // CONFIG_MODESP_HTTP_FRAMEWORK_ROUTES
 
 // ── Runtime log verbosity ───────────────────────────────────────
 //
@@ -2348,13 +2350,15 @@ void HttpService::register_api_handlers() {
         esp_err_t (*handler)(httpd_req_t*);
     } endpoints[] = {
         {"/api/state",    HTTP_GET,  handle_get_state},
-        {"/api/board",    HTTP_GET,  handle_get_board},
         {"/api/ui",       HTTP_GET,  handle_get_ui},
         {"/api/bindings", HTTP_GET,  handle_get_bindings},
         {"/api/bindings", HTTP_POST, handle_post_bindings},
+#if CONFIG_MODESP_HTTP_FRAMEWORK_ROUTES
+        {"/api/board",    HTTP_GET,  handle_get_board},
         {"/api/devices",  HTTP_GET,  handle_get_devices},
         {"/api/devices",  HTTP_POST, handle_post_devices},
         {"/api/modules",  HTTP_GET,  handle_get_modules},
+#endif
         {"/api/settings",   HTTP_POST, handle_post_settings},
         {"/api/wifi",       HTTP_POST, handle_post_wifi},
         {"/api/wifi/scan",  HTTP_GET,  handle_get_wifi_scan},
@@ -2367,11 +2371,13 @@ void HttpService::register_api_handlers() {
         {"/api/ota",        HTTP_GET,  handle_get_ota},
         {"/api/time",       HTTP_GET,  handle_get_time},
         {"/api/time",       HTTP_POST, handle_post_time},
+#if CONFIG_MODESP_HTTP_FRAMEWORK_ROUTES
         {"/api/onewire/scan", HTTP_GET, handle_get_ow_scan},   // legacy alias
         {"/api/drivers/scan", HTTP_GET, handle_get_ow_scan},   // generic: ?driver=<type>&bus=<hw>  (OneWire ROM discovery)
         {"/api/ble/scan",     HTTP_GET, handle_get_ble_scan},  // unified BLE scan: all identified nearby devices + readings
         {"/api/log",         HTTP_GET, handle_get_log},
         {"/api/log/summary", HTTP_GET, handle_get_log_summary},
+#endif
         {"/api/auth", HTTP_GET,  handle_get_auth},
         {"/api/auth", HTTP_POST, handle_post_auth},
         // The panel ships quiet. This is how it is made to talk again
@@ -2380,45 +2386,27 @@ void HttpService::register_api_handlers() {
         {"/api/loglevel", HTTP_POST, handle_post_loglevel},
     };
 
-    // Реєструємо handlers + OPTIONS для CORS preflight
-    // Використовуємо масив для відстеження URI, де OPTIONS вже зареєстрований
-    const char* options_registered[24] = {};
-    int options_count = 0;
-
+    // No OPTIONS routes: the web is served from the panel itself, and a cross-site preflight
+    // must fail (check_auth(), the POST content types).
     for (auto& ep : endpoints) {
         httpd_uri_t uri_handler = {};
         uri_handler.uri      = ep.uri;
         uri_handler.method   = ep.method;
         uri_handler.handler  = ep.handler;
         uri_handler.user_ctx = this;
-        httpd_register_uri_handler(server_, &uri_handler);
-
-        // OPTIONS для CORS — лише один раз per URI
-        bool already = false;
-        for (int j = 0; j < options_count; j++) {
-            if (strcmp(options_registered[j], ep.uri) == 0) {
-                already = true;
-                break;
-            }
-        }
-        if (!already && options_count < 16) {
-            httpd_uri_t options = {};
-            options.uri      = ep.uri;
-            options.method   = HTTP_OPTIONS;
-            options.handler  = handle_options;
-            options.user_ctx = this;
-            httpd_register_uri_handler(server_, &options);
-            options_registered[options_count++] = ep.uri;
+        if (httpd_register_uri_handler(server_, &uri_handler) != ESP_OK) {
+            ESP_LOGE(TAG, "route %s not registered: max_uri_handlers too small?", ep.uri);
         }
     }
 
-    // OTA POST registered separately (OPTIONS вже від GET /api/ota)
     httpd_uri_t ota_post = {};
     ota_post.uri      = "/api/ota";
     ota_post.method   = HTTP_POST;
     ota_post.handler  = handle_post_ota;
     ota_post.user_ctx = this;
-    httpd_register_uri_handler(server_, &ota_post);
+    if (httpd_register_uri_handler(server_, &ota_post) != ESP_OK) {
+        ESP_LOGE(TAG, "route /api/ota POST not registered: max_uri_handlers too small?");
+    }
 
     ESP_LOGI(TAG, "API handlers registered (%d endpoints + OTA upload)",
              (int)(sizeof(endpoints) / sizeof(endpoints[0])));

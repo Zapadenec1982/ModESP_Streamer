@@ -128,7 +128,6 @@ private:
     static esp_err_t handle_static(httpd_req_t* req);
 
     // CORS
-    static esp_err_t handle_options(httpd_req_t* req);
     static void set_cors_headers(httpd_req_t* req);
 };
 

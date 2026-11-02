@@ -26,6 +26,18 @@ menu "ModESP Network"
             otherwise not leave through the hosted interface. Harmless on
             targets with native Wi-Fi.
 
+    config MODESP_HTTP_FRAMEWORK_ROUTES
+        bool "ModESP framework routes: board, devices, modules, journal, bus scanners"
+        depends on MODESP_NET_ENABLE
+        default y
+        help
+            GET /api/board, GET/POST /api/devices, GET /api/modules, GET /api/log
+            and /api/log/summary, and the OneWire and BLE scanners
+            (/api/onewire/scan, /api/drivers/scan, /api/ble/scan). A product with
+            no device registry, no journal source and no bus discovery turns them
+            off: it keeps their eight handler slots and the devices routes' two
+            4 KB static buffers.
+
     config MODESP_HTTPD_MAX_OPEN_SOCKETS
         int "HTTP server sessions, WebSocket and HTTP together"
         depends on MODESP_NET_ENABLE
