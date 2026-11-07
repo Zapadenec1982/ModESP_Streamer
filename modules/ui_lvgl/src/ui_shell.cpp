@@ -468,8 +468,9 @@ constexpr int32_t SB_SPEC_BASE = uig::SCR_H - 24;
 constexpr int32_t SB_SPEC_H    = 180;
 /// 23 px a band and 12 of it bar: 28 bands come to 633 px, the nearest the pitch gets to the
 /// window without bars of two widths. Otherwise the Player's row exactly — no peak caps, which
-/// were tried and dropped so the spectrum looks the same wherever it is.
-constexpr uih::SpecStyle SB_SPEC = {23, 12};
+/// were tried and dropped so the spectrum looks the same wherever it is. Bars move in pairs:
+/// four at this pitch would be 81 px, a width the PPA takes in stripes (SpecStyle).
+constexpr uih::SpecStyle SB_SPEC = {23, 12, 2};
 constexpr int32_t SB_SPEC_X = (uig::SCR_W - uih::spec_drawn_w(SB_SPEC)) / 2;
 static_assert(uih::spec_drawn_w(SB_SPEC) <= SB_WIN_W, "the spectrum fits the window");
 /// How fast the line runs, px/s. Set per text rather than left to LVGL, whose default caps a

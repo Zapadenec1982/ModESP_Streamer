@@ -21,6 +21,11 @@
  *
  * The HTTP task waits out the run, so the web UI's other requests wait with it, as they do for
  * the bench. Behind the web UI's login like /api/screenshot (open on a bench build the same way).
+ *
+ * Bench builds (CONFIG_UI_SCROLL_BENCH) take `whole=<0|1>` before the run, kept until changed:
+ * the spectrum row repainted whole on every move (uih::spectrum_whole), the way it was before,
+ * so old and new can be timed against each other in one session. `ms=0` sets it and answers at
+ * once.
  */
 
 #include "ui_frame_meter.h"
@@ -132,12 +137,17 @@ esp_err_t handle_frames(httpd_req_t* req) {
 #endif
     int32_t ms = 5000;
     bool plain = false;
-    char query[48];
+    int32_t whole = -1;                      // bench setting, -1: leave as it is
+    char query[64];
     if (httpd_req_get_url_query_str(req, query, sizeof(query)) == ESP_OK) {
         char v[12];
         if (httpd_query_key_value(query, "ms", v, sizeof(v)) == ESP_OK) ms = atoi(v);
         if (httpd_query_key_value(query, "plain", v, sizeof(v)) == ESP_OK) plain = atoi(v) != 0;
+#if CONFIG_UI_SCROLL_BENCH
+        if (httpd_query_key_value(query, "whole", v, sizeof(v)) == ESP_OK) whole = atoi(v) != 0;
+#endif
     }
+    const bool settle_only = ms == 0 && whole >= 0;
     if (ms < 1000) ms = 1000; else if (ms > 20000) ms = 20000;
     if (s_busy.exchange(true)) return send_json(req, "409 Conflict", "{\"error\":\"a run is in progress\"}");
 
@@ -146,6 +156,16 @@ esp_err_t handle_frames(httpd_req_t* req) {
         return send_json(req, "503 Service Unavailable", "{\"error\":\"LVGL busy\"}");
     }
     lv_display_t* disp = lv_display_get_default();
+    if (whole >= 0) uih::spectrum_whole(whole != 0);
+    if (settle_only) {
+        // Everything on the glass again, drawn the new way, before anything is timed.
+        if (disp) lv_obj_invalidate(lv_display_get_screen_active(disp));
+        lvgl_port_unlock();
+        s_busy.store(false);
+        char body[32];
+        snprintf(body, sizeof(body), "{\"whole\":%s}", uih::spectrum_whole() ? "true" : "false");
+        return send_json(req, "200 OK", body);
+    }
     if (!s_hooked && disp) {
         for (lv_event_code_t code : {LV_EVENT_REFR_START, LV_EVENT_REFR_READY, LV_EVENT_FLUSH_START,
                                      LV_EVENT_FLUSH_FINISH, LV_EVENT_FLUSH_WAIT_START, LV_EVENT_FLUSH_WAIT_FINISH})
@@ -179,11 +199,13 @@ esp_err_t handle_frames(httpd_req_t* req) {
     snprintf(body, sizeof(body),
              "{\"screen\":\"%s\",\"plain\":%s,\"cover\":%s,\"ms\":%ld,\"frames\":%lu,\"refreshes\":%lu,"
              "\"fps\":%.1f,\"frame_ms\":{\"avg\":%.2f,\"p95\":%lu,\"max\":%.2f},"
-             "\"render_ms_avg\":%.2f,\"flush_ms_avg\":%.2f,\"wait_ms_avg\":%.2f}",
+             "\"render_ms_avg\":%.2f,\"flush_ms_avg\":%.2f,\"wait_ms_avg\":%.2f,"
+             "\"whole\":%s}",
              screen, plain ? "true" : "false", cover ? "true" : "false", (long)ms,
              (unsigned long)r.frame.n, (unsigned long)r.refreshes, r.frame.n / secs,
              r.frame.avg_ms(), (unsigned long)p95_ms(r.hist, r.frame.n), r.frame.max_ms(),
-             r.render.avg_ms(), r.flush.avg_ms(), r.wait.avg_ms());
+             r.render.avg_ms(), r.flush.avg_ms(), r.wait.avg_ms(),
+             uih::spectrum_whole() ? "true" : "false");
     ESP_LOGI(TAG, "%s", body);
     return send_json(req, "200 OK", body);
 }

@@ -111,7 +111,10 @@ Besides SharedState, the pages read the components' shared objects directly: the
   tall as the whole list; mapping entries to rows is `include/vlist_window.h`
   (test `tests/host/test_vlist_window.cpp`).
 - The spectrum is one object that draws all 28 bars itself: 28 separate objects overflow LVGL's list
-  of invalidated areas, and it redraws the whole screen.
+  of invalidated areas, and it redraws the whole screen. It invalidates only the rows of the bars
+  that moved, a few neighbouring bars to a rectangle (`SpecStyle::group`: 4 on the Player, 2 on the
+  standby face; `include/spec_damage.h`, test `tests/host/test_spec_damage.cpp`), and draws only the
+  bars inside the area being drawn.
 
 The module's Kconfig (`modules/ui_lvgl/Kconfig`):
 
@@ -446,7 +449,7 @@ otherwise.
 | `GET /api/cover?px=` | the Player's cover as a BMP thumbnail (default 140 px), 404 without a cover |
 | `GET /api/library?from=&n=` | the card index, one page (`n` ≤ 200, default 100), JSON `{gen, busy, count, cursor, root, from, rows}` |
 | `GET /api/i18n/overflow[?all=1]` | texts on the glass that do not fit (see "Width check") |
-| `GET /api/ui/frames?ms=&plain=` | frame times of what the screen draws by itself (1–20 s, default 5) |
+| `GET /api/ui/frames?ms=&plain=` | frame times of what the screen draws by itself (1–20 s, default 5); with `CONFIG_UI_SCROLL_BENCH` also `whole=1` (the spectrum row repainted whole, as before), kept until changed; `ms=0` only sets it |
 | `GET /api/ui/scrollbench` | a scripted scroll of a long list with timings; only with `UI_SCROLL_BENCH`, without login |
 
 Parameters of `GET /api/screenshot`:

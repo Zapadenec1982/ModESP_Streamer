@@ -201,9 +201,16 @@ constexpr int32_t SPEC_ROW_W = SPEC_BARS * SPEC_PITCH;
 
 /// How wide a row is drawn. The defaults are the Player's strip; the look is the same in
 /// every row, only the spacing differs.
+///
+/// `group`: how many neighbouring bars share one repainted rectangle when they move. Each
+/// rectangle is its own flush, so fewer pixels mean more of them; the counts keep a frame
+/// well under LV_INV_BUF_SIZE (32) and the flush's MAX_DAMAGE (24), and a group's width
+/// clear of the PPA's striped widths (ppa_geometry.h: 4 bars at 23 px is 81 px, striped at
+/// most heights; 2 bars, 35 px, never).
 struct SpecStyle {
     int32_t pitch = SPEC_PITCH;
     int32_t bar_w = SPEC_BAR_W;
+    int32_t group = 4;
 };
 
 /// Width of the bars as drawn, first bar's left edge to last bar's right edge.
@@ -215,8 +222,13 @@ lv_obj_t* spectrum(lv_obj_t* parent, int32_t x, int32_t base_y, int32_t h,
                    const SpecStyle& style = SpecStyle{});
 
 /// Hand the row a fresh frame of band levels in dBFS, or nullptr when there is none yet.
-/// Redraws once, and only when a bar actually moved.
+/// Redraws only the rows of the bars that moved (spec_damage.h), and nothing when none did.
 void spectrum_set(lv_obj_t* row, const float* db);
+
+/// Bench builds: repaint the whole row on every move instead, as before, to time one against
+/// the other in the same session (GET /api/ui/frames?whole=1).
+void spectrum_whole(bool whole);
+bool spectrum_whole();
 
 /// Forget every row. The rows live in a fixed table; a scheme change destroys the whole
 /// object tree and builds it again, and without this the second build finds the table

@@ -4,7 +4,9 @@
  */
 
 #include "ui_common.h"
+#include "spec_damage.h"
 #include "spectrum.h"
+#include "src/misc/lv_area_private.h"   // lv_area_is_on: LVGL 9.3 keeps it private
 #include <cstring>
 
 namespace uih {
@@ -129,11 +131,13 @@ struct SpecRow {
     int32_t h     = 0;                   ///< the tallest a bar may be
     int32_t pitch = SPEC_PITCH;
     int32_t bar_w = SPEC_BAR_W;
+    int32_t group = 4;                   ///< bars to one repainted rectangle (SpecStyle)
     int16_t bar[SPEC_BARS] = {};         ///< current height of each bar, in pixels
     bool    live = false;                ///< a frame has been published at least once
 };
 SpecRow s_spec[2];
 size_t  s_spec_n = 0;
+bool    s_whole = false;                 ///< bench: the whole row on every move (spectrum_whole)
 
 /// Two pixels, so a silent band still reads as a band rather than vanishing from the row.
 constexpr int16_t SPEC_MIN_H = 2;
@@ -152,24 +156,30 @@ void spec_draw_cb(lv_event_t* e) {
     lv_draw_rect_dsc_init(&dsc);
     dsc.bg_opa = LV_OPA_COVER;
 
+    // Only what falls inside the area being drawn: the row is repainted a few bars at a time,
+    // and every rectangle handed to LVGL is a draw task with its own allocations, whether or
+    // not a pixel of it lands.
+    const lv_area_t& clip = layer->_clip_area;
+
     // The baseline first, and the bars over it — the same order, and therefore the same
     // picture, as when each of these was its own object stacked in creation order.
     dsc.bg_color = ui_col(t.hair);
     lv_area_t a = { co.x1, co.y2, co.x2, co.y2 };
-    lv_draw_rect(layer, &dsc, &a);
+    if (lv_area_is_on(&a, &clip)) lv_draw_rect(layer, &dsc, &a);
 
     // Bars in primary, the loud ones in tertiary — the design's spectrum card, where a peak
     // is a change of tone rather than an alarm.
-    dsc.radius = 4;
+    dsc.radius = spec_damage::SPEC_RADIUS;
     const int32_t loud_from = row->h * 82 / 100;
     const uint32_t loud = m3::theme().c.tertiary;
     for (int32_t i = 0; i < SPEC_BARS; i++) {
         const int32_t h = row->bar[i];
-        dsc.bg_color = ui_col(!row->live ? t.hair : (h > loud_from ? loud : t.acc));
         a.x1 = co.x1 + i * row->pitch;
         a.x2 = a.x1 + row->bar_w - 1;
         a.y2 = co.y2;
         a.y1 = a.y2 - h + 1;
+        if (!lv_area_is_on(&a, &clip)) continue;
+        dsc.bg_color = ui_col(!row->live ? t.hair : (h > loud_from ? loud : t.acc));
         lv_draw_rect(layer, &dsc, &a);
     }
 }
@@ -185,10 +195,11 @@ lv_obj_t* spectrum(lv_obj_t* parent, int32_t x, int32_t base_y, int32_t h, const
     row.h = h;
     row.pitch = style.pitch;
     row.bar_w = style.bar_w;
+    row.group = style.group > 0 ? style.group : 1;
     for (auto& b : row.bar) b = SPEC_MIN_H;
 
-    // The object covers the whole row INCLUDING the baseline, so the one invalidation it
-    // ever asks for is the one rectangle that can change.
+    // The object covers the whole row INCLUDING the baseline: every rectangle it invalidates
+    // is inside it.
     lv_obj_t* o = box(parent, x, base_y - h, SPEC_BARS * style.pitch, h);
     lv_obj_set_user_data(o, &row);
     lv_obj_add_event_cb(o, spec_draw_cb, LV_EVENT_DRAW_MAIN, &row);
@@ -206,8 +217,15 @@ void spectrum_set(lv_obj_t* o, const float* db) {
         return;
     }
 
-    bool moved = !row->live;
+    // The first frame turns every bar from the hairline colour to its own: the whole row.
+    const bool first = !row->live;
     row->live = true;
+    bool moved = false;
+    lv_area_t co;
+    lv_obj_get_coords(o, &co);
+    const int32_t loud_from = row->h * 82 / 100;
+    int32_t lo = 0, hi = 0;                 // rows to repaint in the current group, 0: none
+    int32_t g0 = 0;                         // the group's first bar
     for (int32_t i = 0; i < SPEC_BARS; i++) {
         // floor..band reference → 0..h. The top of the row is SPECTRUM_BAND_REF_DB, not
         // 0 dBFS: referencing a BAND display to the level of the WHOLE signal is what left
@@ -218,13 +236,31 @@ void spectrum_set(lv_obj_t* o, const float* db) {
         if (u < 0.0f) u = 0.0f; else if (u > 1.0f) u = 1.0f;
         int16_t h = (int16_t)(u * (float)row->h);
         if (h < SPEC_MIN_H) h = SPEC_MIN_H;
-        if (h == row->bar[i]) continue;
-        row->bar[i] = h;
-        moved = true;
+        int32_t l, r;
+        if (spec_damage::rows(row->bar[i], h, row->bar_w, spec_damage::SPEC_RADIUS, loud_from, l, r)) {
+            if (!hi || l < lo) lo = l;
+            if (r > hi) hi = r;
+            row->bar[i] = h;
+            moved = true;
+        }
+        // The group ends: its bars' changed rows, from the first bar's left edge to the last
+        // one's right edge, rows counted up from the baseline (spec_damage.h).
+        if ((i + 1) % row->group == 0 || i == SPEC_BARS - 1) {
+            if (hi && !first && !s_whole) {
+                const lv_area_t a = { co.x1 + g0 * row->pitch, co.y2 - (hi - 1),
+                                      co.x1 + i * row->pitch + row->bar_w - 1, co.y2 - (lo - 1) };
+                lv_obj_invalidate_area(o, &a);
+            }
+            lo = hi = 0;
+            g0 = i + 1;
+        }
     }
-    // One invalidation for the whole row, and none at all on a frame where nothing moved —
-    // which is every frame of silence, and the reason a paused screen costs nothing.
-    if (moved) lv_obj_invalidate(o);
+    // Nothing at all on a frame where nothing moved — which is every frame of silence, and the
+    // reason a paused screen costs nothing.
+    if (first || (s_whole && moved)) lv_obj_invalidate(o);
 }
+
+void spectrum_whole(bool whole) { s_whole = whole; }
+bool spectrum_whole() { return s_whole; }
 
 } // namespace uih
