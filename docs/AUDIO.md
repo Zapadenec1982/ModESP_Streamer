@@ -642,9 +642,14 @@ Class 2 device on the HS port. The port's hardware limits: `docs/CONCEPT.md`, "U
   Hann window, hop 512; at 88.2/96 kHz the mono sum is averaged in pairs, so the FFT works on the
   equivalent of 44.1/48 kHz. The signal is taken after the chain, and the volume cut is added back;
   the limiter's reduction is not.
+- Two halves on two cores. The audio task only feeds the mono sum into a ring of 2048 samples. The
+  `spectrum` task (core 0, priority 2) analyses the newest whole window at every hop and publishes
+  the bands to `spectrum_bus()`; a window the feed overwrote while it was copied is skipped. The
+  real window of 1024 goes through a 512-point complex FFT and one real-input step, which gives the
+  same bins as a 1024-point complex FFT (test `tests/host/test_spectrum.cpp`, against a direct DFT).
 - It runs only when the source ≠ `off` and the panel shows a screen with the spectrum strip
-  (`ui.screen` = `now`, `radio` or `standby`); otherwise it publishes one frame at the floor and
-  stays quiet.
+  (`ui.screen` = `now` or `standby`); otherwise it publishes one frame at the floor and stays
+  quiet.
 
 ## Diagnostics
 

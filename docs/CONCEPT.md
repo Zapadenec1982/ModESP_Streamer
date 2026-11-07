@@ -509,7 +509,7 @@ I2S1 or, when the panel clocks the link, from I2S0 RX — into the BT ring in PS
 | Core | Tasks |
 |---|---|
 | 1 | `audio` (22), `audio_bt` (23), AirPlay playback `ap_play` (9), USB: `usb_pcm` (23), `usb_dev` (20) and the controller interrupt (`usb_audio.core` = 1) |
-| 0 | the ModESP main loop, lwIP `tiT` (`CONFIG_LWIP_TCPIP_TASK_AFFINITY_CPU0`), LVGL (1), PPA composition `ui_compose` (6), `player` (5), the radio and DLNA tasks, the cover art tasks of the player, radio and AirPlay, the satellite UART `sat_uart` |
+| 0 | the ModESP main loop, lwIP `tiT` (`CONFIG_LWIP_TCPIP_TASK_AFFINITY_CPU0`), LVGL (1), PPA composition `ui_compose` (6), the spectrum's analysis `spectrum` (2), `player` (5), the radio and DLNA tasks, the cover art tasks of the player, radio and AirPlay, the satellite UART `sat_uart` |
 | unpinned | four ESP-Hosted SDIO tasks, priority 21 (`CONFIG_ESP_HOSTED_HOST_DEFLT_TASK_PRIORITY`): above lwIP (18) and system events (20), so as to drain the link, and below audio (22) — the only task with a hard deadline |
 
 The FreeRTOS tick is 1 kHz (`CONFIG_FREERTOS_HZ=1000`): a 5 ms block is not quantized by a 10 ms tick.

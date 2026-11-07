@@ -509,7 +509,7 @@ I2S1 або, коли панель тактує лінк, із прийому I2
 | Ядро | Задачі |
 |---|---|
 | 1 | `audio` (22), `audio_bt` (23), відтворення AirPlay `ap_play` (9), USB: `usb_pcm` (23), `usb_dev` (20) і переривання контролера (`usb_audio.core` = 1) |
-| 0 | головний цикл ModESP, lwIP `tiT` (`CONFIG_LWIP_TCPIP_TASK_AFFINITY_CPU0`), LVGL (1), композиція PPA `ui_compose` (6), `player` (5), задачі радіо, DLNA, обкладинок плеєра, радіо й AirPlay, UART супутника `sat_uart` |
+| 0 | головний цикл ModESP, lwIP `tiT` (`CONFIG_LWIP_TCPIP_TASK_AFFINITY_CPU0`), LVGL (1), композиція PPA `ui_compose` (6), аналіз спектра `spectrum` (2), `player` (5), задачі радіо, DLNA, обкладинок плеєра, радіо й AirPlay, UART супутника `sat_uart` |
 | без прив'язки | чотири SDIO-задачі ESP-Hosted, пріоритет 21 (`CONFIG_ESP_HOSTED_HOST_DEFLT_TASK_PRIORITY`): вище lwIP (18) і системних подій (20), щоб вичерпувати лінк, і нижче аудіо (22) — єдиної задачі з жорстким дедлайном |
 
 Тик FreeRTOS — 1 кГц (`CONFIG_FREERTOS_HZ=1000`): блок 5 мс не квантується 10-мс тиком.

@@ -386,8 +386,7 @@ on Wi-Fi and Bluetooth): their scrim covers the header with ← as well.
 - Backlight: outside standby — `ui.backlight`; in standby with music — `ui.standby_bl`, without
   music — 5 %. A change of `ui.standby_bl` outside standby is shown for 1.5 s. Standby dims the
   backlight rather than turning it off: a zero PWM duty cannot be told from a dead panel.
-- The `audio` module turns the spectrum analyser on only for `ui.screen` = `now`, `radio` or
-  `standby`.
+- The `audio` module turns the spectrum analyser on only for `ui.screen` = `now` or `standby`.
 
 ### Colour schemes
 

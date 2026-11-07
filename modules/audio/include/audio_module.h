@@ -83,6 +83,7 @@ public:
     // ── task side (public for the static entry points) ──
     void task_loop();
     void bt_rx_loop();
+    void spectrum_loop();
 
 private:
     // WIDTH and MONO_BASS carry a scaled integer (width x100, Hz) because Cmd is int32 —
@@ -454,6 +455,7 @@ private:
     QueueHandle_t cmd_q_ = nullptr;
     TaskHandle_t  task_ = nullptr;
     TaskHandle_t  bt_task_ = nullptr;
+    TaskHandle_t  spectrum_task_ = nullptr;   ///< the analysis, core 0 (spectrum.h)
     volatile bool run_ = false;
     Status        status_{};
     portMUX_TYPE  mux_ = portMUX_INITIALIZER_UNLOCKED;
@@ -484,10 +486,13 @@ private:
     int32_t  last_width_ = -1;
     int32_t  last_mono_bass_ = -1;
     int      last_spectrum_ = -1;      ///< what the UI was last told to want; -1 = not yet asked
-    /// Audio task: whether a screen with a spectrum row is showing, and whether the analyser
-    /// published anything last block (so the row can be sent to the floor exactly once).
+    /// Audio task: whether a screen with a spectrum row is showing, and whether it fed the
+    /// analyser last block (feeding resumed starts the ring over).
     bool     spectrum_wanted_ = false;
     bool     spectrum_live_   = false;
+    /// The audio task feeds the analyser; the analysis task reads it to know whether to run, and
+    /// sends the row to the floor once when it stops.
+    std::atomic<bool> spectrum_feeding_{false};
     /// Output mode from eq.json (docs/CONCEPT.md, "Outputs"). Only "2.0" is implemented; the
     /// value is published as audio.out_mode so the UI and MQTT can see what the file asks for.
     char     out_mode_[8] = "2.0";
@@ -495,7 +500,7 @@ private:
     float    eq_trim_db_ = 0.0f;
     /// The EQ store's revision last handed to the audio core (own_eq).
     uint32_t eq_heard_rev_ = 0;
-    /// ~12 KB of working buffers, fed from the audio task and published to the UI
-    /// through the lock-free bus in components/audio_dsp.
+    /// ~12 KB of buffers: fed by the audio task, analysed on core 0 by the analysis task and
+    /// published to the UI through the lock-free bus in components/audio_dsp.
     audio_core::SpectrumAnalyzer spectrum_;
 };

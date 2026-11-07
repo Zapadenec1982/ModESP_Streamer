@@ -260,6 +260,7 @@ float   s_asrc_in[BLOCK * 4];   // ≤ 2× BLOCK input frames per output block a
 
 void audio_task_entry(void* arg) { static_cast<AudioModule*>(arg)->task_loop(); vTaskDelete(nullptr); }
 void bt_rx_task_entry(void* arg) { static_cast<AudioModule*>(arg)->bt_rx_loop(); vTaskDelete(nullptr); }
+void spectrum_task_entry(void* arg) { static_cast<AudioModule*>(arg)->spectrum_loop(); vTaskDeleteWithCaps(nullptr); }
 
 /// Main task: room for one copy of the EQ document, which is over a kilobyte and the main
 /// task's stack has little to spare (own_eq, on_init).
@@ -826,6 +827,13 @@ bool AudioModule::on_init() {
         bt_ = nullptr;
         source_gone(SRC_BT);   // audio.sources offered it above
     }
+    // The spectrum's analysis: core 0, beside the UI that shows it, and off the audio task's
+    // deadline (spectrum.h). Above the main loop and LVGL (1), so a busy frame does not make it
+    // late; ~0.5 ms a hop. Its stack is in PSRAM: it never touches flash.
+    if (xTaskCreatePinnedToCoreWithCaps(spectrum_task_entry, "spectrum", 4096, this, 2, &spectrum_task_, 0,
+                                        MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT) != pdPASS) {
+        ESP_LOGW(TAG, "spectrum task not created — the spectrum row stays still");
+    }
 
     ESP_LOGI(TAG, "Initialized: main %lu Hz %u-bit%s%s, BT %s, amp %s, heap DMA %u",
              (unsigned long)main_->port_caps().sample_rate_hz, (unsigned)main_->port_caps().slot_bits,
@@ -983,14 +991,14 @@ bool AudioModule::follow_settings() {
     }
     // The analyser is a 1024-point FFT every 512 frames, and nobody needs it while the
     // panel shows a screen without a spectrum row. ui.screen is the UI's own record of what
-    // it is showing; "now" and the standby face draw the row ("radio" did once, and costs
-    // nothing to keep). The standby face shows it only while music plays, and with nothing
-    // playing the analyser is fed silence or not at all (source off) — not worth a second key.
+    // it is showing; "now" and the standby face draw the row. Not "radio", the Stations
+    // list: it has none, and the analyser ran there for nothing (7.9 % of core 1 at 96 kHz).
+    // The standby face shows it only while music plays, and with nothing playing the analyser
+    // is fed silence or not at all (source off) — not worth a second key.
     {
         char screen[16] = "";
         read_string("ui.screen", screen, sizeof(screen));
-        const int want = (strcmp(screen, "now") == 0 || strcmp(screen, "radio") == 0 ||
-                          strcmp(screen, "standby") == 0) ? 1 : 0;
+        const int want = (strcmp(screen, "now") == 0 || strcmp(screen, "standby") == 0) ? 1 : 0;
         if (want != last_spectrum_) { last_spectrum_ = want; send(CmdType::SPECTRUM, want); }
     }
 
@@ -1548,7 +1556,7 @@ void AudioModule::adopt_clock(uint32_t hz, uint16_t mclk_mult) {
     }
     dsp_.reset();
     dsp_dirty_ = false;
-    spectrum_.reset();
+    spectrum_.restart();
     tone_.refresh();            // its step was a frequency over the OLD rate
     priming_ = true;            // the ring restarts; wait for a cushion as at a track start
     {
@@ -2813,18 +2821,14 @@ void AudioModule::task_loop() {
         //
         // ...but not when there is nothing to analyse or nobody to look at it: with the
         // source off, or the panel on a screen without a spectrum row, the FFT is work for
-        // no one. On the way out one frame at the floor is published, so a row that IS
-        // visible falls away rather than freezing on the last thing that played.
+        // no one. The analysis itself runs on core 0 (spectrum_loop); this task only feeds it.
         const bool analyse = spectrum_wanted_ && source_ != SRC_OFF;
         if (analyse) {
+            if (!spectrum_live_) spectrum_.restart();   // what it holds is from before the pause
             spectrum_.set_gain_offset_db(dsp_.volume_cut_db());
-            if (spectrum_.feed(s_blk, BLOCK)) {
-                audio_core::spectrum_bus().publish(spectrum_.bands_db());
-            }
-        } else if (spectrum_live_) {
-            spectrum_.reset();
-            audio_core::spectrum_bus().publish(spectrum_.bands_db());
+            spectrum_.feed(s_blk, BLOCK);
         }
+        if (analyse != spectrum_live_) spectrum_feeding_.store(analyse, std::memory_order_release);
         spectrum_live_ = analyse;
 
 #if MODESP_AUDIO_DIAGNOSTIC_CONSTANT
@@ -2970,6 +2974,36 @@ void AudioModule::task_loop() {
     if (bt_) bt_->stop();
     portENTER_CRITICAL(&mux_); status_.running = false; portEXIT_CRITICAL(&mux_);
     ESP_LOGI(TAG, "audio task stopped");
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Spectrum analysis task: core 0, the window the audio task fed → bands → the UI's bus
+// ═══════════════════════════════════════════════════════════════
+
+void AudioModule::spectrum_loop() {
+    // Polled, not woken: the audio task never signals anything for the screen's sake. 5 ms is
+    // twice a hop at 48 kHz, so every hop's window is analysed, as when the feed ran the FFT.
+    bool shown = false;           // the bus holds a frame of music, not the floor
+    while (run_) {
+        if (spectrum_feeding_.load(std::memory_order_acquire)) {
+            if (spectrum_.analyse()) {
+                audio_core::spectrum_bus().publish(spectrum_.bands_db());
+                shown = true;
+            }
+            vTaskDelay(pdMS_TO_TICKS(5));
+            continue;
+        }
+        if (shown) {
+            // Nothing feeds it now: one frame at the floor, so a row that IS visible falls
+            // away rather than freezing on the last thing that played.
+            float floor_db[audio_core::SPECTRUM_BANDS];
+            for (float& d : floor_db) d = audio_core::SPECTRUM_FLOOR_DB;
+            audio_core::spectrum_bus().publish(floor_db);
+            shown = false;
+        }
+        vTaskDelay(pdMS_TO_TICKS(40));
+    }
+    spectrum_task_ = nullptr;
 }
 
 // ═══════════════════════════════════════════════════════════════

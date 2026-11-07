@@ -7,16 +7,25 @@
  * there would mean 28 keys or a blob round-trip per frame, for data whose only consumer is
  * one widget.
  *
- * SpectrumBus is a seqlock: the audio task writes, the LVGL task reads, neither ever blocks
- * the other, and a reader that catches a half-written frame retries instead of drawing torn
- * data. That matters because the writer is the audio task — it must never wait on the UI.
+ * The analyser has two halves on two cores. The audio task (core 1) only feeds it: the mono
+ * sum, averaged down above 50 kHz, into a ring. The analysis — window, FFT, bands — runs on a
+ * task of its own on core 0, beside the UI that shows it: on core 1 it was 7.9 % of the core
+ * at 96 kHz, about 0.8 ms in every tenth block, all of it inside the audio task's deadline and
+ * none of it sound. The ring needs no lock: the analysis copies a window out and checks the
+ * feed did not overwrite it meanwhile; a window that was is dropped, and a dropped window is
+ * one frame the bars wait for.
  *
- * The analyser itself lives here rather than in the audio module so it is testable on the
- * host, where the FFT kernel is a plain reference implementation.
+ * SpectrumBus is a seqlock: the analysis task writes, the LVGL task reads, neither ever
+ * blocks the other, and a reader that catches a half-written frame retries instead of drawing
+ * torn data.
+ *
+ * The analyser lives here rather than in the audio module so it is testable on the host,
+ * where the FFT kernel is a plain reference implementation.
  */
 
 #pragma once
 
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 
@@ -25,12 +34,14 @@ namespace audio_core {
 constexpr int SPECTRUM_BANDS = 28;      ///< as the design draws
 /// 1024 points at 48 kHz = 46.9 Hz per bin, with 50 % overlap giving ~94 frames a second.
 /// The window size is a straight trade: it buys low-frequency resolution with internal RAM
-/// (1024 costs 12 KB of working buffers) and with latency. Even here the lowest bands are
-/// narrower than one bin — a log-spaced band at f is about 0.24*f wide, so bands stop
-/// sharing bins only above ~200 Hz. That is inherent to any FFT analyser with log bands;
-/// the display shows it rather than interpolating a resolution that is not there.
+/// (1024 costs 15 KB: the ring, the FFT's buffer and the tables) and with latency. Even here
+/// the lowest bands are narrower than one bin — a log-spaced band at f is about 0.24*f wide,
+/// so bands stop sharing bins only above ~200 Hz. That is inherent to any FFT analyser with
+/// log bands; the display shows it rather than interpolating a resolution that is not there.
 constexpr int SPECTRUM_FFT_N = 1024;
 constexpr int SPECTRUM_HOP   = SPECTRUM_FFT_N / 2;
+/// The feed's ring: a window, and as much again for the analysis to be late by (21 ms).
+constexpr int SPECTRUM_RING  = 2 * SPECTRUM_FFT_N;
 constexpr float SPECTRUM_FLOOR_DB = -60.0f;
 
 /// Ceiling for a band level, and the level a band display should put at the top of the row.
@@ -51,22 +62,33 @@ constexpr float SPECTRUM_F_LO = 40.0f;
 constexpr float SPECTRUM_F_HI = 16000.0f;
 
 /// Log-spaced band analyser over a Hann-windowed FFT of the mono sum.
+///
+/// feed(), restart() and set_gain_offset_db() belong to the audio task; analyse() and
+/// bands_db() to the analysis task; reset() to whoever owns both while neither runs (start-up,
+/// tests).
 class SpectrumAnalyzer {
 public:
     void reset();
 
-    /// Feed interleaved stereo. Returns true when a new frame of bands became available —
-    /// the caller publishes only then, so the bus is not rewritten for every audio block.
+    /// Feed interleaved stereo into the ring.
     ///
     /// Above 50 kHz the mono sum is averaged over 2 (≤ 100 kHz) or 4 frames first, so the FFT
     /// runs on a 44.1/48 kHz-equivalent stream at every output rate: the same ~94 frames a
-    /// second and the same resolution, instead of four times the FFTs at 192 kHz (16.7 % of
-    /// a core) for bins the display does not draw — it stops at 16 kHz.
-    bool feed(const float* stereo, size_t frames);
+    /// second and the same resolution, instead of four times the FFTs at 192 kHz for bins the
+    /// display does not draw — it stops at 16 kHz.
+    void feed(const float* stereo, size_t frames);
+    /// Start the ring over: the rate moved, or feeding resumes after a pause. The analysis
+    /// drops whatever window it holds and the bars go back to the floor.
+    void restart();
     /// Frames averaged into one analysed sample at the current rate (1, 2 or 4).
-    int decimation() const { return dec_; }
+    int decimation() const { return dec_.load(std::memory_order_relaxed); }
 
-    /// Band levels in dBFS, SPECTRUM_FLOOR_DB..SPECTRUM_BAND_REF_DB. Valid after feed()
+    /// The newest whole window the ring holds, if it ends past the last one analysed: at every
+    /// hop (SPECTRUM_HOP analysed samples), so ~94 times a second, as long as it is called at
+    /// least that often. True when the bands moved; publish them then.
+    bool analyse();
+
+    /// Band levels in dBFS, SPECTRUM_FLOOR_DB..SPECTRUM_BAND_REF_DB. Valid after analyse()
     /// returned true.
     const float* bands_db() const { return bands_; }
 
@@ -84,25 +106,33 @@ public:
     ///
     /// The limiter's gain reduction is deliberately NOT compensated here: when the limiter
     /// works, that should be visible.
-    void set_gain_offset_db(float db) { offset_db_ = db; }
+    void set_gain_offset_db(float db) { offset_db_.store(db, std::memory_order_relaxed); }
 
 private:
-    void analyse();
     /// The bin range of every band at `fs`, built once per sample rate. It used to be
     /// worked out per frame — two powf() per band, 94 times a second — for a table that
     /// only changes when the output clock does.
     void build_bands(float fs);
 
-    float acc_[SPECTRUM_FFT_N] = {};     ///< mono window; the second half becomes the first
-    int   fill_ = 0;
-    float cplx_[2 * SPECTRUM_FFT_N] = {};
+    // ── the feed's (audio task) ──
+    float ring_[SPECTRUM_RING] = {};     ///< analysed samples; sample n at n % SPECTRUM_RING
+    std::atomic<uint32_t> written_{0};   ///< samples written since the last restart
+    std::atomic<uint32_t> epoch_{0};     ///< restarts so far
+    std::atomic<int>      dec_{1};       ///< frames averaged per analysed sample
+    std::atomic<float>    offset_db_{0.0f};
+    int   dec_k_ = 0;                    ///< frames averaged so far
+    float dec_acc_ = 0.0f;
+
+    // ── the analysis's ──
+    float work_[SPECTRUM_FFT_N] = {};    ///< the window as 512 complex points (spectrum.cpp)
     float bands_[SPECTRUM_BANDS] = {};
-    float offset_db_ = 0.0f;
+    uint32_t seen_epoch_ = UINT32_MAX;
+    uint32_t last_end_ = 0;              ///< where the last analysed window ended...
+    bool     primed_ = false;            ///< ...once there is one in this epoch. The counts wrap
+                                         ///< after ~25 h of play: compared by difference only
     int   lo_[SPECTRUM_BANDS] = {};      ///< first bin of each band, at bands_fs_
     int   hi_[SPECTRUM_BANDS] = {};      ///< one past the last
     float bands_fs_ = 0.0f;              ///< the rate the table was built for; 0 = not yet
-    int   dec_ = 1, dec_k_ = 0;          ///< frames averaged per analysed sample, and so far
-    float dec_acc_ = 0.0f;
 };
 
 /// Single-writer / single-reader seqlock carrying one frame of band levels.
