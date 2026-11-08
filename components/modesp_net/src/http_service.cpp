@@ -49,6 +49,7 @@
 #include <initializer_list>
 #include <strings.h>
 #include <new>
+#include <optional>
 #include <sys/time.h>
 #include <sys/stat.h>
 
@@ -1450,6 +1451,14 @@ esp_err_t HttpService::handle_post_ota(httpd_req_t* req) {
     // row (~90 s) end the request; progress resets the count. Same bound as userdata_post.
     int timeouts = 0;
 
+    // player-fork: the upload is bound by the sector erase, so recv never waits and this task
+    // (priority 5, CPU0 by its float use) would hold CPU0 to the end of the image: IDLE0 got no
+    // turn and the task watchdog reset the panel mid-upload, the slot left half-written. The
+    // pacer gives way until IDLE0 has run (ota_handler.h). Ended after the loop, before the
+    // restart, which runs no destructor.
+    std::optional<ota_handler::IdlePacer> pacer;
+    pacer.emplace();
+
     while (remaining > 0) {
         int to_recv = (remaining < (int)sizeof(buf)) ? remaining : (int)sizeof(buf);
         int recv_len = httpd_req_recv(req, buf, to_recv);
@@ -1513,10 +1522,12 @@ esp_err_t HttpService::handle_post_ota(httpd_req_t* req) {
             httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "OTA write failed");
             return ESP_FAIL;
         }
+        pacer->pace();
 
         remaining -= recv_len;
         received_total += recv_len;
     }
+    pacer.reset();
 
     err = esp_ota_end(ota_handle);
     if (err != ESP_OK) {

@@ -331,6 +331,12 @@ Module routes (`http_routes`):
   otherwise hold the only httpd task.
 - One update at a time, shared with the MQTT `_ota` command where it is built: while one is being
   written the other is refused (here `409`), and a written image keeps the slot until the restart.
+- The write is bound by the flash erase, so the loop (httpd, priority 5, CPU0) would never block
+  and IDLE0 would starve into the 5 s task watchdog. `ota_handler::IdlePacer` counts IDLE0's
+  turns: when it has had none for 0.5 s, the loop sleeps one tick at a time until it has. The main
+  loop and the glass keep running during the upload, at the cost of the upload's speed. The
+  `_ota` download does the same on its own core. At the end the log has
+  `update writer: waited for idle N time(s), M ms in all` (INFO, tag `OTA_HTTP`).
 - Writes to the next slot (`ota_0` / `ota_1`), makes it bootable, stops the modules,
   restarts.
 - Within 60 s the new image must get Wi-Fi and the HTTP server, `audio.state` ≠ `error` and a

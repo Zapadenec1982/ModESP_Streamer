@@ -24,17 +24,96 @@
 #else
 #include "mbedtls/sha256.h"
 #endif
+#include "esp_freertos_hooks.h"
+#include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
 #include <cstring>
 #include <cstdio>
 #include <atomic>
+#include <optional>
 
 static const char* TAG = "OTA_HTTP";
 
 namespace modesp {
 namespace ota_handler {
+
+// ── IdlePacer ────────────────────────────────────────────────────
+
+namespace {
+
+static_assert(configNUMBER_OF_CORES <= IdlePacer::MAX_CORES, "one idle hook per core");
+
+/// Idle has had no turn on the writer's core for this long: the writer sleeps until it has.
+/// The task watchdog allows 5 s; the gap stays ten times inside that, plus the one write in
+/// progress when it runs out (a sector erase, tens of ms).
+constexpr int64_t IDLE_GAP_US = 500 * 1000;
+
+/// The longest one wait lasts. Idle that does not run within it while the writer sleeps is
+/// held off by another task; the update goes on, and the watchdog names that task.
+constexpr TickType_t IDLE_WAIT_MAX_TICKS = pdMS_TO_TICKS(500);
+
+/// Turns each core's idle task has had while an IdlePacer counts them.
+std::atomic<uint32_t> s_idle_turns[IdlePacer::MAX_CORES];
+
+template <int CORE>
+bool count_idle_turn() {
+    s_idle_turns[CORE].fetch_add(1, std::memory_order_relaxed);
+    return true;   // idle may still wait for the next interrupt, as it does without the hook
+}
+
+constexpr esp_freertos_idle_cb_t IDLE_HOOK[IdlePacer::MAX_CORES] = {
+    count_idle_turn<0>, count_idle_turn<1>,
+};
+
+}  // namespace
+
+IdlePacer::IdlePacer() {
+    for (int c = 0; c < configNUMBER_OF_CORES; ++c) {
+        // With no free hook slot the count stands still, and pace() sleeps its full bound
+        // every half second instead: slower, still safe.
+        if (esp_register_freertos_idle_hook_for_cpu(IDLE_HOOK[c], c) != ESP_OK) {
+            ESP_LOGW(TAG, "no idle hook slot on core %d: the update will pause 0.5 s every 0.5 s", c);
+        }
+    }
+    const int64_t now = esp_timer_get_time();
+    for (int c = 0; c < MAX_CORES; ++c) {
+        seen_[c] = s_idle_turns[c].load(std::memory_order_relaxed);
+        seen_at_us_[c] = now;
+    }
+}
+
+IdlePacer::~IdlePacer() {
+    for (int c = 0; c < configNUMBER_OF_CORES; ++c) {
+        esp_deregister_freertos_idle_hook_for_cpu(IDLE_HOOK[c], c);
+    }
+    ESP_LOGI(TAG, "update writer: waited for idle %lu time(s), %lld ms in all",
+             (unsigned long)waits_, (long long)(waited_us_ / 1000));
+}
+
+void IdlePacer::pace() {
+    const int core = xPortGetCoreID();
+    const uint32_t turns = s_idle_turns[core].load(std::memory_order_relaxed);
+    const int64_t now = esp_timer_get_time();
+    if (turns != seen_[core]) {
+        seen_[core] = turns;
+        seen_at_us_[core] = now;
+        return;
+    }
+    if (now - seen_at_us_[core] < IDLE_GAP_US) return;
+
+    // The tasks above idle run first, each as long as it needs; idle comes when they are done.
+    for (TickType_t t = 0; t < IDLE_WAIT_MAX_TICKS &&
+                           s_idle_turns[core].load(std::memory_order_relaxed) == turns; ++t) {
+        vTaskDelay(1);
+    }
+    const int64_t after = esp_timer_get_time();
+    seen_[core] = s_idle_turns[core].load(std::memory_order_relaxed);
+    seen_at_us_[core] = after;
+    waits_++;
+    waited_us_ += after - now;
+}
 
 // ── Atomic guard — тільки одна OTA операція одночасно ────────────
 
@@ -183,6 +262,12 @@ static void ota_task(void* arg) {
     uint8_t header[HEADER_NEEDED];
     size_t header_len = 0;
 
+    // A LAN server keeps ahead of the sector erase as the HTTP upload's client does, and this
+    // task (priority 5, either core) would starve that core's idle task the same way. Ended
+    // right after the loop: every way out of the task below is vTaskDelete(), which runs no
+    // destructor.
+    std::optional<IdlePacer> pacer;
+    pacer.emplace();
     while (true) {
         int read_len = esp_http_client_read(http_client, buf, sizeof(buf));
         if (read_len < 0) {
@@ -261,6 +346,7 @@ static void ota_task(void* arg) {
             download_ok = false;
             break;
         }
+        pacer->pace();
 
         // Оновити SHA256
         mbedtls_sha256_update(&sha_ctx,
@@ -276,6 +362,7 @@ static void ota_task(void* arg) {
             set_progress(pct);
         }
     }
+    pacer.reset();
 
     esp_http_client_close(http_client);
     esp_http_client_cleanup(http_client);

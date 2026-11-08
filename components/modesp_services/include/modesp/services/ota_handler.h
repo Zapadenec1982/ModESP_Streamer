@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 namespace modesp {
 
 class SharedState;
@@ -60,6 +62,42 @@ bool try_begin();
  * Release a claim from try_begin(): the update failed or was abandoned.
  */
 void end();
+
+/**
+ * Keeps an update's write loop from holding its core away from that core's idle task.
+ *
+ * Writing an image is bound by the flash: each 4 KB sector is erased with the core
+ * busy-polling and the scheduler held, and when the write returns the next chunk is already
+ * waiting, so the loop never blocks. Every task below the writer on its core then waits, the
+ * idle task last, and the task watchdog resets the board mid-image. A one-tick sleep per
+ * sector does not cure it (IDF's own erase yield is one): the tasks between the writer and
+ * idle (main loop, glass, analyser) have all woken during the erase, they take the tick, and
+ * idle runs only once all of them are done.
+ *
+ * So pace(), called after each write, sleeps one tick at a time until the idle task of this
+ * core has had a turn, whenever it has not had one for half a second. The loop then gives up
+ * as much CPU as the tasks above idle need to catch up, and no more.
+ *
+ * One at a time — the update claim (try_begin()) already makes it so.
+ */
+class IdlePacer {
+public:
+    IdlePacer();    ///< starts counting the idle tasks' turns
+    ~IdlePacer();   ///< stops
+    IdlePacer(const IdlePacer&) = delete;
+    IdlePacer& operator=(const IdlePacer&) = delete;
+
+    /// After each write: returns at once, or after the idle task of this core has run.
+    void pace();
+
+    static constexpr int MAX_CORES = 2;
+
+private:
+    uint32_t seen_[MAX_CORES] = {};        ///< idle turns counted at the last look
+    int64_t  seen_at_us_[MAX_CORES] = {};  ///< when they last changed
+    uint32_t waits_ = 0;                   ///< times pace() slept, for the log at the end
+    int64_t  waited_us_ = 0;               ///< and for how long in all
+};
 
 } // namespace ota_handler
 } // namespace modesp
