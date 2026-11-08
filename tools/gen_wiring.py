@@ -37,7 +37,7 @@ OUT = {"en": ROOT / "docs/img/wiring.svg", "uk": ROOT / "docs/img/wiring.uk.svg"
 
 P = 20.0            # 2.54 mm
 MM = P / 2.54
-W, H = 2040, 1290
+W, H = 2040, 1370
 
 
 # ---------------------------------------------------------------- pin facts against the sources
@@ -85,13 +85,19 @@ def draw(lang: str):
         "BCK":    ("#0a58ca", L("GPIO50 · I2S0 BCK, 64·fs, to the PCM5102A", "GPIO50 · I2S0 BCK, 64·fs, до PCM5102A")),
         "WS":     ("#2f9bff", "GPIO51 · I2S0 WS"),
         "DOUT":   ("#00337a", "GPIO52 · I2S0 DOUT"),
-        "AMPEN":  ("#d1242f", L("GPIO34 · amp_enable: XSMT, /RESET, 10 kΩ to GND", "GPIO34 · amp_enable: XSMT, /RESET, 10 кОм на GND")),
+        "AMPEN":  ("#bf3989", L("GPIO34 · amp_enable: XSMT, /RESET, 10 kΩ to GND", "GPIO34 · amp_enable: XSMT, /RESET, 10 кОм на GND")),
         "BTBCK":  ("#8250df", L("GPIO33 · BCLK, the satellite's D13 (GPIO13)", "GPIO33 · BCLK, D13 супутника (GPIO13)")),
         "BTWS":   ("#b083f0", L("GPIO30 · WS, the satellite's D26 (GPIO26)", "GPIO30 · WS, D26 супутника (GPIO26)")),
         "BTDATA": ("#55309b", L("GPIO31 · DATA from the satellite's D27 (GPIO27)", "GPIO31 · DATA від D27 супутника (GPIO27)")),
-        "BTGND":  ("#111418", L("GND, twisted with BCLK", "GND, скручений із BCLK")),
-        "UTX":    ("#e8590c", L("J5.2 TX1 (GPIO26) to the satellite's RX2 (GPIO16)", "J5.2 TX1 (GPIO26) до RX2 супутника (GPIO16)")),
-        "URX":    ("#a84300", L("J5.3 RX1 (GPIO27) from the satellite's TX2 (GPIO17)", "J5.3 RX1 (GPIO27) від TX2 супутника (GPIO17)")),
+        "UTX":    ("#bc4c00", L("J5.2 TX1 (GPIO26) to the satellite's RX2 (GPIO16)", "J5.2 TX1 (GPIO26) до RX2 супутника (GPIO16)")),
+        "URX":    ("#7a3410", L("J5.3 RX1 (GPIO27) from the satellite's TX2 (GPIO17)", "J5.3 RX1 (GPIO27) від TX2 супутника (GPIO17)")),
+        # power and ground: a wire of its own from JP1 to each module
+        "P5SAT":  ("#e5484d", L("+5V from JP1 to the satellite's VIN", "+5V з JP1 на VIN супутника")),
+        "P3DAC":  ("#d4a017", L("+3V3 from JP1 to the PCM5102A board", "+3V3 з JP1 на плату PCM5102A")),
+        "P3ENC":  ("#d4a017", L("+3V3 from JP1 to the encoder", "+3V3 з JP1 на енкодер")),
+        "GSAT":   ("#111418", L("GND to the satellite, twisted with BCLK", "GND на супутник, скручений із BCLK")),
+        "GDAC":   ("#111418", L("GND from JP1 to the PCM5102A board", "GND з JP1 на плату PCM5102A")),
+        "GENC":   ("#111418", L("GND from JP1 to the encoder", "GND з JP1 на енкодер")),
         "ENCA":   ("#1a7f37", L("GPIO32 · encoder A", "GPIO32 · енкодер A")),
         "ENCB":   ("#2da44e", L("GPIO28 · encoder B", "GPIO28 · енкодер B")),
         "ENCSW":  ("#57b56e", L("GPIO35 · encoder button", "GPIO35 · кнопка енкодера")),
@@ -106,22 +112,27 @@ def draw(lang: str):
         "BTBCK":  ["JP1.GPIO33", "SAT.D13"],
         "BTWS":   ["JP1.GPIO30", "SAT.D26"],
         "BTDATA": ["JP1.GPIO31", "SAT.D27"],
-        "BTGND":  ["JP1.GND_R", "SAT.GND"],
         "UTX":    ["J5.2", "SAT.RX2"],
         "URX":    ["J5.3", "SAT.TX2"],
+        "P5SAT":  ["JP1.5V_2", "SAT.VIN"],
+        "P3DAC":  ["JP1.3V3_2", "DAC.VCC"],
+        "P3ENC":  ["JP1.3V3_1", "ENC.+"],
+        "GSAT":   ["JP1.GND_R", "SAT.GND"],
+        "GDAC":   ["JP1.GND_L", "DAC.GND"],
+        "GENC":   ["JP1.GND_8", "ENC.GND"],
         "ENCA":   ["JP1.GPIO32", "ENC.A"],
         "ENCB":   ["JP1.GPIO28", "ENC.B"],
         "ENCSW":  ["JP1.GPIO35", "ENC.SW"],
         "AL":     ["DAC.L", "AMP.INL"],
         "AR":     ["DAC.R", "AMP.INR"],
     }
-    # rails: the pad colour says it, a small tag names it where it is a tie
+    # pads on a rail with no wire of their own: the pad colour says it, a small tag names it where it is a tie
     TIES = {
-        "5V":  ["JP1.5V_1", "JP1.5V_2", "J5.1"],
-        "3V3": ["JP1.3V3_1", "JP1.3V3_2", "ENC.+"],
-        "GND": ["JP1.GND_L", "JP1.GND_8", "J5.4", "DAC.SCK", "DAC.FMT", "DAC.DEMP", "ENC.GND", "SAT.GND_R"],
+        "5V":  ["JP1.5V_1", "J5.1"],
+        "3V3": [],
+        "GND": ["J5.4", "DAC.SCK", "DAC.FMT", "DAC.DEMP", "SAT.GND_R"],
     }
-    TIE_COLOR = {"5V": "#e5484d", "3V3": "#f08c00", "GND": "#111418"}
+    TIE_COLOR = {"5V": "#e5484d", "3V3": "#d4a017", "GND": "#111418"}
     NC_COLOR = "#c9b26a"
 
     boards, pads, wires, tags, notes = [], [], [], [], []
@@ -278,7 +289,7 @@ def draw(lang: str):
     # ------------------------------------------------------------ the satellite: a 30-pin ESP32 DevKit
     # Measured from a photo of the board through the 2.54 mm pitch: 27.8 × 51.4 mm, rows 25.4 mm apart,
     # the first pin 6.2 mm from the antenna edge. Drawn antenna up, so rotated 180° from the photo.
-    SX, SY = 1410.0, 181.0
+    SX, SY = 1410.0, 141.0      # VIN level with JP1's second 5V pin
     SW, SH = 27.8 * MM, 51.4 * MM
     SJ2, SJ3 = SX + 10, SX + 210
     SR1 = SY + 49
@@ -312,26 +323,26 @@ def draw(lang: str):
         notes.append(text(SJ3 - 10, SR1 + i * P + 3.5, {"GND_R": "GND"}.get(n, n), 9.5, "#ffffff", "end", halo="#1b1f23"))
 
     # ------------------------------------------------------------ encoder: outline and pin order schematic
-    EX, EY = 1070.0, 700.0
+    EX, EY = 1100.0, 700.0
     BODY["ENC"] = (EX, EY - 13, 170.0, 108.0)
     boards.append(rect(EX, EY - 13, 170, 108, "#f6f8fa", "#57606a", rx=5, dash="5 3"))
     boards.append(circle(EX + 102, EY + 22, 22, "#d0d7de", "#57606a", 1.5))
     boards.append(circle(EX + 102, EY + 22, 10, "#8c959f"))
     boards.append(text(EX + 102, EY + 62, L("Encoder", "Енкодер"), 10.5, weight=700, anchor="middle"))
     boards.append(text(EX + 102, EY + 76, L("PCNT, 4 edges per detent","PCNT, 4 фронти на клацання"), 8.5, "#57606a", "middle"))
-    for i, n in enumerate(("A", "B", "SW", "+", "GND")):
+    for i, n in enumerate(("A", "B", "SW", "GND", "+")):
         pad(f"ENC.{n}", EX, EY + i * P, 5.6)
         notes.append(text(EX + 9, EY + 3.5 + i * P, n, 9.5, "#1f2328", weight=600))
 
     # ------------------------------------------------------------ PCM5102A board: outline and pin order schematic
-    DX, DY, DW, DH = 1260.0, 845.0, 200.0, 175.0
+    DX, DY, DW, DH = 1260.0, 845.0, 200.0, 212.0
     BODY["DAC"] = (DX, DY, DW, DH)
     boards.append(rect(DX, DY, DW, DH, "#f6f8fa", "#57606a", rx=6, sw=1.4, dash="5 3"))
     boards.append(text(DX + 130, DY + 21, L("PCM5102A · DAC", "PCM5102A · ЦАП"), 12.5, weight=700, anchor="middle"))
     for i, s in enumerate((L("PLL from BCK, no MCLK", "PLL від BCK, без MCLK"), L("out 2.1 Vrms", "вихід 2.1 Vrms"),
                            L("LOW on XSMT = mute", "LOW на XSMT = тиша"))):
         boards.append(text(DX + 62, DY + 52 + i * 15, s, 10, "#57606a"))
-    for i, n in enumerate(("XSMT", "SCK", "BCK", "LRCK", "DIN", "FMT", "DEMP")):
+    for i, n in enumerate(("XSMT", "SCK", "BCK", "LRCK", "DIN", "FMT", "DEMP", "GND", "VCC")):
         pad(f"DAC.{n}", DX, DY + 35 + i * P, 5.6)
         notes.append(text(DX + 9, DY + 38.5 + i * P, n, 9.5, weight=600))
     for n, y in (("L", 940.0), ("R", 960.0)):
@@ -367,7 +378,7 @@ def draw(lang: str):
     # the 10 k pull-down on the amp_enable line
     RX, RY = 1500.0, 830.0
     PIN["R1.A"] = (RX, RY + 30)
-    boards.append(rect(RX - 6, RY + 30, 12, 34, "#ffffff", "#d1242f", sw=1.5))
+    boards.append(rect(RX - 6, RY + 30, 12, 34, "#ffffff", NET["AMPEN"][0], sw=1.5))
     boards.append(f'<path d="M{fmt(RX)} {fmt(RY + 64)} v12 M{fmt(RX - 9)} {fmt(RY + 76)} h18 M{fmt(RX - 6)} {fmt(RY + 80)} h12 '
                   f'M{fmt(RX - 3)} {fmt(RY + 84)} h6" fill="none" stroke="#111418" stroke-width="1.6"/>')
     notes.append(text(RX + 11, RY + 51, L("10 kΩ", "10 кОм"), 9.5, weight=600))
@@ -375,10 +386,12 @@ def draw(lang: str):
     # ------------------------------------------------------------ routing
     # JP1's left column leaves to the left, goes down round the header and turns right under the panel,
     # upper rows outside the lower ones so no two of them cross
-    XV = {"DOUT": 704, "WS": 716, "BCK": 728, "ENCSW": 740, "AMPEN": 752, "ENCA": 764, "ENCB": 776}
-    YB = {"ENCB": 850, "ENCA": 865, "AMPEN": 880, "ENCSW": 895, "BCK": 920, "WS": 940, "DOUT": 960}
-    SRC = {"DOUT": "JP1.GPIO52", "WS": "JP1.GPIO51", "BCK": "JP1.GPIO50", "ENCSW": "JP1.GPIO35", "AMPEN": "JP1.GPIO34",
-           "ENCA": "JP1.GPIO32", "ENCB": "JP1.GPIO28"}
+    XV = {"P3ENC": 668, "P3DAC": 680, "GDAC": 692, "DOUT": 704, "WS": 716, "BCK": 728, "ENCSW": 740, "AMPEN": 752,
+          "ENCA": 764, "ENCB": 776}
+    YB = {"ENCB": 850, "ENCA": 865, "AMPEN": 880, "ENCSW": 895, "BCK": 920, "WS": 940, "DOUT": 960,
+          "GDAC": 1020, "P3DAC": 1040, "P3ENC": 1060}
+    SRC = {"P3ENC": "JP1.3V3_1", "P3DAC": "JP1.3V3_2", "GDAC": "JP1.GND_L", "DOUT": "JP1.GPIO52", "WS": "JP1.GPIO51",
+           "BCK": "JP1.GPIO50", "ENCSW": "JP1.GPIO35", "AMPEN": "JP1.GPIO34", "ENCA": "JP1.GPIO32", "ENCB": "JP1.GPIO28"}
 
     def down(n):
         return (SRC[n], (XV[n], PIN[SRC[n]][1]), (XV[n], YB[n]))
@@ -386,17 +399,22 @@ def draw(lang: str):
     wire("DOUT", *down("DOUT"), "DAC.DIN")
     wire("WS", *down("WS"), "DAC.LRCK")
     wire("BCK", *down("BCK"), "DAC.BCK")
+    wire("GDAC", *down("GDAC"), "DAC.GND")
+    wire("P3DAC", *down("P3DAC"), "DAC.VCC")
     wire("AMPEN", *down("AMPEN"), "DAC.XSMT")
     wire("AMPEN", (1220, 880), (1220, RY), (1560, RY), (1560, PIN["AMP.RESET"][1]), "AMP.RESET")
     wire("AMPEN", (RX, RY), "R1.A")
     wire("ENCB", *down("ENCB"), (1025, YB["ENCB"]), (1025, PIN["ENC.B"][1]), "ENC.B")
     wire("ENCA", *down("ENCA"), (1010, YB["ENCA"]), (1010, PIN["ENC.A"][1]), "ENC.A")
     wire("ENCSW", *down("ENCSW"), (1045, YB["ENCSW"]), (1045, PIN["ENC.SW"][1]), "ENC.SW")
+    wire("P3ENC", *down("P3ENC"), (1065, YB["P3ENC"]), (1065, PIN["ENC.+"][1]), "ENC.+")
+    wire("GENC", "JP1.GND_8", (1080, PIN["JP1.GND_8"][1]), (1080, PIN["ENC.GND"][1]), "ENC.GND")
     wire("AL", "DAC.L", "AMP.INL")
     wire("AR", "DAC.R", "AMP.INR")
 
-    # the satellite: GND and BCLK run side by side and cross, as the two twisted wires do
-    wire("BTGND", "JP1.GND_R", "SAT.GND")
+    # the satellite: GND and BCLK sit next to each other at both ends and are twisted, so they cross here
+    wire("P5SAT", "JP1.5V_2", "SAT.VIN")
+    wire("GSAT", "JP1.GND_R", (1260, PIN["JP1.GND_R"][1]), (1260, PIN["SAT.GND"][1]), "SAT.GND")
     wire("BTBCK", "JP1.GPIO33", (1280, PIN["JP1.GPIO33"][1]), (1280, PIN["SAT.D13"][1]), "SAT.D13")
     wire("BTDATA", "JP1.GPIO31", (1300, PIN["JP1.GPIO31"][1]), (1300, PIN["SAT.D27"][1]), "SAT.D27")
     wire("BTWS", "JP1.GPIO30", (1320, PIN["JP1.GPIO30"][1]), (1320, PIN["SAT.D26"][1]), "SAT.D26")
@@ -406,16 +424,20 @@ def draw(lang: str):
     # ------------------------------------------------------------ wire labels, sitting on the wires
     for n, s in (("ENCB", L("GPIO28 · encoder B", "GPIO28 · енкодер B")), ("ENCA", L("GPIO32 · encoder A", "GPIO32 · енкодер A")),
                  ("AMPEN", "GPIO34 · amp_enable"), ("ENCSW", L("GPIO35 · encoder button", "GPIO35 · кнопка енкодера")),
-                 ("BCK", "GPIO50 · BCK 64·fs"), ("WS", "GPIO51 · WS"), ("DOUT", "GPIO52 · DOUT")):
+                 ("BCK", "GPIO50 · BCK 64·fs"), ("WS", "GPIO51 · WS"), ("DOUT", "GPIO52 · DOUT"),
+                 ("GDAC", L("GND · PCM5102A", "GND · PCM5102A")), ("P3DAC", L("+3V3 · PCM5102A", "+3V3 · PCM5102A")),
+                 ("P3ENC", L("+3V3 · encoder", "+3V3 · енкодер"))):
         tag(n, 800, YB[n], s)
     tag("AMPEN", 1240, RY, "/RESET, XSMT")
-    for n, pin, s in (("BTGND", "JP1.GND_R", L("GND, twisted with BCLK", "GND, скручений із BCLK")),
+    for n, pin, s in (("P5SAT", "JP1.5V_2", L("+5V · VIN, own regulator", "+5V · VIN, свій стабілізатор")),
+                      ("GSAT", "JP1.GND_R", L("GND, twisted with BCLK", "GND, скручений із BCLK")),
                       ("BTBCK", "JP1.GPIO33", "GPIO33 · BCLK"),
                       ("BTDATA", "JP1.GPIO31", L("GPIO31 · DATA from the satellite", "GPIO31 · DATA від супутника")),
-                      ("BTWS", "JP1.GPIO30", "GPIO30 · WS")):
+                      ("BTWS", "JP1.GPIO30", "GPIO30 · WS"),
+                      ("GENC", "JP1.GND_8", L("GND · encoder", "GND · енкодер"))):
         tag(n, 985, PIN[pin][1], s)
-    tag("UTX", 1000, 650, L("TX: J5.2, GPIO26, to RX2 (GPIO16)", "TX: J5.2, GPIO26, до RX2 (GPIO16)"))
-    tag("URX", 1000, 665, L("RX: J5.3, GPIO27, from TX2 (GPIO17)", "RX: J5.3, GPIO27, від TX2 (GPIO17)"))
+    tag("UTX", 1110, 650, L("TX: J5.2, GPIO26, to RX2 (GPIO16)", "TX: J5.2, GPIO26, до RX2 (GPIO16)"))
+    tag("URX", 1110, 665, L("RX: J5.3, GPIO27, from TX2 (GPIO17)", "RX: J5.3, GPIO27, від TX2 (GPIO17)"))
     tag("AL", 1530, 940, "L")
     tag("AR", 1530, 960, "R")
 
@@ -448,8 +470,9 @@ def draw(lang: str):
     side.append(text(LX, 66, L("Colours", "Кольори"), 15, weight=700))
     leg = [("BCK", L("I2S0 to the DAC: BCK, WS, DOUT", "I2S0 до ЦАП: BCK, WS, DOUT")), ("AMPEN", "amp_enable, GPIO34"),
            ("BTBCK", L("I2S-B, the satellite: BCLK, WS, DATA", "I2S-B, супутник: BCLK, WS, DATA")),
-           ("BTGND", L("ground wire beside BCLK", "дріт землі поруч із BCLK")), ("UTX", L("UART link on J5", "UART-лінк на J5")),
-           ("ENCA", L("encoder: A, B, button", "енкодер: A, B, кнопка")), ("AL", L("analog audio", "аналоговий звук"))]
+           ("UTX", L("UART link on J5", "UART-лінк на J5")), ("ENCA", L("encoder: A, B, button", "енкодер: A, B, кнопка")),
+           ("P5SAT", L("+5V from JP1", "+5V з JP1")), ("P3DAC", L("+3V3 from JP1", "+3V3 з JP1")),
+           ("GDAC", L("GND from JP1", "GND з JP1")), ("AL", L("analog audio", "аналоговий звук"))]
     for i, (n, s) in enumerate(leg):
         y = 88 + i * 20
         side.append(f'<path d="M{LX} {y} h34" stroke="{NET[n][0]}" stroke-width="3" fill="none"/>')
@@ -462,7 +485,7 @@ def draw(lang: str):
     side.append(text(LX + 20, y + 26, L("not used or not shown", "не використано або не показано"), 11.5))
 
     foot = []
-    fy = 1010
+    fy = 1095
     foot.append(text(40, fy, L("Ties and power", "Перемички і живлення"), 15, weight=700))
     for i, s in enumerate((
         L("PCM5102A: SCK, FMT and DEMP to GND: PLL from BCK, I2S format. XSMT from GPIO34: LOW = mute.",
@@ -473,8 +496,10 @@ def draw(lang: str):
           "Енкодер: «+» лише на 3V3, не на 5 В. A і B на внутрішніх підтяжках P4; на GPIO35 на платі R34 10 кОм угору і кнопка BOOT (SW1)."),
         L("Ground: the analog ground and the board ground meet at one point near the amplifier input; the Class-D power ground is separate.",
           "Земля: аналогова земля і земля плати сходяться в одній точці біля входу підсилювача; силова земля Class-D окремо."),
-        L("Not shown: power for the PCM5102A board and the satellite. The TPA3255 has its own 24 V supply.",
-          "Не показано: живлення плати PCM5102A і супутника. TPA3255 має своє живлення 24 В."),
+        L("Power from JP1: 3V3 to the PCM5102A board and the encoder, 5V to the satellite's VIN (it has its own regulator), a GND wire to each. "
+          "JP1's two 3V3, two 5V and three GND pins are one rail each. The TPA3255 has its own 24 V supply.",
+          "Живлення з JP1: 3V3 на плату PCM5102A і енкодер, 5V на VIN супутника (у нього свій стабілізатор), до кожного свій дріт GND. "
+          "Два 3V3, два 5V і три GND на JP1 — кожні одна шина. TPA3255 має своє живлення 24 В."),
     )):
         foot.append(text(40, fy + 22 + i * 19, s, 11.5, "#3d444d"))
     fy2 = fy + 22 + 5 * 19 + 18

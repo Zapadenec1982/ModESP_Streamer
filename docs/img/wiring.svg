@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2040 1290" width="2040" height="1290" font-family="Roboto, 'Segoe UI', Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2040 1370" width="2040" height="1370" font-family="Roboto, 'Segoe UI', Arial, sans-serif">
 <title>ModESP Streamer: wiring</title>
 <style>.net path{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}.net:hover path{stroke-width:4.5}</style>
-<rect x="0" y="0" width="2040" height="1290" fill="#ffffff"/>
+<rect x="0" y="0" width="2040" height="1370" fill="#ffffff"/>
 <rect x="40" y="300" width="900.8" height="526" fill="#c7ccd1" stroke="#6e7781" stroke-width="1.5" rx="9"/>
 <rect x="101" y="303" width="778.8" height="520" fill="#eef1f4" stroke="#8c959f" stroke-width="1.0" rx="4"/>
 <text x="116" y="326" font-size="15" fill="#1f2328" font-weight="700">JC4880P443C · back view, 114.4 × 66.8 mm</text>
@@ -19,32 +19,32 @@
 <text x="847.8" y="435" font-size="11" fill="#1f2328" text-anchor="middle" font-weight="700">JP1</text>
 <rect x="848.8" y="726" width="22" height="82" fill="#ffffff" stroke="#57606a" stroke-width="1.0" rx="2" stroke-dasharray="4 3"/>
 <text x="874.8" y="819" font-size="9.5" fill="#1f2328" text-anchor="middle" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">J5 (place schematic)</text>
-<rect x="1410" y="181" width="218.9" height="404.7" fill="#1b1f23" stroke="#000000" stroke-width="1.0" rx="6"/>
-<circle cx="1422" cy="199" r="7" fill="#ffffff" stroke="#6e7781" stroke-width="1.5"/>
-<circle cx="1616.9" cy="199" r="7" fill="#ffffff" stroke="#6e7781" stroke-width="1.5"/>
-<circle cx="1422" cy="571.7" r="7" fill="#ffffff" stroke="#6e7781" stroke-width="1.5"/>
-<circle cx="1616.9" cy="571.7" r="7" fill="#ffffff" stroke="#6e7781" stroke-width="1.5"/>
-<rect x="1449" y="181" width="142" height="201" fill="#b6bcc3" stroke="#6e7781" stroke-width="1.0" rx="3"/>
-<rect x="1449" y="181" width="142" height="47" fill="#2d333b" rx="3"/>
-<text x="1520" y="210" font-size="10" fill="#c9d1d9" text-anchor="middle">antenna</text>
-<text x="1520" y="297" font-size="11.5" fill="#1f2328" text-anchor="middle" font-weight="700">ESP-WROOM-32</text>
-<text x="1520" y="407" font-size="13.5" fill="#ffffff" text-anchor="middle" font-weight="700">BT satellite</text>
-<text x="1520" y="425" font-size="9.5" fill="#c9d1d9" text-anchor="middle">ESP32 DevKit, 30 pins</text>
-<text x="1520" y="443" font-size="9.5" fill="#c9d1d9" text-anchor="middle">A2DP → I2S, UART2</text>
-<rect x="1545" y="471" width="40" height="40" fill="#2d333b" stroke="#6e7781" stroke-width="1.0" rx="2"/>
-<text x="1565" y="494" font-size="7" fill="#e6edf3" text-anchor="middle">USB-UART</text>
-<rect x="1443" y="554.7" width="26" height="20" fill="#57606a" stroke="#8c959f" stroke-width="1.0" rx="2"/>
-<text x="1456" y="568.7" font-size="9" fill="#ffffff" text-anchor="middle">EN</text>
-<rect x="1569.9" y="554.7" width="26" height="20" fill="#57606a" stroke="#8c959f" stroke-width="1.0" rx="2"/>
-<text x="1582.9" y="568.7" font-size="7.5" fill="#ffffff" text-anchor="middle">BOOT</text>
-<rect x="1501.4" y="563.7" width="36" height="24" fill="#8c959f" stroke="#57606a" stroke-width="1.0" rx="2"/>
-<text x="1519.4" y="579.7" font-size="8.5" fill="#111418" text-anchor="middle" font-weight="600">USB</text>
-<rect x="1070" y="687" width="170" height="108" fill="#f6f8fa" stroke="#57606a" stroke-width="1.0" rx="5" stroke-dasharray="5 3"/>
-<circle cx="1172" cy="722" r="22" fill="#d0d7de" stroke="#57606a" stroke-width="1.5"/>
-<circle cx="1172" cy="722" r="10" fill="#8c959f"/>
-<text x="1172" y="762" font-size="10.5" fill="#1f2328" text-anchor="middle" font-weight="700">Encoder</text>
-<text x="1172" y="776" font-size="8.5" fill="#57606a" text-anchor="middle">PCNT, 4 edges per detent</text>
-<rect x="1260" y="845" width="200" height="175" fill="#f6f8fa" stroke="#57606a" stroke-width="1.4" rx="6" stroke-dasharray="5 3"/>
+<rect x="1410" y="141" width="218.9" height="404.7" fill="#1b1f23" stroke="#000000" stroke-width="1.0" rx="6"/>
+<circle cx="1422" cy="159" r="7" fill="#ffffff" stroke="#6e7781" stroke-width="1.5"/>
+<circle cx="1616.9" cy="159" r="7" fill="#ffffff" stroke="#6e7781" stroke-width="1.5"/>
+<circle cx="1422" cy="531.7" r="7" fill="#ffffff" stroke="#6e7781" stroke-width="1.5"/>
+<circle cx="1616.9" cy="531.7" r="7" fill="#ffffff" stroke="#6e7781" stroke-width="1.5"/>
+<rect x="1449" y="141" width="142" height="201" fill="#b6bcc3" stroke="#6e7781" stroke-width="1.0" rx="3"/>
+<rect x="1449" y="141" width="142" height="47" fill="#2d333b" rx="3"/>
+<text x="1520" y="170" font-size="10" fill="#c9d1d9" text-anchor="middle">antenna</text>
+<text x="1520" y="257" font-size="11.5" fill="#1f2328" text-anchor="middle" font-weight="700">ESP-WROOM-32</text>
+<text x="1520" y="367" font-size="13.5" fill="#ffffff" text-anchor="middle" font-weight="700">BT satellite</text>
+<text x="1520" y="385" font-size="9.5" fill="#c9d1d9" text-anchor="middle">ESP32 DevKit, 30 pins</text>
+<text x="1520" y="403" font-size="9.5" fill="#c9d1d9" text-anchor="middle">A2DP → I2S, UART2</text>
+<rect x="1545" y="431" width="40" height="40" fill="#2d333b" stroke="#6e7781" stroke-width="1.0" rx="2"/>
+<text x="1565" y="454" font-size="7" fill="#e6edf3" text-anchor="middle">USB-UART</text>
+<rect x="1443" y="514.7" width="26" height="20" fill="#57606a" stroke="#8c959f" stroke-width="1.0" rx="2"/>
+<text x="1456" y="528.7" font-size="9" fill="#ffffff" text-anchor="middle">EN</text>
+<rect x="1569.9" y="514.7" width="26" height="20" fill="#57606a" stroke="#8c959f" stroke-width="1.0" rx="2"/>
+<text x="1582.9" y="528.7" font-size="7.5" fill="#ffffff" text-anchor="middle">BOOT</text>
+<rect x="1501.4" y="523.7" width="36" height="24" fill="#8c959f" stroke="#57606a" stroke-width="1.0" rx="2"/>
+<text x="1519.4" y="539.7" font-size="8.5" fill="#111418" text-anchor="middle" font-weight="600">USB</text>
+<rect x="1100" y="687" width="170" height="108" fill="#f6f8fa" stroke="#57606a" stroke-width="1.0" rx="5" stroke-dasharray="5 3"/>
+<circle cx="1202" cy="722" r="22" fill="#d0d7de" stroke="#57606a" stroke-width="1.5"/>
+<circle cx="1202" cy="722" r="10" fill="#8c959f"/>
+<text x="1202" y="762" font-size="10.5" fill="#1f2328" text-anchor="middle" font-weight="700">Encoder</text>
+<text x="1202" y="776" font-size="8.5" fill="#57606a" text-anchor="middle">PCNT, 4 edges per detent</text>
+<rect x="1260" y="845" width="200" height="212" fill="#f6f8fa" stroke="#57606a" stroke-width="1.4" rx="6" stroke-dasharray="5 3"/>
 <text x="1390" y="866" font-size="12.5" fill="#1f2328" text-anchor="middle" font-weight="700">PCM5102A · DAC</text>
 <text x="1322" y="897" font-size="10" fill="#57606a">PLL from BCK, no MCLK</text>
 <text x="1322" y="912" font-size="10" fill="#57606a">out 2.1 Vrms</text>
@@ -63,7 +63,7 @@
 <path d="M1915 961 l20 -13 v54 l-20 -13 z" fill="#d0d7de" stroke="#1f2328" stroke-width="1.5"/>
 <text x="1918" y="979" font-size="11" fill="#1f2328" font-weight="700">R</text>
 <text x="1918" y="1022" font-size="10.5" fill="#57606a" text-anchor="middle">Denon SC-G101</text>
-<rect x="1494" y="860" width="12" height="34" fill="#ffffff" stroke="#d1242f" stroke-width="1.5"/>
+<rect x="1494" y="860" width="12" height="34" fill="#ffffff" stroke="#bf3989" stroke-width="1.5"/>
 <path d="M1500 894 v12 M1491 906 h18 M1494 910 h12 M1497 914 h6" fill="none" stroke="#111418" stroke-width="1.6"/>
 <g class="net" stroke="#00337a"><title>GPIO52 · I2S0 DOUT</title>
 <path d="M837.8 510 L704 510 L704 960 L1260 960"/>
@@ -74,19 +74,31 @@
 <g class="net" stroke="#0a58ca"><title>GPIO50 · I2S0 BCK, 64·fs, to the PCM5102A</title>
 <path d="M837.8 550 L728 550 L728 920 L1260 920"/>
 </g>
-<g class="net" stroke="#d1242f"><title>GPIO34 · amp_enable: XSMT, /RESET, 10 kΩ to GND</title>
+<g class="net" stroke="#111418"><title>GND from JP1 to the PCM5102A board</title>
+<path d="M837.8 490 L692 490 L692 1020 L1260 1020"/>
+</g>
+<g class="net" stroke="#d4a017"><title>+3V3 from JP1 to the PCM5102A board</title>
+<path d="M837.8 470 L680 470 L680 1040 L1260 1040"/>
+</g>
+<g class="net" stroke="#bf3989"><title>GPIO34 · amp_enable: XSMT, /RESET, 10 kΩ to GND</title>
 <path d="M837.8 610 L752 610 L752 880 L1260 880"/>
 <path d="M1220 880 L1220 830 L1560 830 L1560 900 L1600 900"/>
 <path d="M1500 830 L1500 860"/>
 </g>
 <g class="net" stroke="#2da44e"><title>GPIO28 · encoder B</title>
-<path d="M837.8 650 L776 650 L776 850 L1025 850 L1025 720 L1070 720"/>
+<path d="M837.8 650 L776 650 L776 850 L1025 850 L1025 720 L1100 720"/>
 </g>
 <g class="net" stroke="#1a7f37"><title>GPIO32 · encoder A</title>
-<path d="M837.8 630 L764 630 L764 865 L1010 865 L1010 700 L1070 700"/>
+<path d="M837.8 630 L764 630 L764 865 L1010 865 L1010 700 L1100 700"/>
 </g>
 <g class="net" stroke="#57b56e"><title>GPIO35 · encoder button</title>
-<path d="M837.8 590 L740 590 L740 895 L1045 895 L1045 740 L1070 740"/>
+<path d="M837.8 590 L740 590 L740 895 L1045 895 L1045 740 L1100 740"/>
+</g>
+<g class="net" stroke="#d4a017"><title>+3V3 from JP1 to the encoder</title>
+<path d="M837.8 450 L668 450 L668 1060 L1065 1060 L1065 780 L1100 780"/>
+</g>
+<g class="net" stroke="#111418"><title>GND from JP1 to the encoder</title>
+<path d="M857.8 590 L1080 590 L1080 760 L1100 760"/>
 </g>
 <g class="net" stroke="#57606a"><title>L</title>
 <path d="M1460 940 L1600 940"/>
@@ -94,29 +106,32 @@
 <g class="net" stroke="#8c959f"><title>R</title>
 <path d="M1460 960 L1600 960"/>
 </g>
-<g class="net" stroke="#111418"><title>GND, twisted with BCLK</title>
-<path d="M857.8 490 L1420 490"/>
+<g class="net" stroke="#e5484d"><title>+5V from JP1 to the satellite&#x27;s VIN</title>
+<path d="M857.8 470 L1420 470"/>
+</g>
+<g class="net" stroke="#111418"><title>GND to the satellite, twisted with BCLK</title>
+<path d="M857.8 490 L1260 490 L1260 450 L1420 450"/>
 </g>
 <g class="net" stroke="#8250df"><title>GPIO33 · BCLK, the satellite&#x27;s D13 (GPIO13)</title>
-<path d="M857.8 510 L1280 510 L1280 470 L1420 470"/>
+<path d="M857.8 510 L1280 510 L1280 430 L1420 430"/>
 </g>
 <g class="net" stroke="#55309b"><title>GPIO31 · DATA from the satellite&#x27;s D27 (GPIO27)</title>
-<path d="M857.8 530 L1300 530 L1300 410 L1420 410"/>
+<path d="M857.8 530 L1300 530 L1300 370 L1420 370"/>
 </g>
 <g class="net" stroke="#b083f0"><title>GPIO30 · WS, the satellite&#x27;s D26 (GPIO26)</title>
-<path d="M857.8 550 L1320 550 L1320 390 L1420 390"/>
+<path d="M857.8 550 L1320 550 L1320 350 L1420 350"/>
 </g>
-<g class="net" stroke="#e8590c"><title>J5.2 TX1 (GPIO26) to the satellite&#x27;s RX2 (GPIO16)</title>
-<path d="M859.8 777 L980 777 L980 650 L1660 650 L1660 410 L1620 410"/>
+<g class="net" stroke="#bc4c00"><title>J5.2 TX1 (GPIO26) to the satellite&#x27;s RX2 (GPIO16)</title>
+<path d="M859.8 777 L980 777 L980 650 L1660 650 L1660 370 L1620 370"/>
 </g>
-<g class="net" stroke="#a84300"><title>J5.3 RX1 (GPIO27) from the satellite&#x27;s TX2 (GPIO17)</title>
-<path d="M859.8 757 L965 757 L965 665 L1675 665 L1675 390 L1620 390"/>
+<g class="net" stroke="#7a3410"><title>J5.3 RX1 (GPIO27) from the satellite&#x27;s TX2 (GPIO17)</title>
+<path d="M859.8 757 L965 757 L965 665 L1675 665 L1675 350 L1620 350"/>
 </g>
-<circle cx="1220" cy="880" r="3.6" fill="#d1242f" stroke="#ffffff" stroke-width="1"/>
-<circle cx="1500" cy="830" r="3.6" fill="#d1242f" stroke="#ffffff" stroke-width="1"/>
-<circle cx="837.8" cy="450" r="6.5" fill="#f08c00" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1220" cy="880" r="3.6" fill="#bf3989" stroke="#ffffff" stroke-width="1"/>
+<circle cx="1500" cy="830" r="3.6" fill="#bf3989" stroke="#ffffff" stroke-width="1"/>
+<circle cx="837.8" cy="450" r="6.5" fill="#d4a017" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="857.8" cy="450" r="6.5" fill="#e5484d" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="837.8" cy="470" r="6.5" fill="#f08c00" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="837.8" cy="470" r="6.5" fill="#d4a017" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="857.8" cy="470" r="6.5" fill="#e5484d" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="837.8" cy="490" r="6.5" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="857.8" cy="490" r="6.5" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
@@ -130,7 +145,7 @@
 <circle cx="857.8" cy="570" r="6.5" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="837.8" cy="590" r="6.5" fill="#57b56e" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="857.8" cy="590" r="6.5" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="837.8" cy="610" r="6.5" fill="#d1242f" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="837.8" cy="610" r="6.5" fill="#bf3989" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="857.8" cy="610" r="6.5" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="837.8" cy="630" r="6.5" fill="#1a7f37" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="857.8" cy="630" r="6.5" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
@@ -141,54 +156,56 @@
 <circle cx="837.8" cy="690" r="6.5" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="857.8" cy="690" r="6.5" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="859.8" cy="737" r="6" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="859.8" cy="757" r="6" fill="#a84300" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="859.8" cy="777" r="6" fill="#e8590c" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="859.8" cy="757" r="6" fill="#7a3410" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="859.8" cy="777" r="6" fill="#bc4c00" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="859.8" cy="797" r="6" fill="#e5484d" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="190" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="210" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1420" cy="230" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1420" cy="250" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1420" cy="270" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1420" cy="290" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1420" cy="310" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1420" cy="330" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="1420" cy="350" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="1420" cy="370" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="1420" cy="390" r="5.6" fill="#b083f0" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="1420" cy="410" r="5.6" fill="#55309b" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="1420" cy="430" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="1420" cy="450" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="1420" cy="470" r="5.6" fill="#8250df" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="1420" cy="490" r="5.6" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="1420" cy="510" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="350" r="5.6" fill="#b083f0" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="370" r="5.6" fill="#55309b" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="390" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="410" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="430" r="5.6" fill="#8250df" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="450" r="5.6" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="470" r="5.6" fill="#e5484d" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="190" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="210" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1620" cy="230" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1620" cy="250" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1620" cy="270" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1620" cy="290" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1620" cy="310" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1620" cy="330" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="1620" cy="350" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="1620" cy="370" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="1620" cy="390" r="5.6" fill="#a84300" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="1620" cy="410" r="5.6" fill="#e8590c" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="350" r="5.6" fill="#7a3410" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="370" r="5.6" fill="#bc4c00" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="390" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="410" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1620" cy="430" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="1620" cy="450" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="450" r="5.6" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1620" cy="470" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="1620" cy="490" r="5.6" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="1620" cy="510" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="1070" cy="700" r="5.6" fill="#1a7f37" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="1070" cy="720" r="5.6" fill="#2da44e" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="1070" cy="740" r="5.6" fill="#57b56e" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="1070" cy="760" r="5.6" fill="#f08c00" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="1070" cy="780" r="5.6" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="1260" cy="880" r="5.6" fill="#d1242f" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1100" cy="700" r="5.6" fill="#1a7f37" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1100" cy="720" r="5.6" fill="#2da44e" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1100" cy="740" r="5.6" fill="#57b56e" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1100" cy="760" r="5.6" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1100" cy="780" r="5.6" fill="#d4a017" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1260" cy="880" r="5.6" fill="#bf3989" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1260" cy="900" r="5.6" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1260" cy="920" r="5.6" fill="#0a58ca" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1260" cy="940" r="5.6" fill="#2f9bff" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1260" cy="960" r="5.6" fill="#00337a" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1260" cy="980" r="5.6" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1260" cy="1000" r="5.6" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1260" cy="1020" r="5.6" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1260" cy="1040" r="5.6" fill="#d4a017" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1460" cy="940" r="5" fill="#57606a" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1460" cy="960" r="5" fill="#8c959f" stroke="#ffffff" stroke-width="1.6"/>
-<circle cx="1600" cy="900" r="5.6" fill="#d1242f" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1600" cy="900" r="5.6" fill="#bf3989" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1600" cy="940" r="5" fill="#57606a" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1600" cy="960" r="5" fill="#8c959f" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1830" cy="900" r="5" fill="#57606a" stroke="#ffffff" stroke-width="1.4"/>
@@ -257,41 +274,41 @@
 <text x="176" y="640" font-size="10.5" fill="#3d444d">the ES8311&#x27;s microphone ADC; XTAL</text>
 <text x="116" y="667" font-size="12.5" fill="#1f2328" font-weight="700">Sources</text>
 <text x="116" y="686" font-size="10.5" fill="#3d444d">microSD · radio, DLNA, AirPlay (Wi-Fi over the C6) · USB UAC2 · BT (satellite)</text>
-<text x="1430" y="233.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">EN</text>
-<text x="1430" y="253.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">VP</text>
-<text x="1430" y="273.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">VN</text>
-<text x="1430" y="293.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D34</text>
-<text x="1430" y="313.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D35</text>
-<text x="1430" y="333.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D32</text>
-<text x="1430" y="353.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D33</text>
-<text x="1430" y="373.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D25</text>
-<text x="1430" y="393.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D26</text>
-<text x="1430" y="413.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D27</text>
-<text x="1430" y="433.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D14</text>
-<text x="1430" y="453.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D12</text>
-<text x="1430" y="473.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D13</text>
-<text x="1430" y="493.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">GND</text>
-<text x="1430" y="513.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">VIN</text>
-<text x="1610" y="233.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D23</text>
-<text x="1610" y="253.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D22</text>
-<text x="1610" y="273.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">TX0</text>
-<text x="1610" y="293.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">RX0</text>
-<text x="1610" y="313.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D21</text>
-<text x="1610" y="333.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D19</text>
-<text x="1610" y="353.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D18</text>
-<text x="1610" y="373.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D5</text>
-<text x="1610" y="393.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">TX2</text>
-<text x="1610" y="413.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">RX2</text>
-<text x="1610" y="433.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D4</text>
-<text x="1610" y="453.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D2</text>
-<text x="1610" y="473.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D15</text>
-<text x="1610" y="493.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">GND</text>
-<text x="1610" y="513.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">3V3</text>
-<text x="1079" y="703.5" font-size="9.5" fill="#1f2328" font-weight="600">A</text>
-<text x="1079" y="723.5" font-size="9.5" fill="#1f2328" font-weight="600">B</text>
-<text x="1079" y="743.5" font-size="9.5" fill="#1f2328" font-weight="600">SW</text>
-<text x="1079" y="763.5" font-size="9.5" fill="#1f2328" font-weight="600">+</text>
-<text x="1079" y="783.5" font-size="9.5" fill="#1f2328" font-weight="600">GND</text>
+<text x="1430" y="193.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">EN</text>
+<text x="1430" y="213.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">VP</text>
+<text x="1430" y="233.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">VN</text>
+<text x="1430" y="253.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D34</text>
+<text x="1430" y="273.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D35</text>
+<text x="1430" y="293.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D32</text>
+<text x="1430" y="313.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D33</text>
+<text x="1430" y="333.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D25</text>
+<text x="1430" y="353.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D26</text>
+<text x="1430" y="373.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D27</text>
+<text x="1430" y="393.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D14</text>
+<text x="1430" y="413.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D12</text>
+<text x="1430" y="433.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D13</text>
+<text x="1430" y="453.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">GND</text>
+<text x="1430" y="473.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">VIN</text>
+<text x="1610" y="193.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D23</text>
+<text x="1610" y="213.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D22</text>
+<text x="1610" y="233.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">TX0</text>
+<text x="1610" y="253.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">RX0</text>
+<text x="1610" y="273.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D21</text>
+<text x="1610" y="293.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D19</text>
+<text x="1610" y="313.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D18</text>
+<text x="1610" y="333.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D5</text>
+<text x="1610" y="353.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">TX2</text>
+<text x="1610" y="373.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">RX2</text>
+<text x="1610" y="393.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D4</text>
+<text x="1610" y="413.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D2</text>
+<text x="1610" y="433.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D15</text>
+<text x="1610" y="453.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">GND</text>
+<text x="1610" y="473.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">3V3</text>
+<text x="1109" y="703.5" font-size="9.5" fill="#1f2328" font-weight="600">A</text>
+<text x="1109" y="723.5" font-size="9.5" fill="#1f2328" font-weight="600">B</text>
+<text x="1109" y="743.5" font-size="9.5" fill="#1f2328" font-weight="600">SW</text>
+<text x="1109" y="763.5" font-size="9.5" fill="#1f2328" font-weight="600">GND</text>
+<text x="1109" y="783.5" font-size="9.5" fill="#1f2328" font-weight="600">+</text>
 <text x="1269" y="883.5" font-size="9.5" fill="#1f2328" font-weight="600">XSMT</text>
 <text x="1269" y="903.5" font-size="9.5" fill="#1f2328" font-weight="600">SCK</text>
 <text x="1269" y="923.5" font-size="9.5" fill="#1f2328" font-weight="600">BCK</text>
@@ -299,6 +316,8 @@
 <text x="1269" y="963.5" font-size="9.5" fill="#1f2328" font-weight="600">DIN</text>
 <text x="1269" y="983.5" font-size="9.5" fill="#1f2328" font-weight="600">FMT</text>
 <text x="1269" y="1003.5" font-size="9.5" fill="#1f2328" font-weight="600">DEMP</text>
+<text x="1269" y="1023.5" font-size="9.5" fill="#1f2328" font-weight="600">GND</text>
+<text x="1269" y="1043.5" font-size="9.5" fill="#1f2328" font-weight="600">VCC</text>
 <text x="1451" y="943.5" font-size="9.5" fill="#1f2328" text-anchor="end" font-weight="600">L</text>
 <text x="1451" y="963.5" font-size="9.5" fill="#1f2328" text-anchor="end" font-weight="600">R</text>
 <text x="1609" y="903.5" font-size="9.5" fill="#1f2328" font-weight="600">/RESET</text>
@@ -317,7 +336,7 @@
 <rect x="797" y="858.9" width="113.9" height="13.5" fill="#ffffff" rx="2"/>
 <text x="800" y="868.8" font-size="10.5" fill="#1a7f37" font-weight="600">GPIO32 · encoder A</text>
 <rect x="797" y="873.9" width="121.9" height="13.5" fill="#ffffff" rx="2"/>
-<text x="800" y="883.8" font-size="10.5" fill="#d1242f" font-weight="600">GPIO34 · amp_enable</text>
+<text x="800" y="883.8" font-size="10.5" fill="#bf3989" font-weight="600">GPIO34 · amp_enable</text>
 <rect x="797" y="888.9" width="144.2" height="13.5" fill="#ffffff" rx="2"/>
 <text x="800" y="898.8" font-size="10.5" fill="#57b56e" font-weight="600">GPIO35 · encoder button</text>
 <rect x="797" y="913.9" width="113.5" height="13.5" fill="#ffffff" rx="2"/>
@@ -326,8 +345,16 @@
 <text x="800" y="943.8" font-size="10.5" fill="#2f9bff" font-weight="600">GPIO51 · WS</text>
 <rect x="797" y="953.9" width="89.2" height="13.5" fill="#ffffff" rx="2"/>
 <text x="800" y="963.8" font-size="10.5" fill="#00337a" font-weight="600">GPIO52 · DOUT</text>
+<rect x="797" y="1013.9" width="94.2" height="13.5" fill="#ffffff" rx="2"/>
+<text x="800" y="1023.8" font-size="10.5" fill="#111418" font-weight="600">GND · PCM5102A</text>
+<rect x="797" y="1033.9" width="98" height="13.5" fill="#ffffff" rx="2"/>
+<text x="800" y="1043.8" font-size="10.5" fill="#d4a017" font-weight="600">+3V3 · PCM5102A</text>
+<rect x="797" y="1053.9" width="86.6" height="13.5" fill="#ffffff" rx="2"/>
+<text x="800" y="1063.8" font-size="10.5" fill="#d4a017" font-weight="600">+3V3 · encoder</text>
 <rect x="1237" y="823.9" width="87.1" height="13.5" fill="#ffffff" rx="2"/>
-<text x="1240" y="833.8" font-size="10.5" fill="#d1242f" font-weight="600">/RESET, XSMT</text>
+<text x="1240" y="833.8" font-size="10.5" fill="#bf3989" font-weight="600">/RESET, XSMT</text>
+<rect x="982" y="463.9" width="144.6" height="13.6" fill="#ffffff" rx="2"/>
+<text x="985" y="473.8" font-size="10.5" fill="#e5484d" font-weight="600">+5V · VIN, own regulator</text>
 <rect x="982" y="483.9" width="141.7" height="13.6" fill="#ffffff" rx="2"/>
 <text x="985" y="493.8" font-size="10.5" fill="#111418" font-weight="600">GND, twisted with BCLK</text>
 <rect x="982" y="503.9" width="89.2" height="13.6" fill="#ffffff" rx="2"/>
@@ -336,10 +363,12 @@
 <text x="985" y="533.8" font-size="10.5" fill="#55309b" font-weight="600">GPIO31 · DATA from the satellite</text>
 <rect x="982" y="543.9" width="74" height="13.5" fill="#ffffff" rx="2"/>
 <text x="985" y="553.8" font-size="10.5" fill="#b083f0" font-weight="600">GPIO30 · WS</text>
-<rect x="997" y="643.9" width="203.8" height="13.5" fill="#ffffff" rx="2"/>
-<text x="1000" y="653.8" font-size="10.5" fill="#e8590c" font-weight="600">TX: J5.2, GPIO26, to RX2 (GPIO16)</text>
-<rect x="997" y="658.9" width="216.4" height="13.5" fill="#ffffff" rx="2"/>
-<text x="1000" y="668.8" font-size="10.5" fill="#a84300" font-weight="600">RX: J5.3, GPIO27, from TX2 (GPIO17)</text>
+<rect x="982" y="583.9" width="82.9" height="13.5" fill="#ffffff" rx="2"/>
+<text x="985" y="593.8" font-size="10.5" fill="#111418" font-weight="600">GND · encoder</text>
+<rect x="1107" y="643.9" width="203.8" height="13.5" fill="#ffffff" rx="2"/>
+<text x="1110" y="653.8" font-size="10.5" fill="#bc4c00" font-weight="600">TX: J5.2, GPIO26, to RX2 (GPIO16)</text>
+<rect x="1107" y="658.9" width="216.4" height="13.5" fill="#ffffff" rx="2"/>
+<text x="1110" y="668.8" font-size="10.5" fill="#7a3410" font-weight="600">RX: J5.3, GPIO27, from TX2 (GPIO17)</text>
 <rect x="1527" y="933.9" width="13.6" height="13.5" fill="#ffffff" rx="2"/>
 <text x="1530" y="943.8" font-size="10.5" fill="#57606a" font-weight="600">L</text>
 <rect x="1527" y="953.9" width="13.6" height="13.5" fill="#ffffff" rx="2"/>
@@ -357,37 +386,41 @@
 <text x="1700" y="66" font-size="15" fill="#1f2328" font-weight="700">Colours</text>
 <path d="M1700 88 h34" stroke="#0a58ca" stroke-width="3" fill="none"/>
 <text x="1744" y="92" font-size="11.5" fill="#1f2328">I2S0 to the DAC: BCK, WS, DOUT</text>
-<path d="M1700 108 h34" stroke="#d1242f" stroke-width="3" fill="none"/>
+<path d="M1700 108 h34" stroke="#bf3989" stroke-width="3" fill="none"/>
 <text x="1744" y="112" font-size="11.5" fill="#1f2328">amp_enable, GPIO34</text>
 <path d="M1700 128 h34" stroke="#8250df" stroke-width="3" fill="none"/>
 <text x="1744" y="132" font-size="11.5" fill="#1f2328">I2S-B, the satellite: BCLK, WS, DATA</text>
-<path d="M1700 148 h34" stroke="#111418" stroke-width="3" fill="none"/>
-<text x="1744" y="152" font-size="11.5" fill="#1f2328">ground wire beside BCLK</text>
-<path d="M1700 168 h34" stroke="#e8590c" stroke-width="3" fill="none"/>
-<text x="1744" y="172" font-size="11.5" fill="#1f2328">UART link on J5</text>
-<path d="M1700 188 h34" stroke="#1a7f37" stroke-width="3" fill="none"/>
-<text x="1744" y="192" font-size="11.5" fill="#1f2328">encoder: A, B, button</text>
-<path d="M1700 208 h34" stroke="#57606a" stroke-width="3" fill="none"/>
-<text x="1744" y="212" font-size="11.5" fill="#1f2328">analog audio</text>
-<circle cx="1708" cy="234" r="6" fill="#e5484d" stroke="#fff" stroke-width="1.2"/>
-<text x="1720" y="238" font-size="11.5" fill="#1f2328">+5V</text>
-<circle cx="1778" cy="234" r="6" fill="#f08c00" stroke="#fff" stroke-width="1.2"/>
-<text x="1790" y="238" font-size="11.5" fill="#1f2328">+3V3</text>
-<circle cx="1850" cy="234" r="6" fill="#111418" stroke="#fff" stroke-width="1.2"/>
-<text x="1862" y="238" font-size="11.5" fill="#1f2328">GND</text>
-<circle cx="1708" cy="256" r="6" fill="#c9b26a" stroke="#fff" stroke-width="1.2"/>
-<text x="1720" y="260" font-size="11.5" fill="#1f2328">not used or not shown</text>
-<text x="40" y="1010" font-size="15" fill="#1f2328" font-weight="700">Ties and power</text>
-<text x="40" y="1032" font-size="11.5" fill="#3d444d">PCM5102A: SCK, FMT and DEMP to GND: PLL from BCK, I2S format. XSMT from GPIO34: LOW = mute.</text>
-<text x="40" y="1051" font-size="11.5" fill="#3d444d">GPIO34 amp_enable drives the TPA3255&#x27;s /RESET and the DAC&#x27;s XSMT. The 10 kΩ to GND keeps both silent until the firmware starts; HIGH = playing.</text>
-<text x="40" y="1070" font-size="11.5" fill="#3d444d">Encoder: “+” to 3V3 only, not 5 V. A and B use the P4&#x27;s internal pull-ups; GPIO35 has R34 10 kΩ up and the BOOT button (SW1) on the board.</text>
-<text x="40" y="1089" font-size="11.5" fill="#3d444d">Ground: the analog ground and the board ground meet at one point near the amplifier input; the Class-D power ground is separate.</text>
-<text x="40" y="1108" font-size="11.5" fill="#3d444d">Not shown: power for the PCM5102A board and the satellite. The TPA3255 has its own 24 V supply.</text>
-<text x="40" y="1145" font-size="15" fill="#1f2328" font-weight="700">Constraints</text>
-<text x="40" y="1167" font-size="11.5" fill="#3d444d">GPIO34 and GPIO35 are strapping pins: nothing an external chip drives during reset sits on them, so the satellite&#x27;s clocks are on 33, 30 and 31.</text>
-<text x="40" y="1186" font-size="11.5" fill="#3d444d">BCLK and WS: outputs of I2S0 while the satellite is an I2S slave (link protocol 1.9 or later), inputs of I2S1 otherwise. Drive strength: BCLK 2, WS 3.</text>
-<text x="40" y="1205" font-size="11.5" fill="#3d444d">At the satellite BCLK is D13 (GPIO13), next to a GND pin, and its wire is twisted with a ground wire.</text>
-<text x="40" y="1224" font-size="11.5" fill="#3d444d">UART on J5: 460800 8N1, no flow control, COBS frames; UART2 on the satellite. R70, R75 and R76 are removed: J5 is TTL, not RS485.</text>
-<text x="40" y="1243" font-size="11.5" fill="#3d444d">J5: pin order from the schematic, sheet 04; which pin is TX is set in board.json. Its place on the board is not known.</text>
-<text x="40" y="1262" font-size="11.5" fill="#3d444d">GPIO49 (I2S0 MCLK) is held LOW and is not free; GPIO29 (I2S0 DIN) is read only by AUX, off in this build. C6_*: the ESP32-C6 recovery path, C6_UPDATE.md.</text>
+<path d="M1700 148 h34" stroke="#bc4c00" stroke-width="3" fill="none"/>
+<text x="1744" y="152" font-size="11.5" fill="#1f2328">UART link on J5</text>
+<path d="M1700 168 h34" stroke="#1a7f37" stroke-width="3" fill="none"/>
+<text x="1744" y="172" font-size="11.5" fill="#1f2328">encoder: A, B, button</text>
+<path d="M1700 188 h34" stroke="#e5484d" stroke-width="3" fill="none"/>
+<text x="1744" y="192" font-size="11.5" fill="#1f2328">+5V from JP1</text>
+<path d="M1700 208 h34" stroke="#d4a017" stroke-width="3" fill="none"/>
+<text x="1744" y="212" font-size="11.5" fill="#1f2328">+3V3 from JP1</text>
+<path d="M1700 228 h34" stroke="#111418" stroke-width="3" fill="none"/>
+<text x="1744" y="232" font-size="11.5" fill="#1f2328">GND from JP1</text>
+<path d="M1700 248 h34" stroke="#57606a" stroke-width="3" fill="none"/>
+<text x="1744" y="252" font-size="11.5" fill="#1f2328">analog audio</text>
+<circle cx="1708" cy="274" r="6" fill="#e5484d" stroke="#fff" stroke-width="1.2"/>
+<text x="1720" y="278" font-size="11.5" fill="#1f2328">+5V</text>
+<circle cx="1778" cy="274" r="6" fill="#d4a017" stroke="#fff" stroke-width="1.2"/>
+<text x="1790" y="278" font-size="11.5" fill="#1f2328">+3V3</text>
+<circle cx="1850" cy="274" r="6" fill="#111418" stroke="#fff" stroke-width="1.2"/>
+<text x="1862" y="278" font-size="11.5" fill="#1f2328">GND</text>
+<circle cx="1708" cy="296" r="6" fill="#c9b26a" stroke="#fff" stroke-width="1.2"/>
+<text x="1720" y="300" font-size="11.5" fill="#1f2328">not used or not shown</text>
+<text x="40" y="1095" font-size="15" fill="#1f2328" font-weight="700">Ties and power</text>
+<text x="40" y="1117" font-size="11.5" fill="#3d444d">PCM5102A: SCK, FMT and DEMP to GND: PLL from BCK, I2S format. XSMT from GPIO34: LOW = mute.</text>
+<text x="40" y="1136" font-size="11.5" fill="#3d444d">GPIO34 amp_enable drives the TPA3255&#x27;s /RESET and the DAC&#x27;s XSMT. The 10 kΩ to GND keeps both silent until the firmware starts; HIGH = playing.</text>
+<text x="40" y="1155" font-size="11.5" fill="#3d444d">Encoder: “+” to 3V3 only, not 5 V. A and B use the P4&#x27;s internal pull-ups; GPIO35 has R34 10 kΩ up and the BOOT button (SW1) on the board.</text>
+<text x="40" y="1174" font-size="11.5" fill="#3d444d">Ground: the analog ground and the board ground meet at one point near the amplifier input; the Class-D power ground is separate.</text>
+<text x="40" y="1193" font-size="11.5" fill="#3d444d">Power from JP1: 3V3 to the PCM5102A board and the encoder, 5V to the satellite&#x27;s VIN (it has its own regulator), a GND wire to each. JP1&#x27;s two 3V3, two 5V and three GND pins are one rail each. The TPA3255 has its own 24 V supply.</text>
+<text x="40" y="1230" font-size="15" fill="#1f2328" font-weight="700">Constraints</text>
+<text x="40" y="1252" font-size="11.5" fill="#3d444d">GPIO34 and GPIO35 are strapping pins: nothing an external chip drives during reset sits on them, so the satellite&#x27;s clocks are on 33, 30 and 31.</text>
+<text x="40" y="1271" font-size="11.5" fill="#3d444d">BCLK and WS: outputs of I2S0 while the satellite is an I2S slave (link protocol 1.9 or later), inputs of I2S1 otherwise. Drive strength: BCLK 2, WS 3.</text>
+<text x="40" y="1290" font-size="11.5" fill="#3d444d">At the satellite BCLK is D13 (GPIO13), next to a GND pin, and its wire is twisted with a ground wire.</text>
+<text x="40" y="1309" font-size="11.5" fill="#3d444d">UART on J5: 460800 8N1, no flow control, COBS frames; UART2 on the satellite. R70, R75 and R76 are removed: J5 is TTL, not RS485.</text>
+<text x="40" y="1328" font-size="11.5" fill="#3d444d">J5: pin order from the schematic, sheet 04; which pin is TX is set in board.json. Its place on the board is not known.</text>
+<text x="40" y="1347" font-size="11.5" fill="#3d444d">GPIO49 (I2S0 MCLK) is held LOW and is not free; GPIO29 (I2S0 DIN) is read only by AUX, off in this build. C6_*: the ESP32-C6 recovery path, C6_UPDATE.md.</text>
 </svg>
