@@ -103,6 +103,7 @@ def draw(lang: str):
         "ENCSW":  ("#57b56e", L("GPIO35 · encoder button", "GPIO35 · кнопка енкодера")),
         "AL":     ("#57606a", "L"),
         "AR":     ("#8c959f", "R"),
+        "AG":     ("#111418", L("audio ground: the DAC's output to the amplifier's input", "аудіоземля: вихід ЦАПа → вхід підсилювача")),
     }
     EXPECTED = {
         "BCK":    ["JP1.GPIO50", "DAC.BCK"],
@@ -125,6 +126,7 @@ def draw(lang: str):
         "ENCSW":  ["JP1.GPIO35", "ENC.SW"],
         "AL":     ["DAC.L", "AMP.INL"],
         "AR":     ["DAC.R", "AMP.INR"],
+        "AG":     ["DAC.AGND", "AMP.INGND"],
     }
     # pads on a rail with no wire of their own: the pad colour says it, a small tag names it where it is a tie
     TIES = {
@@ -345,7 +347,7 @@ def draw(lang: str):
     for i, n in enumerate(("XSMT", "SCK", "BCK", "LRCK", "DIN", "FMT", "DEMP", "GND", "VCC")):
         pad(f"DAC.{n}", DX, DY + 35 + i * P, 5.6)
         notes.append(text(DX + 9, DY + 38.5 + i * P, n, 9.5, weight=600))
-    for n, y in (("L", 940.0), ("R", 960.0)):
+    for n, y in (("L", 940.0), ("R", 960.0), ("AGND", 980.0)):
         pad(f"DAC.{n}", DX + DW, y, 5)
         notes.append(text(DX + DW - 9, y + 3.5, n, 9.5, anchor="end", weight=600))
     for n in ("SCK", "FMT", "DEMP"):
@@ -359,7 +361,7 @@ def draw(lang: str):
     boards.append(text(AMX + 16, AY + 44, L("Class-D, gain 21.5 dB", "Class-D, підсилення 21.5 дБ"), 10.5, "#57606a"))
     boards.append(text(AMX + 16, AY + 66, L("PVDD 24 V, own supply", "PVDD 24 В, своє живлення"), 10.5, "#e5484d", weight=600))
     boards.append(text(AMX + 16, AY + 81, L("Class-D ground separate", "земля Class-D окремо"), 10.5, "#57606a"))
-    for n, y, s in (("RESET", 900.0, "/RESET"), ("INL", 940.0, "IN L"), ("INR", 960.0, "IN R")):
+    for n, y, s in (("RESET", 900.0, "/RESET"), ("INL", 940.0, "IN L"), ("INR", 960.0, "IN R"), ("INGND", 980.0, "IN GND")):
         pad(f"AMP.{n}", AMX, y, 5.6 if n == "RESET" else 5)
         notes.append(text(AMX + 9, y + 3.5, s, 9.5, weight=600))
     outs = (("L+", AY + 110), ("L−", AY + 130), ("R+", AY + 175), ("R−", AY + 195))
@@ -411,6 +413,7 @@ def draw(lang: str):
     wire("GENC", "JP1.GND_8", (1080, PIN["JP1.GND_8"][1]), (1080, PIN["ENC.GND"][1]), "ENC.GND")
     wire("AL", "DAC.L", "AMP.INL")
     wire("AR", "DAC.R", "AMP.INR")
+    wire("AG", "DAC.AGND", "AMP.INGND")
 
     # the satellite: GND and BCLK sit next to each other at both ends and are twisted, so they cross here
     wire("P5SAT", "JP1.5V_2", "SAT.VIN")
@@ -440,6 +443,7 @@ def draw(lang: str):
     tag("URX", 1110, 665, L("RX: J5.3, GPIO27, from TX2 (GPIO17)", "RX: J5.3, GPIO27, від TX2 (GPIO17)"))
     tag("AL", 1530, 940, "L")
     tag("AR", 1530, 960, "R")
+    tag("AG", 1522, 980, "GND")
 
     # ------------------------------------------------------------ text in free space
     hdr = [
@@ -494,8 +498,10 @@ def draw(lang: str):
           "GPIO34 amp_enable веде /RESET TPA3255 і XSMT ЦАПа. 10 кОм на GND тримають обидва в тиші до старту прошивки; HIGH = грає."),
         L("Encoder: “+” to 3V3 only, not 5 V. A and B use the P4's internal pull-ups; GPIO35 has R34 10 kΩ up and the BOOT button (SW1) on the board.",
           "Енкодер: «+» лише на 3V3, не на 5 В. A і B на внутрішніх підтяжках P4; на GPIO35 на платі R34 10 кОм угору і кнопка BOOT (SW1)."),
-        L("Ground: the analog ground and the board ground meet at one point near the amplifier input; the Class-D power ground is separate.",
-          "Земля: аналогова земля і земля плати сходяться в одній точці біля входу підсилювача; силова земля Class-D окремо."),
+        L("Audio: L, R and their ground run together from the DAC's output to the amplifier's input. The analog ground and the board ground "
+          "meet at one point near the amplifier input; the Class-D power ground is separate.",
+          "Звук: L, R і їхня земля йдуть разом від виходу ЦАПа до входу підсилювача. Аналогова земля і земля плати сходяться в одній точці "
+          "біля входу підсилювача; силова земля Class-D окремо."),
         L("Power from JP1: 3V3 to the PCM5102A board and the encoder, 5V to the satellite's VIN (it has its own regulator), a GND wire to each. "
           "JP1's two 3V3, two 5V and three GND pins are one rail each. The TPA3255 has its own 24 V supply.",
           "Живлення з JP1: 3V3 на плату PCM5102A і енкодер, 5V на VIN супутника (у нього свій стабілізатор), до кожного свій дріт GND. "

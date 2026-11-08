@@ -106,6 +106,9 @@
 <g class="net" stroke="#8c959f"><title>R</title>
 <path d="M1460 960 L1600 960"/>
 </g>
+<g class="net" stroke="#111418"><title>аудіоземля: вихід ЦАПа → вхід підсилювача</title>
+<path d="M1460 980 L1600 980"/>
+</g>
 <g class="net" stroke="#e5484d"><title>+5V з JP1 на VIN супутника</title>
 <path d="M857.8 470 L1420 470"/>
 </g>
@@ -205,9 +208,11 @@
 <circle cx="1260" cy="1040" r="5.6" fill="#d4a017" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1460" cy="940" r="5" fill="#57606a" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1460" cy="960" r="5" fill="#8c959f" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1460" cy="980" r="5" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1600" cy="900" r="5.6" fill="#bf3989" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1600" cy="940" r="5" fill="#57606a" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1600" cy="960" r="5" fill="#8c959f" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1600" cy="980" r="5" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
 <circle cx="1830" cy="900" r="5" fill="#57606a" stroke="#ffffff" stroke-width="1.4"/>
 <circle cx="1830" cy="920" r="5" fill="#57606a" stroke="#ffffff" stroke-width="1.4"/>
 <circle cx="1830" cy="965" r="5" fill="#57606a" stroke="#ffffff" stroke-width="1.4"/>
@@ -320,9 +325,11 @@
 <text x="1269" y="1043.5" font-size="9.5" fill="#1f2328" font-weight="600">VCC</text>
 <text x="1451" y="943.5" font-size="9.5" fill="#1f2328" text-anchor="end" font-weight="600">L</text>
 <text x="1451" y="963.5" font-size="9.5" fill="#1f2328" text-anchor="end" font-weight="600">R</text>
+<text x="1451" y="983.5" font-size="9.5" fill="#1f2328" text-anchor="end" font-weight="600">AGND</text>
 <text x="1609" y="903.5" font-size="9.5" fill="#1f2328" font-weight="600">/RESET</text>
 <text x="1609" y="943.5" font-size="9.5" fill="#1f2328" font-weight="600">IN L</text>
 <text x="1609" y="963.5" font-size="9.5" fill="#1f2328" font-weight="600">IN R</text>
+<text x="1609" y="983.5" font-size="9.5" fill="#1f2328" font-weight="600">IN GND</text>
 <text x="1821" y="903.5" font-size="9.5" fill="#1f2328" text-anchor="end" font-weight="600">L+</text>
 <text x="1821" y="923.5" font-size="9.5" fill="#1f2328" text-anchor="end" font-weight="600">L−</text>
 <text x="1821" y="968.5" font-size="9.5" fill="#1f2328" text-anchor="end" font-weight="600">R+</text>
@@ -373,6 +380,8 @@
 <text x="1530" y="943.8" font-size="10.5" fill="#57606a" font-weight="600">L</text>
 <rect x="1527" y="953.9" width="13.6" height="13.5" fill="#ffffff" rx="2"/>
 <text x="1530" y="963.8" font-size="10.5" fill="#8c959f" font-weight="600">R</text>
+<rect x="1519" y="973.9" width="28.7" height="13.5" fill="#ffffff" rx="2"/>
+<text x="1522" y="983.8" font-size="10.5" fill="#111418" font-weight="600">GND</text>
 <text x="40" y="44" font-size="26" fill="#1f2328" font-weight="700">ModESP Streamer: схема з&#x27;єднань</text>
 <text x="40" y="70" font-size="13.5" fill="#3d444d">Як зібрано зараз: один PCM5102A на I2S0, BT-супутник на I2S-B і UART J5, енкодер на PCNT.</text>
 <text x="40" y="90" font-size="13.5" fill="#3d444d">Один масштаб: крок виводів 2.54 мм = 20 одиниць. Суцільний контур відповідає платі; пунктирний контур і порядок його виводів умовні.</text>
@@ -414,7 +423,7 @@
 <text x="40" y="1117" font-size="11.5" fill="#3d444d">PCM5102A: SCK, FMT і DEMP на GND: PLL від BCK, формат I2S. XSMT від GPIO34: LOW = тиша.</text>
 <text x="40" y="1136" font-size="11.5" fill="#3d444d">GPIO34 amp_enable веде /RESET TPA3255 і XSMT ЦАПа. 10 кОм на GND тримають обидва в тиші до старту прошивки; HIGH = грає.</text>
 <text x="40" y="1155" font-size="11.5" fill="#3d444d">Енкодер: «+» лише на 3V3, не на 5 В. A і B на внутрішніх підтяжках P4; на GPIO35 на платі R34 10 кОм угору і кнопка BOOT (SW1).</text>
-<text x="40" y="1174" font-size="11.5" fill="#3d444d">Земля: аналогова земля і земля плати сходяться в одній точці біля входу підсилювача; силова земля Class-D окремо.</text>
+<text x="40" y="1174" font-size="11.5" fill="#3d444d">Звук: L, R і їхня земля йдуть разом від виходу ЦАПа до входу підсилювача. Аналогова земля і земля плати сходяться в одній точці біля входу підсилювача; силова земля Class-D окремо.</text>
 <text x="40" y="1193" font-size="11.5" fill="#3d444d">Живлення з JP1: 3V3 на плату PCM5102A і енкодер, 5V на VIN супутника (у нього свій стабілізатор), до кожного свій дріт GND. Два 3V3, два 5V і три GND на JP1 — кожні одна шина. TPA3255 має своє живлення 24 В.</text>
 <text x="40" y="1230" font-size="15" fill="#1f2328" font-weight="700">Обмеження</text>
 <text x="40" y="1252" font-size="11.5" fill="#3d444d">GPIO34 і GPIO35 — strapping-піни: на них немає нічого, що зовнішній чип веде під час скидання, тому клоки супутника на 33, 30 і 31.</text>
