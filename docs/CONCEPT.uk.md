@@ -207,6 +207,10 @@ buccaneer-jak/JC4880P443C-P4-to-C6-RS232-communication-and-SD-Card-connection м
 
 ![Підключення до панелі](img/wiring.uk.svg)
 
+Креслення генерує `tools/gen_wiring.py`. Він не малює, коли `board.json` з ним не згоден, і звіряє
+кожен дріт зі своїм списком з'єднань; `tools/tests/test_wiring.py` падає, коли файл тут не той,
+який він намалював би.
+
 ### JP1
 
 ![JP1 — контакти і сигнали](img/jp1_header.uk.svg)

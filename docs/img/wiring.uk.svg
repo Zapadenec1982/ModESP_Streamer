@@ -1,140 +1,406 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 830" font-family="Roboto, 'Segoe UI', Arial, sans-serif">
-  <defs>
-    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/>
-    </marker>
-    <style>
-      .t  { font-size: 22px; font-weight: 700; fill: #1f2328; }
-      .s  { font-size: 13px; fill: #57606a; }
-      .h  { font-size: 16px; font-weight: 700; fill: #1f2328; }
-      .p  { font-size: 14px; fill: #1f2328; }
-      .n  { font-size: 12.5px; fill: #57606a; }
-      .box { fill: #f6f8fa; stroke: #8c959f; stroke-width: 1.5; }
-      .mod { fill: #ffffff; stroke: #57606a; stroke-width: 1.5; }
-      .w  { fill: none; stroke-width: 2.5; }
-      .i2sa { stroke: #0969da; }
-      .amp  { stroke: #cf222e; }
-      .bt   { stroke: #8250df; }
-      .uart { stroke: #bc4c00; }
-      .enc  { stroke: #1a7f37; }
-      .gnd  { stroke: #57606a; }
-    </style>
-  </defs>
-  <rect width="1200" height="830" fill="#ffffff"/>
-
-  <text class="t" x="40" y="42">Підключення до панелі JC4880P443C</text>
-  <text class="s" x="40" y="64">Піни — boards/p4_player/board.json і CONCEPT.md «Розпіновка»; піни супутника — його README. Живлення модулів не показано.</text>
-
-  <!-- ===== Panel ===== -->
-  <rect class="box" x="40" y="90" width="360" height="680" rx="8"/>
-  <text class="h" x="60" y="118">ESP32-P4 · гребінка JP1, роз'єм J5</text>
-
-  <text class="p" x="390" y="155" text-anchor="end">GPIO50 · I2S0 BCK</text>
-  <text class="p" x="390" y="185" text-anchor="end">GPIO51 · I2S0 WS</text>
-  <text class="p" x="390" y="215" text-anchor="end">GPIO52 · I2S0 DOUT</text>
-  <text class="n" x="60" y="250">I2S0 — майстер; частота йде за джерелом,</text>
-  <text class="n" x="60" y="266">44,1–96 кГц, слоти 32 біти</text>
-
-  <text class="p" x="390" y="295" text-anchor="end">GPIO34 · amp_enable (HIGH = грає)</text>
-  <text class="n" x="60" y="318">GPIO34 і GPIO35 — strapping-піни</text>
-
-  <text class="p" x="390" y="375" text-anchor="end">GPIO33 · BT BCLK</text>
-  <text class="p" x="390" y="405" text-anchor="end">GPIO30 · BT WS</text>
-  <text class="p" x="390" y="435" text-anchor="end">GPIO31 · BT DATA</text>
-
-  <text class="p" x="390" y="495" text-anchor="end">GPIO26 · J5 UART1 TX</text>
-  <text class="p" x="390" y="525" text-anchor="end">GPIO27 · J5 UART1 RX</text>
-  <text class="p" x="390" y="555" text-anchor="end">GND</text>
-
-  <text class="p" x="390" y="615" text-anchor="end">GPIO32 · енкодер A</text>
-  <text class="p" x="390" y="645" text-anchor="end">GPIO28 · енкодер B</text>
-  <text class="p" x="390" y="675" text-anchor="end">GPIO35 · кнопка енкодера</text>
-  <text class="n" x="60" y="696">на платі: R34 10 кОм ↑ і кнопка BOOT</text>
-  <text class="p" x="390" y="725" text-anchor="end">3V3</text>
-  <text class="p" x="390" y="755" text-anchor="end">GND</text>
-
-  <!-- ===== PCM5102A ===== -->
-  <rect class="mod" x="640" y="110" width="250" height="160" rx="6"/>
-  <text class="h" x="660" y="135">PCM5102A · ЦАП</text>
-  <text class="p" x="652" y="155">BCK</text>
-  <text class="p" x="652" y="185">LRCK</text>
-  <text class="p" x="652" y="215">DIN</text>
-  <text class="p" x="652" y="245">XSMT</text>
-  <text class="n" x="730" y="167">SCK, FMT, DEMP → GND</text>
-  <text class="n" x="730" y="185">PLL від BCK, без MCLK</text>
-  <text class="n" x="730" y="203">LOW на XSMT = mute</text>
-  <text class="p" x="882" y="255" text-anchor="end">L / R</text>
-
-  <!-- ===== TPA3255 ===== -->
-  <rect class="mod" x="950" y="110" width="210" height="190" rx="6"/>
-  <text class="h" x="968" y="135">TPA3255 · Class-D</text>
-  <text class="n" x="968" y="163">PVDD 24 В — окреме живлення</text>
-  <text class="n" x="968" y="181">виходи → колонки</text>
-  <text class="p" x="962" y="255">IN L / R</text>
-  <text class="p" x="962" y="285">/RESET</text>
-
-  <!-- ===== BT satellite ===== -->
-  <rect class="mod" x="640" y="350" width="320" height="220" rx="6"/>
-  <text class="p" x="652" y="375">GPIO13 · I2S BCLK</text>
-  <text class="p" x="652" y="405">GPIO26 · I2S WS</text>
-  <text class="p" x="652" y="435">GPIO27 · I2S DOUT</text>
-  <text class="p" x="652" y="495">GPIO16 · UART RX</text>
-  <text class="p" x="652" y="525">GPIO17 · UART TX</text>
-  <text class="p" x="652" y="555">GND</text>
-  <text class="h" x="800" y="375">BT-супутник</text>
-  <text class="n" x="800" y="394">ESP32-WROOM-32</text>
-  <text class="n" x="800" y="418">A2DP: SBC, AAC,</text>
-  <text class="n" x="800" y="435">aptX, aptX HD</text>
-  <text class="n" x="800" y="495">460800 8N1, COBS</text>
-  <text class="n" x="800" y="512">LINK_PROTOCOL.md</text>
-
-  <!-- ===== Encoder ===== -->
-  <rect class="mod" x="640" y="595" width="260" height="175" rx="6"/>
-  <text class="p" x="652" y="615">A</text>
-  <text class="p" x="652" y="645">B</text>
-  <text class="p" x="652" y="675">SW</text>
-  <text class="p" x="652" y="725">«+»</text>
-  <text class="p" x="652" y="755">GND</text>
-  <text class="h" x="710" y="615">Енкодер з кнопкою</text>
-  <text class="n" x="710" y="636">PCNT, 4 фронти на клацання</text>
-  <text class="n" x="710" y="725">лише 3V3, не 5 В</text>
-
-  <!-- ===== Wires ===== -->
-  <!-- I2S0 to the DAC -->
-  <path class="w i2sa" d="M400,150 H640" marker-end="url(#ar)"/>
-  <path class="w i2sa" d="M400,180 H640" marker-end="url(#ar)"/>
-  <path class="w i2sa" d="M400,210 H640" marker-end="url(#ar)"/>
-  <!-- DAC to amplifier -->
-  <path class="w gnd" d="M890,250 H950" marker-end="url(#ar)"/>
-  <!-- amp_enable to XSMT and /RESET -->
-  <path class="w amp" d="M400,290 H560 V240 H640" marker-end="url(#ar)"/>
-  <path class="w amp" d="M560,290 V312 H925 V280 H950" marker-end="url(#ar)"/>
-  <circle cx="560" cy="290" r="4" fill="#cf222e"/>
-  <text class="n" x="575" y="332">10 кОм униз: ЦАП і підсилювач мовчать до старту прошивки</text>
-  <!-- BT I2S -->
-  <path class="w bt" d="M400,370 H640" marker-start="url(#ar)" marker-end="url(#ar)"/>
-  <path class="w bt" d="M400,400 H640" marker-start="url(#ar)" marker-end="url(#ar)"/>
-  <path class="w bt" d="M640,430 H400" marker-end="url(#ar)"/>
-  <text class="n" x="410" y="452">BCLK, WS: тактує панель,</text>
-  <text class="n" x="410" y="468">якщо супутник ≥ 1.9; інакше — він</text>
-  <!-- UART link -->
-  <path class="w uart" d="M400,490 H640" marker-end="url(#ar)"/>
-  <path class="w uart" d="M640,520 H400" marker-end="url(#ar)"/>
-  <path class="w gnd" d="M400,550 H640"/>
-  <!-- Encoder -->
-  <path class="w enc" d="M640,610 H400" marker-end="url(#ar)"/>
-  <path class="w enc" d="M640,640 H400" marker-end="url(#ar)"/>
-  <path class="w enc" d="M640,670 H400" marker-end="url(#ar)"/>
-  <path class="w gnd" d="M400,720 H640"/>
-  <path class="w gnd" d="M400,750 H640"/>
-
-  <!-- ===== Legend ===== -->
-  <g transform="translate(40,805)">
-    <path class="w i2sa" d="M0,0 H34"/><text class="n" x="42" y="4">I2S0 → ЦАП</text>
-    <path class="w amp" d="M150,0 H184"/><text class="n" x="192" y="4">amp_enable</text>
-    <path class="w bt" d="M300,0 H334"/><text class="n" x="342" y="4">I2S від супутника</text>
-    <path class="w uart" d="M490,0 H524"/><text class="n" x="532" y="4">UART-лінк (J5)</text>
-    <path class="w enc" d="M660,0 H694"/><text class="n" x="702" y="4">енкодер</text>
-    <path class="w gnd" d="M790,0 H824"/><text class="n" x="832" y="4">аналог, 3V3, земля</text>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2040 1290" width="2040" height="1290" font-family="Roboto, 'Segoe UI', Arial, sans-serif">
+<title>ModESP Streamer: схема з&#x27;єднань</title>
+<style>.net path{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}.net:hover path{stroke-width:4.5}</style>
+<rect x="0" y="0" width="2040" height="1290" fill="#ffffff"/>
+<rect x="40" y="300" width="900.8" height="526" fill="#c7ccd1" stroke="#6e7781" stroke-width="1.5" rx="9"/>
+<rect x="101" y="303" width="778.8" height="520" fill="#eef1f4" stroke="#8c959f" stroke-width="1.0" rx="4"/>
+<text x="116" y="326" font-size="15" fill="#1f2328" font-weight="700">JC4880P443C · вид ззаду, 114.4 × 66.8 мм</text>
+<text x="936.8" y="316" font-size="9" fill="#57606a" text-anchor="end">рамка</text>
+<circle cx="661.3" cy="349.6" r="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+<circle cx="661.3" cy="787.4" r="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.5"/>
+<rect x="684.5" y="336.2" width="48" height="22" fill="#ffffff" stroke="#8c959f" stroke-width="1.0" rx="2"/>
+<text x="708.5" y="351.2" font-size="9.5" fill="#57606a" text-anchor="middle">BAT</text>
+<rect x="789.4" y="338.2" width="24" height="18" fill="#ffffff" stroke="#8c959f" stroke-width="1.0" rx="2"/>
+<text x="801.4" y="350.2" font-size="8.5" fill="#57606a" text-anchor="middle">SW3</text>
+<rect x="749.8" y="507" width="26" height="70" fill="#dfe3e7" stroke="#a4acb5" stroke-width="1.2" rx="12"/>
+<rect x="749.8" y="611" width="26" height="70" fill="#dfe3e7" stroke="#a4acb5" stroke-width="1.2" rx="12"/>
+<text x="622.8" y="600" font-size="10" fill="#57606a" text-anchor="middle" transform="rotate(-90 622.8 600)">USB-C × 2: HS (UAC2), FS (консоль)</text>
+<rect x="826.8" y="439" width="42" height="262" fill="#24292f" rx="3"/>
+<text x="847.8" y="435" font-size="11" fill="#1f2328" text-anchor="middle" font-weight="700">JP1</text>
+<rect x="848.8" y="726" width="22" height="82" fill="#ffffff" stroke="#57606a" stroke-width="1.0" rx="2" stroke-dasharray="4 3"/>
+<text x="874.8" y="819" font-size="9.5" fill="#1f2328" text-anchor="middle" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">J5 (положення умовне)</text>
+<rect x="1410" y="192" width="220" height="428" fill="#1b1f23" stroke="#000000" stroke-width="1.0" rx="6"/>
+<rect x="1449" y="196" width="142" height="201" fill="#b6bcc3" stroke="#6e7781" stroke-width="1.0" rx="3"/>
+<rect x="1449" y="196" width="142" height="47" fill="#2d333b" rx="3"/>
+<text x="1520" y="225" font-size="10" fill="#c9d1d9" text-anchor="middle">антена</text>
+<text x="1520" y="302" font-size="12" fill="#1f2328" text-anchor="middle" font-weight="700">ESP32-</text>
+<text x="1520" y="318" font-size="12" fill="#1f2328" text-anchor="middle" font-weight="700">WROOM-32</text>
+<text x="1520" y="424" font-size="13.5" fill="#ffffff" text-anchor="middle" font-weight="700">BT-супутник</text>
+<text x="1520" y="442" font-size="10.5" fill="#c9d1d9" text-anchor="middle">ESP32-DevKitC</text>
+<text x="1520" y="460" font-size="9.5" fill="#c9d1d9" text-anchor="middle">A2DP → I2S, UART2</text>
+<rect x="1490" y="524" width="60" height="42" fill="#2d333b" stroke="#6e7781" stroke-width="1.0" rx="2"/>
+<text x="1520" y="549" font-size="9" fill="#e6edf3" text-anchor="middle">USB-UART</text>
+<rect x="1452" y="578" width="26" height="20" fill="#57606a" stroke="#8c959f" stroke-width="1.0" rx="2"/>
+<text x="1465" y="592" font-size="9" fill="#ffffff" text-anchor="middle">EN</text>
+<rect x="1562" y="578" width="26" height="20" fill="#57606a" stroke="#8c959f" stroke-width="1.0" rx="2"/>
+<text x="1575" y="592" font-size="7.5" fill="#ffffff" text-anchor="middle">BOOT</text>
+<rect x="1498" y="594" width="44" height="32" fill="#8c959f" stroke="#57606a" stroke-width="1.0" rx="2"/>
+<text x="1520" y="614" font-size="9" fill="#111418" text-anchor="middle" font-weight="600">USB</text>
+<rect x="1070" y="687" width="170" height="108" fill="#f6f8fa" stroke="#57606a" stroke-width="1.0" rx="5" stroke-dasharray="5 3"/>
+<circle cx="1172" cy="722" r="22" fill="#d0d7de" stroke="#57606a" stroke-width="1.5"/>
+<circle cx="1172" cy="722" r="10" fill="#8c959f"/>
+<text x="1172" y="762" font-size="10.5" fill="#1f2328" text-anchor="middle" font-weight="700">Енкодер</text>
+<text x="1172" y="776" font-size="8.5" fill="#57606a" text-anchor="middle">PCNT, 4 фронти на клацання</text>
+<rect x="1260" y="845" width="200" height="175" fill="#f6f8fa" stroke="#57606a" stroke-width="1.4" rx="6" stroke-dasharray="5 3"/>
+<text x="1390" y="866" font-size="12.5" fill="#1f2328" text-anchor="middle" font-weight="700">PCM5102A · ЦАП</text>
+<text x="1322" y="897" font-size="10" fill="#57606a">PLL від BCK, без MCLK</text>
+<text x="1322" y="912" font-size="10" fill="#57606a">вихід 2.1 Vrms</text>
+<text x="1322" y="927" font-size="10" fill="#57606a">LOW на XSMT = тиша</text>
+<rect x="1600" y="790" width="230" height="255" fill="#f6f8fa" stroke="#57606a" stroke-width="1.4" rx="6" stroke-dasharray="5 3"/>
+<text x="1616" y="816" font-size="14" fill="#1f2328" font-weight="700">TPA3255</text>
+<text x="1616" y="834" font-size="10.5" fill="#57606a">Class-D, підсилення 21.5 дБ</text>
+<text x="1616" y="856" font-size="10.5" fill="#e5484d" font-weight="600">PVDD 24 В, своє живлення</text>
+<text x="1616" y="871" font-size="10.5" fill="#57606a">земля Class-D окремо</text>
+<path d="M1830 900 H1900 M1830 920 H1900" fill="none" stroke="#57606a" stroke-width="2.6"/>
+<rect x="1900" y="896" width="15" height="28" fill="#ffffff" stroke="#1f2328" stroke-width="1.5"/>
+<path d="M1915 896 l20 -13 v54 l-20 -13 z" fill="#d0d7de" stroke="#1f2328" stroke-width="1.5"/>
+<text x="1918" y="914" font-size="11" fill="#1f2328" font-weight="700">L</text>
+<path d="M1830 965 H1900 M1830 985 H1900" fill="none" stroke="#57606a" stroke-width="2.6"/>
+<rect x="1900" y="961" width="15" height="28" fill="#ffffff" stroke="#1f2328" stroke-width="1.5"/>
+<path d="M1915 961 l20 -13 v54 l-20 -13 z" fill="#d0d7de" stroke="#1f2328" stroke-width="1.5"/>
+<text x="1918" y="979" font-size="11" fill="#1f2328" font-weight="700">R</text>
+<text x="1918" y="1022" font-size="10.5" fill="#57606a" text-anchor="middle">Denon SC-G101</text>
+<rect x="1494" y="860" width="12" height="34" fill="#ffffff" stroke="#d1242f" stroke-width="1.5"/>
+<path d="M1500 894 v12 M1491 906 h18 M1494 910 h12 M1497 914 h6" fill="none" stroke="#111418" stroke-width="1.6"/>
+<g class="net" stroke="#00337a"><title>GPIO52 · I2S0 DOUT</title>
+<path d="M837.8 510 L704 510 L704 960 L1260 960"/>
+</g>
+<g class="net" stroke="#2f9bff"><title>GPIO51 · I2S0 WS</title>
+<path d="M837.8 530 L716 530 L716 940 L1260 940"/>
+</g>
+<g class="net" stroke="#0a58ca"><title>GPIO50 · I2S0 BCK, 64·fs, до PCM5102A</title>
+<path d="M837.8 550 L728 550 L728 920 L1260 920"/>
+</g>
+<g class="net" stroke="#d1242f"><title>GPIO34 · amp_enable: XSMT, /RESET, 10 кОм на GND</title>
+<path d="M837.8 610 L752 610 L752 880 L1260 880"/>
+<path d="M1220 880 L1220 830 L1560 830 L1560 900 L1600 900"/>
+<path d="M1500 830 L1500 860"/>
+</g>
+<g class="net" stroke="#2da44e"><title>GPIO28 · енкодер B</title>
+<path d="M837.8 650 L776 650 L776 850 L1025 850 L1025 720 L1070 720"/>
+</g>
+<g class="net" stroke="#1a7f37"><title>GPIO32 · енкодер A</title>
+<path d="M837.8 630 L764 630 L764 865 L1010 865 L1010 700 L1070 700"/>
+</g>
+<g class="net" stroke="#57b56e"><title>GPIO35 · кнопка енкодера</title>
+<path d="M837.8 590 L740 590 L740 895 L1045 895 L1045 740 L1070 740"/>
+</g>
+<g class="net" stroke="#57606a"><title>L</title>
+<path d="M1460 940 L1600 940"/>
+</g>
+<g class="net" stroke="#8c959f"><title>R</title>
+<path d="M1460 960 L1600 960"/>
+</g>
+<g class="net" stroke="#111418"><title>GND, скручений із BCLK</title>
+<path d="M857.8 490 L1420 490"/>
+</g>
+<g class="net" stroke="#8250df"><title>GPIO33 · BCLK, IO13 супутника</title>
+<path d="M857.8 510 L1420 510"/>
+</g>
+<g class="net" stroke="#55309b"><title>GPIO31 · DATA від IO27 супутника</title>
+<path d="M857.8 530 L1300 530 L1300 430 L1420 430"/>
+</g>
+<g class="net" stroke="#b083f0"><title>GPIO30 · WS, IO26 супутника</title>
+<path d="M857.8 550 L1320 550 L1320 410 L1420 410"/>
+</g>
+<g class="net" stroke="#e8590c"><title>J5.2 TX1 (GPIO26) до RX2 супутника (IO16)</title>
+<path d="M859.8 777 L980 777 L980 650 L1660 650 L1660 450 L1620 450"/>
+</g>
+<g class="net" stroke="#a84300"><title>J5.3 RX1 (GPIO27) від TX2 супутника (IO17)</title>
+<path d="M859.8 757 L965 757 L965 665 L1675 665 L1675 430 L1620 430"/>
+</g>
+<circle cx="1220" cy="880" r="3.6" fill="#d1242f" stroke="#ffffff" stroke-width="1"/>
+<circle cx="1500" cy="830" r="3.6" fill="#d1242f" stroke="#ffffff" stroke-width="1"/>
+<circle cx="837.8" cy="450" r="6.5" fill="#f08c00" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="857.8" cy="450" r="6.5" fill="#e5484d" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="837.8" cy="470" r="6.5" fill="#f08c00" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="857.8" cy="470" r="6.5" fill="#e5484d" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="837.8" cy="490" r="6.5" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="857.8" cy="490" r="6.5" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="837.8" cy="510" r="6.5" fill="#00337a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="857.8" cy="510" r="6.5" fill="#8250df" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="837.8" cy="530" r="6.5" fill="#2f9bff" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="857.8" cy="530" r="6.5" fill="#55309b" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="837.8" cy="550" r="6.5" fill="#0a58ca" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="857.8" cy="550" r="6.5" fill="#b083f0" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="837.8" cy="570" r="6.5" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="857.8" cy="570" r="6.5" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="837.8" cy="590" r="6.5" fill="#57b56e" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="857.8" cy="590" r="6.5" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="837.8" cy="610" r="6.5" fill="#d1242f" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="857.8" cy="610" r="6.5" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="837.8" cy="630" r="6.5" fill="#1a7f37" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="857.8" cy="630" r="6.5" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="837.8" cy="650" r="6.5" fill="#2da44e" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="857.8" cy="650" r="6.5" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="837.8" cy="670" r="6.5" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="857.8" cy="670" r="6.5" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="837.8" cy="690" r="6.5" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="857.8" cy="690" r="6.5" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="859.8" cy="737" r="6" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="859.8" cy="757" r="6" fill="#a84300" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="859.8" cy="777" r="6" fill="#e8590c" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="859.8" cy="797" r="6" fill="#e5484d" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="230" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="250" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="270" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="290" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="310" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="330" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="350" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="370" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="390" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="410" r="5.6" fill="#b083f0" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="430" r="5.6" fill="#55309b" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="450" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="470" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="490" r="5.6" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="510" r="5.6" fill="#8250df" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="530" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="550" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="570" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1420" cy="590" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="230" r="5.6" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="250" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="270" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="290" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="310" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="330" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="350" r="5.6" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="370" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="390" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="410" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="430" r="5.6" fill="#a84300" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="450" r="5.6" fill="#e8590c" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="470" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="490" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="510" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="530" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="550" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="570" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1620" cy="590" r="5.6" fill="#c9b26a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1070" cy="700" r="5.6" fill="#1a7f37" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1070" cy="720" r="5.6" fill="#2da44e" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1070" cy="740" r="5.6" fill="#57b56e" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1070" cy="760" r="5.6" fill="#f08c00" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1070" cy="780" r="5.6" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1260" cy="880" r="5.6" fill="#d1242f" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1260" cy="900" r="5.6" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1260" cy="920" r="5.6" fill="#0a58ca" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1260" cy="940" r="5.6" fill="#2f9bff" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1260" cy="960" r="5.6" fill="#00337a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1260" cy="980" r="5.6" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1260" cy="1000" r="5.6" fill="#111418" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1460" cy="940" r="5" fill="#57606a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1460" cy="960" r="5" fill="#8c959f" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1600" cy="900" r="5.6" fill="#d1242f" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1600" cy="940" r="5" fill="#57606a" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1600" cy="960" r="5" fill="#8c959f" stroke="#ffffff" stroke-width="1.6"/>
+<circle cx="1830" cy="900" r="5" fill="#57606a" stroke="#ffffff" stroke-width="1.4"/>
+<circle cx="1830" cy="920" r="5" fill="#57606a" stroke="#ffffff" stroke-width="1.4"/>
+<circle cx="1830" cy="965" r="5" fill="#57606a" stroke="#ffffff" stroke-width="1.4"/>
+<circle cx="1830" cy="985" r="5" fill="#57606a" stroke="#ffffff" stroke-width="1.4"/>
+<text x="826.8" y="447" font-size="10" fill="#1f2328" text-anchor="end" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">3V3</text>
+<text x="868.8" y="447" font-size="10" fill="#1f2328" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">5V</text>
+<text x="826.8" y="467" font-size="10" fill="#1f2328" text-anchor="end" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">3V3</text>
+<text x="868.8" y="467" font-size="10" fill="#1f2328" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">5V</text>
+<text x="826.8" y="487" font-size="10" fill="#1f2328" text-anchor="end" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">GND</text>
+<text x="868.8" y="487" font-size="10" fill="#1f2328" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">GND</text>
+<text x="826.8" y="507" font-size="10" fill="#1f2328" text-anchor="end" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">GPIO52</text>
+<text x="868.8" y="507" font-size="10" fill="#1f2328" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">GPIO33</text>
+<text x="826.8" y="527" font-size="10" fill="#1f2328" text-anchor="end" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">GPIO51</text>
+<text x="868.8" y="527" font-size="10" fill="#1f2328" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">GPIO31</text>
+<text x="826.8" y="547" font-size="10" fill="#1f2328" text-anchor="end" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">GPIO50</text>
+<text x="868.8" y="547" font-size="10" fill="#1f2328" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">GPIO30</text>
+<text x="826.8" y="567" font-size="10" fill="#1f2328" text-anchor="end" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">GPIO49</text>
+<text x="868.8" y="567" font-size="10" fill="#1f2328" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">GPIO29</text>
+<text x="826.8" y="587" font-size="10" fill="#1f2328" text-anchor="end" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">GPIO35</text>
+<text x="868.8" y="587" font-size="10" fill="#1f2328" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">GND</text>
+<text x="826.8" y="607" font-size="10" fill="#1f2328" text-anchor="end" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">GPIO34</text>
+<text x="868.8" y="607" font-size="10" fill="#1f2328" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">ESP_3V3</text>
+<text x="826.8" y="627" font-size="10" fill="#1f2328" text-anchor="end" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">GPIO32</text>
+<text x="868.8" y="627" font-size="10" fill="#1f2328" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">C6_U0RXD</text>
+<text x="826.8" y="647" font-size="10" fill="#1f2328" text-anchor="end" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">GPIO28</text>
+<text x="868.8" y="647" font-size="10" fill="#1f2328" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">C6_U0TXD</text>
+<text x="826.8" y="667" font-size="10" fill="#1f2328" text-anchor="end" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">I2C_SDA</text>
+<text x="868.8" y="667" font-size="10" fill="#1f2328" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">C6_IO9</text>
+<text x="826.8" y="687" font-size="10" fill="#1f2328" text-anchor="end" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">I2C_SCL</text>
+<text x="868.8" y="687" font-size="10" fill="#1f2328" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">C6_CHIP_PU</text>
+<text x="849.8" y="740.5" font-size="9.5" fill="#1f2328" text-anchor="end" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">4 GND</text>
+<text x="849.8" y="760.5" font-size="9.5" fill="#1f2328" text-anchor="end" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">3 RX1</text>
+<text x="849.8" y="780.5" font-size="9.5" fill="#1f2328" text-anchor="end" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">2 TX1</text>
+<text x="849.8" y="800.5" font-size="9.5" fill="#1f2328" text-anchor="end" font-weight="600" stroke="#eef1f4" stroke-width="3" stroke-linejoin="round" paint-order="stroke">1 5V</text>
+<text x="116" y="348" font-size="12.5" fill="#1f2328" font-weight="700">На платі</text>
+<text x="116" y="366" font-size="11" fill="#1f2328" font-weight="600">ESP32-P4</text>
+<text x="208" y="366" font-size="10.5" fill="#3d444d">2 × 360 МГц, 32 МБ PSRAM, 16 МБ flash, ревізія v1.3</text>
+<text x="116" y="385" font-size="11" fill="#1f2328" font-weight="600">ESP32-C6</text>
+<text x="208" y="385" font-size="10.5" fill="#3d444d">Wi-Fi через SDIO: CLK 18, CMD 19, D0–D3 14–17; скидання GPIO54</text>
+<text x="116" y="404" font-size="11" fill="#1f2328" font-weight="600">ST7701S</text>
+<text x="208" y="404" font-size="10.5" fill="#3d444d">4.3&quot; 480 × 800, 2-lane MIPI-DSI; reset GPIO5, підсвітка GPIO23</text>
+<text x="116" y="423" font-size="11" fill="#1f2328" font-weight="600">GT911</text>
+<text x="208" y="423" font-size="10.5" fill="#3d444d">дотик, ES_I2C 0x5D, опитування</text>
+<text x="116" y="442" font-size="11" fill="#1f2328" font-weight="600">ES8311 + мік.</text>
+<text x="208" y="442" font-size="10.5" fill="#3d444d">ES_I2C 0x18/0x19; I2S2: MCLK 13, BCLK 12, WS 10, DIN 48</text>
+<text x="116" y="461" font-size="11" fill="#1f2328" font-weight="600">NS4150</text>
+<text x="208" y="461" font-size="10.5" fill="#3d444d">бортовий підсилювач не використовується: PA_CTRL GPIO11 = LOW</text>
+<text x="116" y="480" font-size="11" fill="#1f2328" font-weight="600">microSD</text>
+<text x="208" y="480" font-size="10.5" fill="#3d444d">SDMMC слот 0: CLK 43, CMD 44, D0–D3 39–42</text>
+<text x="116" y="499" font-size="11" fill="#1f2328" font-weight="600">USB-C HS</text>
+<text x="208" y="499" font-size="10.5" fill="#3d444d">UAC2, звукова карта для комп&#x27;ютера</text>
+<text x="116" y="518" font-size="11" fill="#1f2328" font-weight="600">USB-C FS</text>
+<text x="208" y="518" font-size="10.5" fill="#3d444d">USB-Serial/JTAG: прошивка і консоль; DTR = скидання</text>
+<text x="116" y="537" font-size="11" fill="#1f2328" font-weight="600">Живлення</text>
+<text x="208" y="537" font-size="10.5" fill="#3d444d">USB5V_IN, IP5306, TLV62569 (3V3, 2 А), MP3202 (підсвітка)</text>
+<text x="116" y="564" font-size="12.5" fill="#1f2328" font-weight="700">Порти I2S</text>
+<text x="116" y="583" font-size="11" fill="#1f2328" font-weight="600">I2S0 TX</text>
+<text x="176" y="583" font-size="10.5" fill="#3d444d">майстер, APLL, слоти 32 біти: 50, 51, 52 до PCM5102A</text>
+<text x="116" y="602" font-size="11" fill="#1f2328" font-weight="600">I2S0 RX</text>
+<text x="176" y="602" font-size="10.5" fill="#3d444d">BT від супутника-slave: I2S0 веде 33, 30; DATA на 31</text>
+<text x="116" y="621" font-size="11" fill="#1f2328" font-weight="600">I2S1 RX</text>
+<text x="176" y="621" font-size="10.5" fill="#3d444d">BT від супутника, що сам тактує лінк: 33, 30, 31</text>
+<text x="116" y="640" font-size="11" fill="#1f2328" font-weight="600">I2S2 RX</text>
+<text x="176" y="640" font-size="10.5" fill="#3d444d">АЦП мікрофона ES8311; XTAL</text>
+<text x="116" y="667" font-size="12.5" fill="#1f2328" font-weight="700">Джерела звуку</text>
+<text x="116" y="686" font-size="10.5" fill="#3d444d">microSD · радіо, DLNA, AirPlay (Wi-Fi через C6) · USB UAC2 · BT (супутник)</text>
+<text x="1430" y="233.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">3V3</text>
+<text x="1430" y="253.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">EN</text>
+<text x="1430" y="273.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">VP</text>
+<text x="1430" y="293.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">VN</text>
+<text x="1430" y="313.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">IO34</text>
+<text x="1430" y="333.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">IO35</text>
+<text x="1430" y="353.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">IO32</text>
+<text x="1430" y="373.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">IO33</text>
+<text x="1430" y="393.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">IO25</text>
+<text x="1430" y="413.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">IO26</text>
+<text x="1430" y="433.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">IO27</text>
+<text x="1430" y="453.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">IO14</text>
+<text x="1430" y="473.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">IO12</text>
+<text x="1430" y="493.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">GND</text>
+<text x="1430" y="513.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">IO13</text>
+<text x="1430" y="533.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D2</text>
+<text x="1430" y="553.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D3</text>
+<text x="1430" y="573.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">CMD</text>
+<text x="1430" y="593.5" font-size="9.5" fill="#ffffff" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">5V</text>
+<text x="1610" y="233.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">GND</text>
+<text x="1610" y="253.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">IO23</text>
+<text x="1610" y="273.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">IO22</text>
+<text x="1610" y="293.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">TX0</text>
+<text x="1610" y="313.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">RX0</text>
+<text x="1610" y="333.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">IO21</text>
+<text x="1610" y="353.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">GND</text>
+<text x="1610" y="373.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">IO19</text>
+<text x="1610" y="393.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">IO18</text>
+<text x="1610" y="413.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">IO5</text>
+<text x="1610" y="433.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">IO17</text>
+<text x="1610" y="453.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">IO16</text>
+<text x="1610" y="473.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">IO4</text>
+<text x="1610" y="493.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">IO0</text>
+<text x="1610" y="513.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">IO2</text>
+<text x="1610" y="533.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">IO15</text>
+<text x="1610" y="553.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D1</text>
+<text x="1610" y="573.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">D0</text>
+<text x="1610" y="593.5" font-size="9.5" fill="#ffffff" text-anchor="end" stroke="#1b1f23" stroke-width="3" stroke-linejoin="round" paint-order="stroke">CLK</text>
+<text x="1079" y="703.5" font-size="9.5" fill="#1f2328" font-weight="600">A</text>
+<text x="1079" y="723.5" font-size="9.5" fill="#1f2328" font-weight="600">B</text>
+<text x="1079" y="743.5" font-size="9.5" fill="#1f2328" font-weight="600">SW</text>
+<text x="1079" y="763.5" font-size="9.5" fill="#1f2328" font-weight="600">+</text>
+<text x="1079" y="783.5" font-size="9.5" fill="#1f2328" font-weight="600">GND</text>
+<text x="1269" y="883.5" font-size="9.5" fill="#1f2328" font-weight="600">XSMT</text>
+<text x="1269" y="903.5" font-size="9.5" fill="#1f2328" font-weight="600">SCK</text>
+<text x="1269" y="923.5" font-size="9.5" fill="#1f2328" font-weight="600">BCK</text>
+<text x="1269" y="943.5" font-size="9.5" fill="#1f2328" font-weight="600">LRCK</text>
+<text x="1269" y="963.5" font-size="9.5" fill="#1f2328" font-weight="600">DIN</text>
+<text x="1269" y="983.5" font-size="9.5" fill="#1f2328" font-weight="600">FMT</text>
+<text x="1269" y="1003.5" font-size="9.5" fill="#1f2328" font-weight="600">DEMP</text>
+<text x="1451" y="943.5" font-size="9.5" fill="#1f2328" text-anchor="end" font-weight="600">L</text>
+<text x="1451" y="963.5" font-size="9.5" fill="#1f2328" text-anchor="end" font-weight="600">R</text>
+<text x="1609" y="903.5" font-size="9.5" fill="#1f2328" font-weight="600">/RESET</text>
+<text x="1609" y="943.5" font-size="9.5" fill="#1f2328" font-weight="600">IN L</text>
+<text x="1609" y="963.5" font-size="9.5" fill="#1f2328" font-weight="600">IN R</text>
+<text x="1821" y="903.5" font-size="9.5" fill="#1f2328" text-anchor="end" font-weight="600">L+</text>
+<text x="1821" y="923.5" font-size="9.5" fill="#1f2328" text-anchor="end" font-weight="600">L−</text>
+<text x="1821" y="968.5" font-size="9.5" fill="#1f2328" text-anchor="end" font-weight="600">R+</text>
+<text x="1821" y="988.5" font-size="9.5" fill="#1f2328" text-anchor="end" font-weight="600">R−</text>
+<text x="1511" y="881" font-size="9.5" fill="#1f2328" font-weight="600">10 кОм</text>
+<text x="1250" y="903.5" font-size="9.5" fill="#111418" text-anchor="end" font-weight="600" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">GND</text>
+<text x="1250" y="983.5" font-size="9.5" fill="#111418" text-anchor="end" font-weight="600" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">GND</text>
+<text x="1250" y="1003.5" font-size="9.5" fill="#111418" text-anchor="end" font-weight="600" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">GND</text>
+<rect x="797" y="843.9" width="113.9" height="13.5" fill="#ffffff" rx="2"/>
+<text x="800" y="853.8" font-size="10.5" fill="#2da44e" font-weight="600">GPIO28 · енкодер B</text>
+<rect x="797" y="858.9" width="113.9" height="13.5" fill="#ffffff" rx="2"/>
+<text x="800" y="868.8" font-size="10.5" fill="#1a7f37" font-weight="600">GPIO32 · енкодер A</text>
+<rect x="797" y="873.9" width="121.9" height="13.5" fill="#ffffff" rx="2"/>
+<text x="800" y="883.8" font-size="10.5" fill="#d1242f" font-weight="600">GPIO34 · amp_enable</text>
+<rect x="797" y="888.9" width="150.5" height="13.5" fill="#ffffff" rx="2"/>
+<text x="800" y="898.8" font-size="10.5" fill="#57b56e" font-weight="600">GPIO35 · кнопка енкодера</text>
+<rect x="797" y="913.9" width="113.5" height="13.5" fill="#ffffff" rx="2"/>
+<text x="800" y="923.8" font-size="10.5" fill="#0a58ca" font-weight="600">GPIO50 · BCK 64·fs</text>
+<rect x="797" y="933.9" width="74" height="13.5" fill="#ffffff" rx="2"/>
+<text x="800" y="943.8" font-size="10.5" fill="#2f9bff" font-weight="600">GPIO51 · WS</text>
+<rect x="797" y="953.9" width="89.2" height="13.5" fill="#ffffff" rx="2"/>
+<text x="800" y="963.8" font-size="10.5" fill="#00337a" font-weight="600">GPIO52 · DOUT</text>
+<rect x="1237" y="823.9" width="87.1" height="13.5" fill="#ffffff" rx="2"/>
+<text x="1240" y="833.8" font-size="10.5" fill="#d1242f" font-weight="600">/RESET, XSMT</text>
+<rect x="982" y="483.9" width="141.7" height="13.6" fill="#ffffff" rx="2"/>
+<text x="985" y="493.8" font-size="10.5" fill="#111418" font-weight="600">GND, скручений із BCLK</text>
+<rect x="982" y="503.9" width="89.2" height="13.6" fill="#ffffff" rx="2"/>
+<text x="985" y="513.8" font-size="10.5" fill="#8250df" font-weight="600">GPIO33 · BCLK</text>
+<rect x="982" y="523.9" width="171.5" height="13.5" fill="#ffffff" rx="2"/>
+<text x="985" y="533.8" font-size="10.5" fill="#55309b" font-weight="600">GPIO31 · DATA від супутника</text>
+<rect x="982" y="543.9" width="74" height="13.5" fill="#ffffff" rx="2"/>
+<text x="985" y="553.8" font-size="10.5" fill="#b083f0" font-weight="600">GPIO30 · WS</text>
+<rect x="997" y="643.9" width="188.7" height="13.5" fill="#ffffff" rx="2"/>
+<text x="1000" y="653.8" font-size="10.5" fill="#e8590c" font-weight="600">TX: J5.2, GPIO26, до RX2 (IO16)</text>
+<rect x="997" y="658.9" width="195" height="13.5" fill="#ffffff" rx="2"/>
+<text x="1000" y="668.8" font-size="10.5" fill="#a84300" font-weight="600">RX: J5.3, GPIO27, від TX2 (IO17)</text>
+<rect x="1527" y="933.9" width="13.6" height="13.5" fill="#ffffff" rx="2"/>
+<text x="1530" y="943.8" font-size="10.5" fill="#57606a" font-weight="600">L</text>
+<rect x="1527" y="953.9" width="13.6" height="13.5" fill="#ffffff" rx="2"/>
+<text x="1530" y="963.8" font-size="10.5" fill="#8c959f" font-weight="600">R</text>
+<text x="40" y="44" font-size="26" fill="#1f2328" font-weight="700">ModESP Streamer: схема з&#x27;єднань</text>
+<text x="40" y="70" font-size="13.5" fill="#3d444d">Як зібрано зараз: один PCM5102A на I2S0, BT-супутник на I2S-B і UART J5, енкодер на PCNT.</text>
+<text x="40" y="90" font-size="13.5" fill="#3d444d">Один масштаб: крок виводів 2.54 мм = 20 одиниць. Суцільний контур відповідає платі; пунктирний контур і порядок його виводів умовні.</text>
+<path d="M40 116 v8 h78.7 v-8" fill="none" stroke="#1f2328" stroke-width="1.5"/>
+<text x="126.7" y="124" font-size="11" fill="#1f2328">10 мм</text>
+<text x="40" y="158" font-size="13" fill="#1f2328" font-weight="700">Звідки геометрія</text>
+<text x="40" y="178" font-size="11.5" fill="#3d444d">Панель: контур 114.4 × 66.8 мм із мануалу Guition; JP1, BAT, SW3 і рамка за фото; порядок JP1 і J5 зі схеми плати, аркуші 03 і 04.</text>
+<text x="40" y="197" font-size="11.5" fill="#3d444d">ESP32-DevKitC: порядок J2 і J3 з документації Espressif; приблизно 28 × 54 мм.</text>
+<text x="40" y="216" font-size="11.5" fill="#3d444d">Плата PCM5102A, плата TPA3255, енкодер: намальовані без розпіновки самих плат, тому контури пунктирні.</text>
+<text x="40" y="235" font-size="11.5" fill="#3d444d">Піни: boards/p4_player/board.json і docs/CONCEPT.uk.md, «Розпіновка»; супутника: main/board.h у ModESP_BT_Satellite.</text>
+<text x="1700" y="66" font-size="15" fill="#1f2328" font-weight="700">Кольори</text>
+<path d="M1700 88 h34" stroke="#0a58ca" stroke-width="3" fill="none"/>
+<text x="1744" y="92" font-size="11.5" fill="#1f2328">I2S0 до ЦАП: BCK, WS, DOUT</text>
+<path d="M1700 108 h34" stroke="#d1242f" stroke-width="3" fill="none"/>
+<text x="1744" y="112" font-size="11.5" fill="#1f2328">amp_enable, GPIO34</text>
+<path d="M1700 128 h34" stroke="#8250df" stroke-width="3" fill="none"/>
+<text x="1744" y="132" font-size="11.5" fill="#1f2328">I2S-B, супутник: BCLK, WS, DATA</text>
+<path d="M1700 148 h34" stroke="#111418" stroke-width="3" fill="none"/>
+<text x="1744" y="152" font-size="11.5" fill="#1f2328">дріт землі поруч із BCLK</text>
+<path d="M1700 168 h34" stroke="#e8590c" stroke-width="3" fill="none"/>
+<text x="1744" y="172" font-size="11.5" fill="#1f2328">UART-лінк на J5</text>
+<path d="M1700 188 h34" stroke="#1a7f37" stroke-width="3" fill="none"/>
+<text x="1744" y="192" font-size="11.5" fill="#1f2328">енкодер: A, B, кнопка</text>
+<path d="M1700 208 h34" stroke="#57606a" stroke-width="3" fill="none"/>
+<text x="1744" y="212" font-size="11.5" fill="#1f2328">аналоговий звук</text>
+<circle cx="1708" cy="234" r="6" fill="#e5484d" stroke="#fff" stroke-width="1.2"/>
+<text x="1720" y="238" font-size="11.5" fill="#1f2328">+5V</text>
+<circle cx="1778" cy="234" r="6" fill="#f08c00" stroke="#fff" stroke-width="1.2"/>
+<text x="1790" y="238" font-size="11.5" fill="#1f2328">+3V3</text>
+<circle cx="1850" cy="234" r="6" fill="#111418" stroke="#fff" stroke-width="1.2"/>
+<text x="1862" y="238" font-size="11.5" fill="#1f2328">GND</text>
+<circle cx="1708" cy="256" r="6" fill="#c9b26a" stroke="#fff" stroke-width="1.2"/>
+<text x="1720" y="260" font-size="11.5" fill="#1f2328">не використано або не показано</text>
+<text x="40" y="1010" font-size="15" fill="#1f2328" font-weight="700">Перемички і живлення</text>
+<text x="40" y="1032" font-size="11.5" fill="#3d444d">PCM5102A: SCK, FMT і DEMP на GND: PLL від BCK, формат I2S. XSMT від GPIO34: LOW = тиша.</text>
+<text x="40" y="1051" font-size="11.5" fill="#3d444d">GPIO34 amp_enable веде /RESET TPA3255 і XSMT ЦАПа. 10 кОм на GND тримають обидва в тиші до старту прошивки; HIGH = грає.</text>
+<text x="40" y="1070" font-size="11.5" fill="#3d444d">Енкодер: «+» лише на 3V3, не на 5 В. A і B на внутрішніх підтяжках P4; на GPIO35 на платі R34 10 кОм угору і кнопка BOOT (SW1).</text>
+<text x="40" y="1089" font-size="11.5" fill="#3d444d">Земля: аналогова земля і земля плати сходяться в одній точці біля входу підсилювача; силова земля Class-D окремо.</text>
+<text x="40" y="1108" font-size="11.5" fill="#3d444d">Не показано: живлення плати PCM5102A і супутника. TPA3255 має своє живлення 24 В.</text>
+<text x="40" y="1145" font-size="15" fill="#1f2328" font-weight="700">Обмеження</text>
+<text x="40" y="1167" font-size="11.5" fill="#3d444d">GPIO34 і GPIO35 — strapping-піни: на них немає нічого, що зовнішній чип веде під час скидання, тому клоки супутника на 33, 30 і 31.</text>
+<text x="40" y="1186" font-size="11.5" fill="#3d444d">BCLK і WS: виходи I2S0, поки супутник — I2S slave (протокол лінку 1.9 і новіше), інакше входи I2S1. Сила драйвера: BCLK 2, WS 3.</text>
+<text x="40" y="1205" font-size="11.5" fill="#3d444d">На супутнику BCLK — IO13, поруч із контактом GND, і його дріт скручений із дротом землі.</text>
+<text x="40" y="1224" font-size="11.5" fill="#3d444d">UART на J5: 460800 8N1, без керування потоком, кадри COBS; на супутнику UART2. R70, R75 і R76 випаяні: J5 — TTL, не RS485.</text>
+<text x="40" y="1243" font-size="11.5" fill="#3d444d">J5: порядок виводів зі схеми, аркуш 04; котрий із них TX, задає board.json. Його місце на платі невідоме.</text>
+<text x="40" y="1262" font-size="11.5" fill="#3d444d">GPIO49 (I2S0 MCLK) тримається в LOW і не вільний; GPIO29 (I2S0 DIN) читає лише AUX, вимкнений у цій збірці. C6_*: відновлення ESP32-C6, C6_UPDATE.uk.md.</text>
 </svg>
