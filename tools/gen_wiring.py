@@ -4,7 +4,7 @@ gen_wiring.py — draws the panel's wiring as built: docs/img/wiring.svg (Englis
 docs/img/wiring.uk.svg (Ukrainian).
 
 Every board is drawn at one scale, pin pitch 2.54 mm = 20 units. A solid outline follows the
-board itself (the panel, the ESP32-DevKitC); a dashed outline is schematic, and so is the order
+board itself (the panel, the satellite's ESP32 DevKit); a dashed outline is schematic, and so is the order
 of its pins. The panel's pins come from boards/p4_player/board.json and docs/CONCEPT.md,
 "Pinout", and the script refuses to draw if board.json says otherwise.
 
@@ -69,7 +69,7 @@ def check_satellite(root: Path) -> list[str]:
     errs = [f"satellite board.h: {n} is not GPIO_NUM_{v}"
             for n, v in (("BOARD_I2S_BCLK_GPIO", 13), ("BOARD_I2S_WS_GPIO", 26), ("BOARD_I2S_DOUT_GPIO", 27))
             if not re.search(rf"#define\s+{n}\s+GPIO_NUM_{v}\b", h)]
-    # the DevKitC build: the link on UART2, TX 17, RX 16
+    # the DevKit build: the link on UART2, TX 17, RX 16 (TX2 and RX2 on the board)
     if not re.search(r"UART_NUM_2\s*\n#define\s+BOARD_LINK_TX_GPIO\s+GPIO_NUM_17\s*\n"
                      r"#define\s+BOARD_LINK_RX_GPIO\s+GPIO_NUM_16\b", h):
         errs.append("satellite board.h: the UART2 link is not TX 17, RX 16")
@@ -86,12 +86,12 @@ def draw(lang: str):
         "WS":     ("#2f9bff", "GPIO51 · I2S0 WS"),
         "DOUT":   ("#00337a", "GPIO52 · I2S0 DOUT"),
         "AMPEN":  ("#d1242f", L("GPIO34 · amp_enable: XSMT, /RESET, 10 kΩ to GND", "GPIO34 · amp_enable: XSMT, /RESET, 10 кОм на GND")),
-        "BTBCK":  ("#8250df", L("GPIO33 · BCLK, the satellite's IO13", "GPIO33 · BCLK, IO13 супутника")),
-        "BTWS":   ("#b083f0", L("GPIO30 · WS, the satellite's IO26", "GPIO30 · WS, IO26 супутника")),
-        "BTDATA": ("#55309b", L("GPIO31 · DATA from the satellite's IO27", "GPIO31 · DATA від IO27 супутника")),
+        "BTBCK":  ("#8250df", L("GPIO33 · BCLK, the satellite's D13 (GPIO13)", "GPIO33 · BCLK, D13 супутника (GPIO13)")),
+        "BTWS":   ("#b083f0", L("GPIO30 · WS, the satellite's D26 (GPIO26)", "GPIO30 · WS, D26 супутника (GPIO26)")),
+        "BTDATA": ("#55309b", L("GPIO31 · DATA from the satellite's D27 (GPIO27)", "GPIO31 · DATA від D27 супутника (GPIO27)")),
         "BTGND":  ("#111418", L("GND, twisted with BCLK", "GND, скручений із BCLK")),
-        "UTX":    ("#e8590c", L("J5.2 TX1 (GPIO26) to the satellite's RX2 (IO16)", "J5.2 TX1 (GPIO26) до RX2 супутника (IO16)")),
-        "URX":    ("#a84300", L("J5.3 RX1 (GPIO27) from the satellite's TX2 (IO17)", "J5.3 RX1 (GPIO27) від TX2 супутника (IO17)")),
+        "UTX":    ("#e8590c", L("J5.2 TX1 (GPIO26) to the satellite's RX2 (GPIO16)", "J5.2 TX1 (GPIO26) до RX2 супутника (GPIO16)")),
+        "URX":    ("#a84300", L("J5.3 RX1 (GPIO27) from the satellite's TX2 (GPIO17)", "J5.3 RX1 (GPIO27) від TX2 супутника (GPIO17)")),
         "ENCA":   ("#1a7f37", L("GPIO32 · encoder A", "GPIO32 · енкодер A")),
         "ENCB":   ("#2da44e", L("GPIO28 · encoder B", "GPIO28 · енкодер B")),
         "ENCSW":  ("#57b56e", L("GPIO35 · encoder button", "GPIO35 · кнопка енкодера")),
@@ -103,12 +103,12 @@ def draw(lang: str):
         "WS":     ["JP1.GPIO51", "DAC.LRCK"],
         "DOUT":   ["JP1.GPIO52", "DAC.DIN"],
         "AMPEN":  ["JP1.GPIO34", "DAC.XSMT", "AMP.RESET", "R1.A"],
-        "BTBCK":  ["JP1.GPIO33", "SAT.IO13"],
-        "BTWS":   ["JP1.GPIO30", "SAT.IO26"],
-        "BTDATA": ["JP1.GPIO31", "SAT.IO27"],
+        "BTBCK":  ["JP1.GPIO33", "SAT.D13"],
+        "BTWS":   ["JP1.GPIO30", "SAT.D26"],
+        "BTDATA": ["JP1.GPIO31", "SAT.D27"],
         "BTGND":  ["JP1.GND_R", "SAT.GND"],
-        "UTX":    ["J5.2", "SAT.IO16"],
-        "URX":    ["J5.3", "SAT.IO17"],
+        "UTX":    ["J5.2", "SAT.RX2"],
+        "URX":    ["J5.3", "SAT.TX2"],
         "ENCA":   ["JP1.GPIO32", "ENC.A"],
         "ENCB":   ["JP1.GPIO28", "ENC.B"],
         "ENCSW":  ["JP1.GPIO35", "ENC.SW"],
@@ -119,7 +119,7 @@ def draw(lang: str):
     TIES = {
         "5V":  ["JP1.5V_1", "JP1.5V_2", "J5.1"],
         "3V3": ["JP1.3V3_1", "JP1.3V3_2", "ENC.+"],
-        "GND": ["JP1.GND_L", "JP1.GND_8", "J5.4", "DAC.SCK", "DAC.FMT", "DAC.DEMP", "ENC.GND", "SAT.GND_J3", "SAT.GND_J3B"],
+        "GND": ["JP1.GND_L", "JP1.GND_8", "J5.4", "DAC.SCK", "DAC.FMT", "DAC.DEMP", "ENC.GND", "SAT.GND_R"],
     }
     TIE_COLOR = {"5V": "#e5484d", "3V3": "#f08c00", "GND": "#111418"}
     NC_COLOR = "#c9b26a"
@@ -275,39 +275,41 @@ def draw(lang: str):
     notes.append(text(PX + 76, oy, L("microSD · radio, DLNA, AirPlay (Wi-Fi over the C6) · USB UAC2 · BT (satellite)",
                                      "microSD · радіо, DLNA, AirPlay (Wi-Fi через C6) · USB UAC2 · BT (супутник)"), 10.5, "#3d444d"))
 
-    # ------------------------------------------------------------ ESP32-DevKitC: the satellite
-    SX, SY = 1410.0, 192.0
+    # ------------------------------------------------------------ the satellite: a 30-pin ESP32 DevKit
+    # Measured from a photo of the board through the 2.54 mm pitch: 27.8 × 51.4 mm, rows 25.4 mm apart,
+    # the first pin 6.2 mm from the antenna edge. Drawn antenna up, so rotated 180° from the photo.
+    SX, SY = 1410.0, 181.0
+    SW, SH = 27.8 * MM, 51.4 * MM
     SJ2, SJ3 = SX + 10, SX + 210
-    SR1 = SY + 38
-    BODY["SAT"] = (SX, SY, 220.0, 428.0)
-    boards.append(rect(SX, SY, 220, 428, "#1b1f23", "#000000", rx=6))
-    boards.append(rect(SX + 39, SY + 4, 142, 201, "#b6bcc3", "#6e7781", rx=3))
-    boards.append(rect(SX + 39, SY + 4, 142, 47, "#2d333b", rx=3))
-    boards.append(text(SX + 110, SY + 33, L("antenna", "антена"), 10, "#c9d1d9", "middle"))
-    boards.append(text(SX + 110, SY + 110, "ESP32-", 12, "#1f2328", "middle", weight=700))
-    boards.append(text(SX + 110, SY + 126, "WROOM-32", 12, "#1f2328", "middle", weight=700))
-    boards.append(text(SX + 110, SY + 232, L("BT satellite", "BT-супутник"), 13.5, "#ffffff", "middle", weight=700))
-    boards.append(text(SX + 110, SY + 250, "ESP32-DevKitC", 10.5, "#c9d1d9", "middle"))
-    boards.append(text(SX + 110, SY + 268, "A2DP → I2S, UART2", 9.5, "#c9d1d9", "middle"))
-    boards.append(rect(SX + 80, SY + 332, 60, 42, "#2d333b", "#6e7781", rx=2))
-    boards.append(text(SX + 110, SY + 357, "USB-UART", 9, "#e6edf3", "middle"))
-    boards.append(rect(SX + 42, SY + 386, 26, 20, "#57606a", "#8c959f", rx=2))
-    boards.append(text(SX + 55, SY + 400, "EN", 9, "#ffffff", "middle"))
-    boards.append(rect(SX + 152, SY + 386, 26, 20, "#57606a", "#8c959f", rx=2))
-    boards.append(text(SX + 165, SY + 400, "BOOT", 7.5, "#ffffff", "middle"))
-    boards.append(rect(SX + 88, SY + 402, 44, 32, "#8c959f", "#57606a", rx=2))
-    boards.append(text(SX + 110, SY + 422, "USB", 9, "#111418", "middle", weight=600))
-    J2 = ["3V3", "EN", "VP", "VN", "IO34", "IO35", "IO32", "IO33", "IO25", "IO26", "IO27", "IO14", "IO12", "GND", "IO13",
-          "D2", "D3", "CMD", "5V"]
-    J3 = ["GND_J3", "IO23", "IO22", "TX", "RX", "IO21", "GND_J3B", "IO19", "IO18", "IO5", "IO17", "IO16", "IO4", "IO0",
-          "IO2", "IO15", "D1", "D0", "CLK"]
-    J3N = {"GND_J3": "GND", "GND_J3B": "GND", "TX": "TX0", "RX": "RX0"}
+    SR1 = SY + 49
+    BODY["SAT"] = (SX, SY, SW, SH)
+    boards.append(rect(SX, SY, SW, SH, "#1b1f23", "#000000", rx=6))
+    for hx, hy in ((SX + 12, SY + 18), (SX + SW - 12, SY + 18), (SX + 12, SY + SH - 14), (SX + SW - 12, SY + SH - 14)):
+        boards.append(circle(hx, hy, 7, "#ffffff", "#6e7781", 1.5))
+    boards.append(rect(SX + 39, SY, 142, 201, "#b6bcc3", "#6e7781", rx=3))
+    boards.append(rect(SX + 39, SY, 142, 47, "#2d333b", rx=3))
+    boards.append(text(SX + 110, SY + 29, L("antenna", "антена"), 10, "#c9d1d9", "middle"))
+    boards.append(text(SX + 110, SY + 116, "ESP-WROOM-32", 11.5, "#1f2328", "middle", weight=700))
+    boards.append(text(SX + 110, SY + 226, L("BT satellite", "BT-супутник"), 13.5, "#ffffff", "middle", weight=700))
+    boards.append(text(SX + 110, SY + 244, L("ESP32 DevKit, 30 pins", "ESP32 DevKit, 30 контактів"), 9.5, "#c9d1d9", "middle"))
+    boards.append(text(SX + 110, SY + 262, "A2DP → I2S, UART2", 9.5, "#c9d1d9", "middle"))
+    boards.append(rect(SX + 135, SY + 290, 40, 40, "#2d333b", "#6e7781", rx=2))
+    boards.append(text(SX + 155, SY + 313, "USB-UART", 7, "#e6edf3", "middle"))
+    boards.append(rect(SX + 33, SY + SH - 31, 26, 20, "#57606a", "#8c959f", rx=2))
+    boards.append(text(SX + 46, SY + SH - 17, "EN", 9, "#ffffff", "middle"))
+    boards.append(rect(SX + SW - 59, SY + SH - 31, 26, 20, "#57606a", "#8c959f", rx=2))
+    boards.append(text(SX + SW - 46, SY + SH - 17, "BOOT", 7.5, "#ffffff", "middle"))
+    boards.append(rect(SX + SW / 2 - 18, SY + SH - 22, 36, 24, "#8c959f", "#57606a", rx=2))
+    boards.append(text(SX + SW / 2, SY + SH - 6, "USB", 8.5, "#111418", "middle", weight=600))
+    # the pins as printed on the board
+    J2 = ["EN", "VP", "VN", "D34", "D35", "D32", "D33", "D25", "D26", "D27", "D14", "D12", "D13", "GND", "VIN"]
+    J3 = ["D23", "D22", "TX0", "RX0", "D21", "D19", "D18", "D5", "TX2", "RX2", "D4", "D2", "D15", "GND_R", "3V3"]
     for i, n in enumerate(J2):
         pad(f"SAT.{n}", SJ2, SR1 + i * P, 5.6)
         notes.append(text(SJ2 + 10, SR1 + i * P + 3.5, n, 9.5, "#ffffff", halo="#1b1f23"))
     for i, n in enumerate(J3):
         pad(f"SAT.{n}", SJ3, SR1 + i * P, 5.6)
-        notes.append(text(SJ3 - 10, SR1 + i * P + 3.5, J3N.get(n, n), 9.5, "#ffffff", "end", halo="#1b1f23"))
+        notes.append(text(SJ3 - 10, SR1 + i * P + 3.5, {"GND_R": "GND"}.get(n, n), 9.5, "#ffffff", "end", halo="#1b1f23"))
 
     # ------------------------------------------------------------ encoder: outline and pin order schematic
     EX, EY = 1070.0, 700.0
@@ -393,13 +395,13 @@ def draw(lang: str):
     wire("AL", "DAC.L", "AMP.INL")
     wire("AR", "DAC.R", "AMP.INR")
 
-    # the satellite: GND and BCLK run side by side, as the two twisted wires do
+    # the satellite: GND and BCLK run side by side and cross, as the two twisted wires do
     wire("BTGND", "JP1.GND_R", "SAT.GND")
-    wire("BTBCK", "JP1.GPIO33", "SAT.IO13")
-    wire("BTDATA", "JP1.GPIO31", (1300, PIN["JP1.GPIO31"][1]), (1300, PIN["SAT.IO27"][1]), "SAT.IO27")
-    wire("BTWS", "JP1.GPIO30", (1320, PIN["JP1.GPIO30"][1]), (1320, PIN["SAT.IO26"][1]), "SAT.IO26")
-    wire("UTX", "J5.2", (980, PIN["J5.2"][1]), (980, 650), (1660, 650), (1660, PIN["SAT.IO16"][1]), "SAT.IO16")
-    wire("URX", "J5.3", (965, PIN["J5.3"][1]), (965, 665), (1675, 665), (1675, PIN["SAT.IO17"][1]), "SAT.IO17")
+    wire("BTBCK", "JP1.GPIO33", (1280, PIN["JP1.GPIO33"][1]), (1280, PIN["SAT.D13"][1]), "SAT.D13")
+    wire("BTDATA", "JP1.GPIO31", (1300, PIN["JP1.GPIO31"][1]), (1300, PIN["SAT.D27"][1]), "SAT.D27")
+    wire("BTWS", "JP1.GPIO30", (1320, PIN["JP1.GPIO30"][1]), (1320, PIN["SAT.D26"][1]), "SAT.D26")
+    wire("UTX", "J5.2", (980, PIN["J5.2"][1]), (980, 650), (1660, 650), (1660, PIN["SAT.RX2"][1]), "SAT.RX2")
+    wire("URX", "J5.3", (965, PIN["J5.3"][1]), (965, 665), (1675, 665), (1675, PIN["SAT.TX2"][1]), "SAT.TX2")
 
     # ------------------------------------------------------------ wire labels, sitting on the wires
     for n, s in (("ENCB", L("GPIO28 · encoder B", "GPIO28 · енкодер B")), ("ENCA", L("GPIO32 · encoder A", "GPIO32 · енкодер A")),
@@ -412,8 +414,8 @@ def draw(lang: str):
                       ("BTDATA", "JP1.GPIO31", L("GPIO31 · DATA from the satellite", "GPIO31 · DATA від супутника")),
                       ("BTWS", "JP1.GPIO30", "GPIO30 · WS")):
         tag(n, 985, PIN[pin][1], s)
-    tag("UTX", 1000, 650, L("TX: J5.2, GPIO26, to RX2 (IO16)", "TX: J5.2, GPIO26, до RX2 (IO16)"))
-    tag("URX", 1000, 665, L("RX: J5.3, GPIO27, from TX2 (IO17)", "RX: J5.3, GPIO27, від TX2 (IO17)"))
+    tag("UTX", 1000, 650, L("TX: J5.2, GPIO26, to RX2 (GPIO16)", "TX: J5.2, GPIO26, до RX2 (GPIO16)"))
+    tag("URX", 1000, 665, L("RX: J5.3, GPIO27, from TX2 (GPIO17)", "RX: J5.3, GPIO27, від TX2 (GPIO17)"))
     tag("AL", 1530, 940, "L")
     tag("AR", 1530, 960, "R")
 
@@ -432,8 +434,8 @@ def draw(lang: str):
     for i, s in enumerate((
         L("Panel: outline 114.4 × 66.8 mm from the Guition manual; JP1, BAT, SW3 and the frame from a photo; JP1 and J5 pin order from the schematic, sheets 03 and 04.",
           "Панель: контур 114.4 × 66.8 мм із мануалу Guition; JP1, BAT, SW3 і рамка за фото; порядок JP1 і J5 зі схеми плати, аркуші 03 і 04."),
-        L("ESP32-DevKitC: J2 and J3 pin order from Espressif's documentation; about 28 × 54 mm.",
-          "ESP32-DevKitC: порядок J2 і J3 з документації Espressif; приблизно 28 × 54 мм."),
+        L("Satellite, a 30-pin ESP32 DevKit: pins as printed on it, 27.8 × 51.4 mm, rows 25.4 mm apart, measured from a photo through the 2.54 mm pitch.",
+          "Супутник, ESP32 DevKit на 30 контактів: підписи як на платі, 27.8 × 51.4 мм, ряди за 25.4 мм, виміряно за фото через крок 2.54 мм."),
         L("PCM5102A board, TPA3255 board, encoder: drawn without the boards' own pinout, so their outlines are dashed.",
           "Плата PCM5102A, плата TPA3255, енкодер: намальовані без розпіновки самих плат, тому контури пунктирні."),
         L("Pins: boards/p4_player/board.json and docs/CONCEPT.md, “Pinout”; the satellite's: main/board.h in ModESP_BT_Satellite.",
@@ -482,8 +484,8 @@ def draw(lang: str):
           "GPIO34 і GPIO35 — strapping-піни: на них немає нічого, що зовнішній чип веде під час скидання, тому клоки супутника на 33, 30 і 31."),
         L("BCLK and WS: outputs of I2S0 while the satellite is an I2S slave (link protocol 1.9 or later), inputs of I2S1 otherwise. Drive strength: BCLK 2, WS 3.",
           "BCLK і WS: виходи I2S0, поки супутник — I2S slave (протокол лінку 1.9 і новіше), інакше входи I2S1. Сила драйвера: BCLK 2, WS 3."),
-        L("At the satellite BCLK is IO13, next to a GND pin, and its wire is twisted with a ground wire.",
-          "На супутнику BCLK — IO13, поруч із контактом GND, і його дріт скручений із дротом землі."),
+        L("At the satellite BCLK is D13 (GPIO13), next to a GND pin, and its wire is twisted with a ground wire.",
+          "На супутнику BCLK — D13 (GPIO13), поруч із контактом GND, і його дріт скручений із дротом землі."),
         L("UART on J5: 460800 8N1, no flow control, COBS frames; UART2 on the satellite. R70, R75 and R76 are removed: J5 is TTL, not RS485.",
           "UART на J5: 460800 8N1, без керування потоком, кадри COBS; на супутнику UART2. R70, R75 і R76 випаяні: J5 — TTL, не RS485."),
         L("J5: pin order from the schematic, sheet 04; which pin is TX is set in board.json. Its place on the board is not known.",
