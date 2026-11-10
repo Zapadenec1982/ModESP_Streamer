@@ -2221,6 +2221,14 @@ void RadioModule::on_update(uint32_t dt_ms) {
         case 1:  // play, and take the output — the DSP keeps playing whichever source is
                  // selected, so tuning has to claim it or nothing is heard.
             state_set("audio.source", AUDIO_SRC_RADIO);
+            {
+                // Play for the station that is already on is nothing to do, and the task
+                // would find that out too — but a command waiting in its queue makes the
+                // decoder drop the rest of the block it is writing, which is heard as a tick.
+                const uint8_t st = s.state.load(std::memory_order_acquire);
+                if (s.station.load() == s.tuned.load(std::memory_order_acquire) &&
+                    (st == ST_BUFFERING || st == ST_PLAYING)) break;
+            }
             send(Cmd::PLAY);
             break;
         case 2: send(Cmd::STOP); break;
