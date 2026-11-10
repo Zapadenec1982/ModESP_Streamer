@@ -256,7 +256,9 @@ struct RadioTaskState {
     /// The rate the ring is fed at: the output's answer, or the fallback until it comes.
     /// Zero until the stream's format is known.
     uint32_t clock = 0;
-    std::atomic<bool> wav{false};           ///< seek requires exact data chunk layout
+    /// No seek or resume by byte fraction: WAV needs its exact data chunk layout, and M4A is cut
+    /// into frames by its sample table, with no sync word to find again in the middle.
+    std::atomic<bool> wav{false};
     uint8_t  src_bits = 0, src_ch = 0;
     uint32_t bitrate = 0;                   ///< kbit/s, for the format line a person reads
     uint32_t bitrate_bps = 0;               ///< bits/s, for the arithmetic — see audio_pipe.h
@@ -1084,7 +1086,8 @@ bool tune(const char* want_url) {
 
     esp_audio_simple_dec_cfg_t cfg = {};
     cfg.dec_type = type_from_content(ct[0] ? ct : nullptr, s.url);
-    s.wav = cfg.dec_type == ESP_AUDIO_SIMPLE_DEC_TYPE_WAV;
+    s.wav = cfg.dec_type == ESP_AUDIO_SIMPLE_DEC_TYPE_WAV ||
+            cfg.dec_type == ESP_AUDIO_SIMPLE_DEC_TYPE_M4A;
     // HE-AAC is off unless asked for (esp_aac_dec.h: aac_plus_enable defaults to false), and
     // without it an "AAC+" station plays its AAC-LC core only: half the sample rate, and mono
     // where the stereo was carried as PS. That was one station in seven in Radio Browser. A
@@ -1141,7 +1144,7 @@ bool promote_prepared() {
     // What the prepared stream's sniff found, not what the URL says: a WAV pushed as
     // …/WAV-0/ORIGINAL or as .WAV was taken for something else, and seeking or resuming it
     // from a byte fraction of the RIFF file turned 24-bit audio into full-scale noise.
-    s.wav = p->type == ESP_AUDIO_SIMPLE_DEC_TYPE_WAV;
+    s.wav = p->type == ESP_AUDIO_SIMPLE_DEC_TYPE_WAV || p->type == ESP_AUDIO_SIMPLE_DEC_TYPE_M4A;
     s.body_bytes = p->total;
     s.bitrate_bps = audio_core::stream_bps(p->info.bitrate, s.src_rate, s.src_ch, s.src_bits);
     s.bitrate = s.bitrate_bps / 1000;
@@ -1652,7 +1655,7 @@ uint32_t backoff_ms(int retry) {
 /// Estimated duration must never turn a truncated transfer into success.
 void finish_or_resume() {
     if (s.wav) {
-        ESP_LOGW(TAG, "WAV stream interrupted; no verified data range for resume");
+        ESP_LOGW(TAG, "WAV or M4A stream interrupted; it cannot be resumed from a byte offset");
         stop_station();
         return;
     }

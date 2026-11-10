@@ -188,6 +188,7 @@ struct PlayerTaskState {
     uint64_t frames_out = 0;    // output frames produced — NOT yet heard; see pos_s
     uint64_t file_bytes = 0;    // the whole file, for the duration estimate
     bool is_wav = false;
+    bool is_m4a = false;               ///< no seek by byte fraction: frames are cut by the sample table
     audio_core::WavPcmData wav_data;
     bool     file_eof = false;
     // The edges of a track are shaped HERE, because only this side knows where they are.
@@ -576,6 +577,7 @@ void seek_to(int32_t sec) {
     if (sec < 0) sec = 0;
     if (sec > dur - (s.is_wav ? 0 : 1)) sec = dur - (s.is_wav ? 0 : 1);
     if (s.is_wav && !s.wav_data.valid()) return; // compressed/unknown WAV cannot seek as PCM
+    if (s.is_m4a) return;   // no sync word in mdat: a byte offset is garbage to the end of the file
     const uint64_t byte = s.is_wav ? audio_core::pcm_seek_byte(s.wav_data, sec)
         : audio_core::stream_seek_byte(s.file_bytes, sec, dur, 0, 0);
     if (byte > LONG_MAX) return;
@@ -628,6 +630,7 @@ bool open_track(const char* path, bool flush_ring) {
     audio_core::pcm_ring().set_paused(false);   // a new track is never born paused
     const esp_audio_simple_dec_type_t type = type_from_name(path);
     s.is_wav = type == ESP_AUDIO_SIMPLE_DEC_TYPE_WAV;
+    s.is_m4a = type == ESP_AUDIO_SIMPLE_DEC_TYPE_M4A;
     if (type == ESP_AUDIO_SIMPLE_DEC_TYPE_NONE) {
         ESP_LOGW(TAG, "%s: unknown extension", path);
         return false;

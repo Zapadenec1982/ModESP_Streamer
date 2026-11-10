@@ -184,7 +184,9 @@ bool read_id3v2(const Reader& r, const uint8_t* hdr, Tags& out) {
     const uint8_t  ver   = hdr[3];
     const uint8_t  flags = hdr[5];
     const uint32_t size  = syncsafe(hdr + 6);
-    if (ver < 2 || ver > 4 || size == 0 || size > MAX_BLOCK) return false;
+    // No limit on the tag's size: the walk reads a frame header and a little text at a time,
+    // and a tag is large only because of its picture. The frame count bounds the walk instead.
+    if (ver < 2 || ver > 4 || size == 0) return false;
 
     const bool     v22     = (ver == 2);
     const uint32_t hdr_len = v22 ? 6 : 10;
@@ -203,7 +205,7 @@ bool read_id3v2(const Reader& r, const uint8_t* hdr, Tags& out) {
     }
 
     uint8_t fh[10];
-    while (pos + hdr_len <= size) {
+    for (int frames = 0; frames < 256 && pos + hdr_len <= size; frames++) {
         if (r.read(r.ctx, TAG_AT + pos, fh, hdr_len) != hdr_len) break;
         if (fh[0] == 0) break;                   // padding: the rest of the tag is zeros
         uint32_t fsz;
