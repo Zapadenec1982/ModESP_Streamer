@@ -276,14 +276,9 @@ void shuf_cb(lv_event_t*)   { post(UiLvglModule::Req::SHUFFLE, -1); }
 /// station has no pause: its "play/pause" — the knob's press — starts and stops the stream.
 void transport(const UiLvglModule::Snapshot& s, int which) {
     if (ui_face(s) == PlayerFace::EMPTY) return;         // the tone, AUX, USB, off: nothing to command
-    if (which == 1 && s.source == AUDIO_SOURCE_FILE && strcmp(s.play_state, "playing") != 0 &&
-        strcmp(s.play_state, "paused") != 0) {
-        // Play on a card with nothing open: the toggle only pauses and resumes a track that is
-        // open, so from idle it did nothing. Start the track the title shows — the cursor's.
-        post(UiLvglModule::Req::PLAY_QUEUE, player_core::playlist().cursor());
-    } else {
-        post(UiLvglModule::Req::TRANSPORT, which == 0 ? 5 : which == 2 ? 4 : 6);
-    }
+    // One code for every source: with nothing open on the card the player itself starts the
+    // track the title shows.
+    post(UiLvglModule::Req::TRANSPORT, which == 0 ? 5 : which == 2 ? 4 : 6);
 }
 
 void tran_cb(lv_event_t* e) {

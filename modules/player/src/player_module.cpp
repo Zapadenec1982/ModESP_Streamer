@@ -1041,10 +1041,19 @@ void player_task(void*) {
             // end mid-waveform. Pausing the ring is immediate and keeps the queue, so resume
             // is immediate too.
             case Cmd::PAUSE:  if (s.state == 1) { s.state = 2; audio_core::pcm_ring().set_paused(true); } break;
-            case Cmd::RESUME: if (s.state == 2) { s.state = 1; audio_core::pcm_ring().set_paused(false); } break;
+            // With nothing open (idle, or after an error) "play" means the track the title shows,
+            // the cursor's: a surface sends one transport code and cannot know that the toggle
+            // only pauses and resumes. Only while the card is the source.
+            case Cmd::RESUME:
+                if (s.state == 2) { s.state = 1; audio_core::pcm_ring().set_paused(false); }
+                else if (s.state != 1 && s.selected.load(std::memory_order_acquire))
+                    open_command(player_core::playlist().cursor());
+                break;
             case Cmd::TOGGLE:
                 if (s.state == 1)      { s.state = 2; audio_core::pcm_ring().set_paused(true); }
                 else if (s.state == 2) { s.state = 1; audio_core::pcm_ring().set_paused(false); }
+                else if (s.selected.load(std::memory_order_acquire))
+                    open_command(player_core::playlist().cursor());
                 break;
             case Cmd::STOP:
                 close_track();
@@ -1424,7 +1433,8 @@ void PlayerModule::on_update(uint32_t dt_ms) {
         case 6: m.type = Cmd::TOGGLE; break;
         default: continue;
         }
-        if (m.type == Cmd::PLAY || m.type == Cmd::RESUME) {
+        if (m.type == Cmd::PLAY || m.type == Cmd::RESUME ||
+            (m.type == Cmd::TOGGLE && s.selected.load(std::memory_order_acquire))) {
             // Decoding into the ring is only half the job. The DSP keeps playing whichever
             // source is selected, so starting a track has to take the output as well —
             // without this the file decodes perfectly into a ring nobody reads, and the
