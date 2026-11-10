@@ -688,10 +688,16 @@ void DlnaModule::on_update(uint32_t dt_ms) {
             notify(Notify::AV_TRANSPORT);
             break;
         case Action::Play:
-            if (!cmd.restart && ours && d.trans_state.load() == TS_PAUSED && strcmp(d.active_uri, cmd.track.uri) == 0) {
+            if (!cmd.restart && ours && strcmp(d.active_uri, cmd.track.uri) == 0) {
+                // The track that is already ours: resume it if it is paused, and otherwise
+                // leave it alone. Judged by the ring's pause, not by the transport state — a
+                // re-buffer while paused passes through TRANSITIONING — and a Play repeated for
+                // a playing track must not start it over.
                 d.pause_after_start = false;
-                audio_core::pcm_ring().set_paused(false);
-                set_trans_state(TS_PLAYING);
+                if (d.started && audio_core::pcm_ring().paused()) {
+                    audio_core::pcm_ring().set_paused(false);
+                    set_trans_state(TS_PLAYING);
+                }
             } else if (cmd.track.uri[0]) {
                 state_set("audio.source", AUDIO_SRC_RADIO);
                 state_set("radio.play_url", cmd.track.uri);
@@ -802,7 +808,10 @@ void DlnaModule::on_update(uint32_t dt_ms) {
                 d.pause_after_start = false;
                 set_trans_state(TS_PAUSED);
             } else if (!audio_core::pcm_ring().paused()) set_trans_state(TS_PLAYING);
-        } else if (strcmp(rs, "connecting") == 0 || strcmp(rs, "buffering") == 0) {
+        } else if ((strcmp(rs, "connecting") == 0 || strcmp(rs, "buffering") == 0) &&
+                   !audio_core::pcm_ring().paused()) {
+            // Not while paused: a seek re-buffers behind the pause, and PAUSED_PLAYBACK is still
+            // what the control point should see.
             set_trans_state(TS_TRANSITIONING);
         } else if (strcmp(rs, "idle") == 0) {
             // Now it means what it says: the track was read to its end, or somebody stopped

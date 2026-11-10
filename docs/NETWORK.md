@@ -651,7 +651,7 @@ the contract is keys only.
 |---|---|
 | `SetAVTransportURI` | URI ≤ 256 B, DIDL-Lite ≤ 2048 B (otherwise `402`); not `http(s)://` — `716`; empty URI — Stop. Clears the next and the previous track. When the transport is playing, the new track plays at once; otherwise it is only loaded (`STOPPED` or `PAUSED_PLAYBACK`) |
 | `SetNextAVTransportURI` | the next-track slot; the same limits and codes as in `SetAVTransportURI` |
-| `Play` | `Speed` only `1` (`717`); with no track — `701`. Paused with the same URI — resume; otherwise a start: `audio.source` = 5, `radio.play_url`, state `TRANSITIONING` |
+| `Play` | `Speed` only `1` (`717`); with no track — `701`. The same URI as the track that is loaded: paused — resume, playing — nothing; another URI, or after a stop — a start: `audio.source` = 5, `radio.play_url`, state `TRANSITIONING` |
 | `Pause` | pause of the ring's consumer (`pcm_ring().set_paused`): the socket stays, TCP holds back the server, resuming is instant. Not its own track, or `STOPPED` — `701` |
 | `Stop` | its own track — `radio.cmd` = 2; state `STOPPED` |
 | `Next` | the next track; none — `711` |
