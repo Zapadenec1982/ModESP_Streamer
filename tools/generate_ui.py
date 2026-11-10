@@ -1950,7 +1950,9 @@ class StateMetaGenerator:
         #   48 — sequence engine reservation: scenario.resource.<hash>.owner mirrors
         #         (up to 32 resources x MAX_SEQUENCES instances), engine internal counters,
         #         future expansion. See ADR-0005 (resource arbitration), plan Q3.
-        SEQUENCE_RUNTIME_MARGIN = 96
+        # player-fork: the player has no sequence engine, so only the base 48 is kept — each
+        # slot is 156 bytes of internal RAM (upstream: 96).
+        SEQUENCE_RUNTIME_MARGIN = 48
         capacity = total_manifest_keys + SEQUENCE_RUNTIME_MARGIN
 
         lines = [
