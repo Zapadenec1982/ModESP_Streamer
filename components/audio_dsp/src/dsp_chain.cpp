@@ -339,16 +339,28 @@ void DspChain::stage(Band& b, bool on, const SvfCoef& c, uint32_t len) {
 void DspChain::set_bands(const EqBand* bands, int count) {
     if (count < 0) count = 0;
     if (count > MAX_BANDS) count = MAX_BANDS;
+    bool moved = count != band_count_;
     for (int i = 0; i < MAX_BANDS; i++) {
-        SvfDesign d;
-        bands_[i]  = i < count ? bands[i] : EqBand{};
-        want_[i]   = i < count && bands[i].enabled && design_svf_params(bands[i], sample_rate_hz_, d);
-        want_d_[i] = d;
-        want_c_[i] = want_[i] ? coef_of(d) : SvfCoef{};
+        const EqBand nb = i < count ? bands[i] : EqBand{};
+        // A band that is the one already designed keeps its design. This runs on the audio
+        // task for every step of a slider drag, and the design is in double, which is
+        // soft-float here: ten bands are about half a block's time, one is a twentieth. The
+        // kept design is the one the same band at the same rate would give again.
+        const EqBand& ob = bands_[i];
+        const bool same = nb.type == ob.type && nb.freq_hz == ob.freq_hz &&
+                          nb.gain_db == ob.gain_db && nb.q == ob.q && nb.enabled == ob.enabled;
+        if (!same) {
+            SvfDesign d;
+            bands_[i]  = nb;
+            want_[i]   = nb.enabled && design_svf_params(nb, sample_rate_hz_, d);
+            want_d_[i] = d;
+            want_c_[i] = want_[i] ? coef_of(d) : SvfCoef{};
+            moved = true;
+        }
         stage_band(i, eq_on_ && want_[i], want_c_[i]);
     }
     band_count_ = count;
-    update_headroom();
+    if (moved) update_headroom();
 }
 
 void DspChain::set_eq_enabled(bool on) {
