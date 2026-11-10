@@ -114,11 +114,12 @@ interleaved stereo float between the producers and the audio task; lock-free on 
   source: the output gate shut and the TX queue played out, the moment the amplifier may go off
   (section "Edges of sound"); the radio writes its preset logos' files only then
   (`docs/NETWORK.md`, "Covers and logos").
-- After a reset the consumer waits for the 100 ms cushion (`PRIME_S`); `eos` lifts the wait. While
+- After a reset, and after an underrun, the consumer waits for the 100 ms cushion (`PRIME_S`);
+  `eos` lifts the wait. While
   the amplifier settles, the ring is not read — except for AirPlay and USB, which pace by the fill
   (`paces_by_fill`).
-- A short block is padded with silence; `audio.underruns` grows only when there is no `eos` and no
-  retune is pending.
+- A short block is padded with silence and plays at the envelope's gain; `audio.underruns` grows
+  only when there is no `eos` and no retune is pending, once for each time the ring runs dry.
 
 ## The audio task
 
