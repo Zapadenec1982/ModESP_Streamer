@@ -282,3 +282,20 @@ TEST_CASE("a snapshot from another task carries the generation it was taken at")
     CHECK(g2 == store.generation());
     CHECK(copy.preset[5] == 1);
 }
+
+TEST_CASE("a list from a writer that escapes with \\u reads as the text it means") {
+    // Python's json.dumps writes Cyrillic this way, and HTML-safe writers the ampersand.
+    const char* json =
+        "{\"stations\":["
+        "{\"name\":\"\\u0420\\u0430\\u0434\\u0456\\u043e\",\"url\":\"http://a/1?id=1\\u0026fmt=mp3\"},"
+        "{\"name\":\"Jazz \\ud83c\\udfb7\",\"url\":\"http://b/2\"},"
+        "{\"name\":\"Half \\ud83c!\",\"url\":\"http://c/3\"}"
+        "]}";
+    radio_core::StationList l;
+    REQUIRE(radio_core::parse(json, strlen(json), l));
+    REQUIRE(l.count == 3);
+    CHECK(std::string(l.station[0].name) == "\xD0\xA0\xD0\xB0\xD0\xB4\xD1\x96\xD0\xBE");   // Радіо
+    CHECK(std::string(l.station[0].url) == "http://a/1?id=1&fmt=mp3");
+    CHECK(std::string(l.station[1].name) == "Jazz \xF0\x9F\x8E\xB7");       // one code point from the pair
+    CHECK(std::string(l.station[2].name) == "Half \xEF\xBF\xBD!");          // half a pair: U+FFFD
+}

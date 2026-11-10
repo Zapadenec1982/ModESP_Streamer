@@ -42,10 +42,7 @@ using jsmn_util::span;
 /// jsmn hands back the raw span between the quotes, backslashes and all — so a station
 /// called Rock "FM" comes out of the file with the backslashes still in its name, and
 /// gains another pair every time the list is saved. Only the escapes a name or a URL can
-/// actually contain are handled; \u sequences are passed through as written: this device
-/// writes one only for a control character without a short form, which no name holds
-/// (StationList::add) and no working URL does, and guessing at half a surrogate pair is
-/// worse than leaving the text alone.
+/// actually contain are handled, and \uXXXX, which other writers use freely.
 void copy_str(const char* json, const jsmntok_t& t, char* out, size_t out_sz) {
     int n = t.end - t.start;
     if (n < 0) n = 0;
@@ -62,6 +59,32 @@ void copy_str(const char* json, const jsmntok_t& t, char* out, size_t out_sz) {
             case 'b': c = '\b'; break;
             case 'f': c = '\f'; break;
             case '"': case '\\': case '/': c = e; break;
+            case 'u': {
+                // \uXXXX, a surrogate pair as one code point. Writers that escape everything
+                // outside ASCII (Python's default) or HTML's characters (\u0026 in a URL) are
+                // ordinary: left as text, a name read as six characters apiece and a URL
+                // asked for the wrong address. A broken escape stays as it was written.
+                const int hi = i + 4 < n ? jsmn_util::hex4(in + i + 1) : -1;
+                if (hi < 0) {
+                    out[o++] = '\\';
+                    if (o + 1 >= out_sz) { out[o] = '\0'; return; }
+                    c = e;
+                    break;
+                }
+                uint32_t cp = (uint32_t)hi;
+                i += 4;
+                if (cp >= 0xD800 && cp <= 0xDBFF && i + 6 < n && in[i + 1] == '\\' &&
+                    in[i + 2] == 'u') {
+                    const int lo = jsmn_util::hex4(in + i + 3);
+                    if (lo >= 0xDC00 && lo <= 0xDFFF) {
+                        cp = 0x10000 + ((cp - 0xD800) << 10) + ((uint32_t)lo - 0xDC00);
+                        i += 6;
+                    }
+                }
+                if (cp == 0 || (cp >= 0xD800 && cp <= 0xDFFF)) cp = 0xFFFD;   // NUL, half a pair
+                if (!jsmn_util::put_utf8(cp, out, o, out_sz)) { out[o] = '\0'; return; }
+                continue;
+            }
             default:                 // not an escape we know: keep it as it was written
                 out[o++] = '\\';
                 if (o + 1 >= out_sz) { out[o] = '\0'; return; }
