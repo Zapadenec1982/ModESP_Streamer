@@ -95,23 +95,15 @@ static bool tok_to_bool(const char* json, const jsmntok_t* tok) {
     return strncmp(json + tok->start, "true", 4) == 0;
 }
 
-// Helper: підрахунок кількості токенів у значенні (для пропуску об'єктів/масивів)
+// Helper: the index of the token after the value at idx (skips objects and arrays whole).
+// A loop, not a recursion: the nesting depth comes from the file, and the stack it runs on
+// (main at boot, httpd for a POST) does not grow with it. A value's tokens are exactly the
+// ones that start before it ends.
 static int skip_token(const jsmntok_t* tokens, int idx, int ntokens) {
     if (idx >= ntokens) return idx;
-    if (tokens[idx].type == JSMN_PRIMITIVE || tokens[idx].type == JSMN_STRING) {
-        return idx + 1;
-    }
-    // Об'єкт або масив: пропустити всі дочірні токени
-    int children = tokens[idx].size;
+    const int end = tokens[idx].end;
     int j = idx + 1;
-    for (int c = 0; c < children; c++) {
-        if (tokens[idx].type == JSMN_OBJECT) {
-            j = skip_token(tokens, j, ntokens);     // key
-            j = skip_token(tokens, j, ntokens);     // value
-        } else {
-            j = skip_token(tokens, j, ntokens);     // array element
-        }
-    }
+    while (j < ntokens && tokens[j].start < end) j++;
     return j;
 }
 
