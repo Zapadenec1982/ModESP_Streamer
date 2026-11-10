@@ -120,6 +120,9 @@ struct KnotEnv {
     int      gh_i = 0;
     float    held = 1.0f, grel = 1.0f;
     uint32_t cnt = 0;
+    /// Knots in a row that asked for no reduction and found none held: past M of them the
+    /// whole history is ones, and knot() has nothing to work out.
+    int      ones = 0;
     float    G1 = 1.0f, g = 1.0f, dg = 0.0f;
 
     /// M knots of look-ahead and smoothing, D frames a knot, a hold and a release in seconds.

@@ -1233,11 +1233,23 @@ void KnotEnv::reset() {
     rh_i = gh_i = 0;
     held = grel = 1.0f;
     cnt = 0;
+    ones = 0;
     G1 = g = 1.0f;
     dg = 0.0f;
 }
 
 void KnotEnv::knot(float r) {
+    // Nothing to limit and nothing held, for longer than the history is: every entry of both
+    // lines is 1, and the scan, the hold, the release and the sum below would arrive at exactly
+    // the state they started from. Most knots of most music are these.
+    if (r == 1.0f && ones > M && G1 == 1.0f) {
+        if (++rh_i == M + 1) rh_i = 0;
+        if (++gh_i == M) gh_i = 0;
+        cnt = hold;
+        g = 1.0f;
+        dg = 0.0f;
+        return;
+    }
     rh[rh_i] = r;
     if (++rh_i == M + 1) rh_i = 0;
     float h = rh[0];
@@ -1270,6 +1282,8 @@ void KnotEnv::knot(float r) {
     if (G1 > 1.0f) G1 = 1.0f;               // M ones sum to exactly M; guard the rest
     g  = G0;
     dg = (G1 - G0) / (float)D;
+    if (r == 1.0f && held == 1.0f && grel == 1.0f) { if (ones <= M) ones++; }
+    else ones = 0;
 }
 
 void DspChain::lim_reset() {
