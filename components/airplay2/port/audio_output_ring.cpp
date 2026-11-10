@@ -146,6 +146,9 @@ void follow_clock() {
 void follow_owner() {
     auto& ring = audio_core::pcm_ring();
     const bool want = g.want.load(std::memory_order_acquire);
+    // Lost to nobody (another producer took the ring and let it go while this source stayed
+    // selected): take it again, as USB does. Never back from an owner that still holds it.
+    if (want && g.owner && ring.owner() == PcmRing::OWNER_NONE) g.owner = false;
     if (want != g.owner) {
         g.owner = want;
         if (want) {
@@ -257,7 +260,12 @@ void playback_task(void*) {
         if (wrote && !g.idle && ring.available() == 0) g.underruns.fetch_add(1, std::memory_order_relaxed);
 
         for (size_t i = 0; i < n * 2; i++) s_f32[i] = (float)s_pcm[i] * (1.0f / 32768.0f);
-        if (!(g.direct ? push(s_f32, n) : push_converted(s_f32, n))) continue;  // taken from us
+        if (!(g.direct ? push(s_f32, n) : push_converted(s_f32, n))) {
+            // Taken from us. The refused write did not wait, so wait here: a loop that never
+            // sleeps starves core 1's idle task into the watchdog.
+            if (ring.owner() != PcmRing::OWNER_AIRPLAY) pace_unheard(next_us, n);
+            continue;
+        }
         wrote = true;
 
         // The pace: let the audio task take the ring back down to the target, sleeping the
