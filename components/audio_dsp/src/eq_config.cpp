@@ -254,20 +254,21 @@ size_t eq_serialize(const EqConfig& cfg, char* buf, size_t buf_sz) {
     return add.size();
 }
 
+/// The file's text, for eq_load(), eq_save() and eq_copy_file(): static, because they run on the
+/// main task, which has little stack to spare, and one buffer, because they run one at a time
+/// (the EQ's owner calls all three, and loads before it ever saves).
+static char s_out[MAX_FILE];
+
 bool eq_load(const char* path, EqConfig& cfg) {
     cfg = EqConfig{};
     FILE* f = fopen(path, "r");
     if (!f) return false;
-    static char buf[MAX_FILE];
-    const size_t len = fread(buf, 1, sizeof(buf) - 1, f);
+    char* const buf = s_out;
+    const size_t len = fread(buf, 1, sizeof(s_out) - 1, f);
     fclose(f);
     buf[len] = '\0';
     return eq_parse(buf, len, cfg);
 }
-
-/// eq_save()'s and eq_copy_file()'s: static, because they run on the main task, which has
-/// little stack to spare, and one at a time (the EQ's owner calls both).
-static char s_out[MAX_FILE];
 
 bool eq_save(const char* path, const EqConfig& cfg) {
     char* const buf = s_out;
