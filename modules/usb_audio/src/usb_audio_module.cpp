@@ -76,10 +76,25 @@ bool UsbAudioModule::panel_playing(int32_t source) const {
     char s[24];
     switch (source) {
         case SRC_TONE:    return true;   // someone is testing the speakers
-        case SRC_BT:      read_string("bt.play_state", s, sizeof(s)); return !strcmp(s, "playing");
+        case SRC_BT:
+            // A phone may stream with no play status at all (the key then reads "idle"), so
+            // past the two things it can say for itself the stream is the answer.
+            read_string("bt.play_state", s, sizeof(s));
+            if (!strcmp(s, "playing")) return true;
+            if (!strcmp(s, "paused")) return false;
+            read_string("bt.state", s, sizeof(s));
+            return !strcmp(s, "streaming");
         case SRC_FILE:    read_string("player.state", s, sizeof(s));  return !strcmp(s, "playing");
         case SRC_AIRPLAY: read_string("airplay.state", s, sizeof(s)); return !strcmp(s, "playing");
         case SRC_RADIO:
+            // A pushed track that is paused keeps the engine's state at "playing": the pause is
+            // the ring's, and only the renderer's own state says so.
+            read_string("radio.mode", s, sizeof(s));
+            if (!strcmp(s, "push")) {
+                char d[24];
+                read_string("dlna.state", d, sizeof(d));
+                if (!strcmp(d, "PAUSED_PLAYBACK")) return false;
+            }
             read_string("radio.state", s, sizeof(s));
             return !strcmp(s, "playing") || !strcmp(s, "buffering") || !strcmp(s, "connecting") ||
                    !strcmp(s, "reconnecting");
