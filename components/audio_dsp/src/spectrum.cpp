@@ -238,7 +238,10 @@ bool SpectrumAnalyzer::analyse() {
         float db = mag > 1e-7f ? 20.0f * log10f(mag) + offset_db : SPECTRUM_FLOOR_DB;
         if (db < SPECTRUM_FLOOR_DB) db = SPECTRUM_FLOOR_DB;
         if (db > SPECTRUM_BAND_REF_DB) db = SPECTRUM_BAND_REF_DB;
-        bands_[b] = db > bands_[b] ? db : bands_[b] - decay;
+        // Falls no lower than what it reads now: subtracted blind, a steady band was published
+        // a step under its level on every hop that read a hair lower than the one before.
+        const float fall = bands_[b] - decay;
+        bands_[b] = db > fall ? db : fall;
         if (bands_[b] < SPECTRUM_FLOOR_DB) bands_[b] = SPECTRUM_FLOOR_DB;
     }
     return true;
