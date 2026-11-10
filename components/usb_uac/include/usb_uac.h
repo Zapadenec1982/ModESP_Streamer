@@ -85,6 +85,10 @@ void  set_output(bool on);
 bool  signal();
 /// The last completed second.
 Stats stats();
+
+/// The host's volume as it stands now, 1/256 dB. `Stats::host_volume` is the same number as
+/// of the last once-a-second report, which is too slow to follow a slider.
+int16_t host_volume();
 const char* state_name(State s);
 const char* phase_name(Phase p);
 /// The last loss events, newest first: "t=123.456s 3 (412 us); ...". Returns the length written.

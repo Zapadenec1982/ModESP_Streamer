@@ -103,13 +103,15 @@ bool UsbAudioModule::panel_playing(int32_t source) const {
 }
 
 void UsbAudioModule::follow_volume(uint32_t dt_ms, bool mine, bool streaming) {
-    const usb_uac::Stats s = usb_uac::stats();
+    // Read directly: the stats are refreshed once a second, and a drag of the computer's
+    // slider then reached the room as one jump a second.
+    const int16_t host_volume = usb_uac::host_volume();
     const int32_t room = read_int("audio.volume", 30);
-    const int32_t host = usb_volume::position(s.host_volume);
+    const int32_t host = usb_volume::position(host_volume);
 
     if (streaming && !was_streaming_) {
         vol_.session_start(room, host);   // the room keeps its level; the slider is not a press
-        host_seen_ = s.host_volume;
+        host_seen_ = host_volume;
         room_seen_ = room;
     }
     vol_.tick(dt_ms);
@@ -117,8 +119,8 @@ void UsbAudioModule::follow_volume(uint32_t dt_ms, bool mine, bool streaming) {
     if (room_seen_ >= 0 && room != room_seen_) vol_.room_moved(room);   // the knob, the web
     room_seen_ = room;
 
-    if (s.host_volume != host_seen_) {
-        host_seen_ = s.host_volume;
+    if (host_volume != host_seen_) {
+        host_seen_ = host_volume;
         const int32_t to = vol_.on_level(host, room, mine && streaming);
         if (to >= 0 && to != room) {
             state_set("audio.volume", to);

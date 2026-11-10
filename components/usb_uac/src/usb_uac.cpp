@@ -374,6 +374,8 @@ void set_output(bool on) { s_output.store(on, std::memory_order_release); }
 
 bool signal() { return s_signal.load(std::memory_order_acquire); }
 
+int16_t host_volume() { return g_uac.volume; }
+
 Stats stats() {
     portENTER_CRITICAL(&s_mux);
     Stats s = s_last;
