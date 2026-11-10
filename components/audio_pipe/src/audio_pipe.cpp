@@ -5,6 +5,8 @@
 
 #include "audio_pipe.h"
 
+#include <cstring>
+
 #include "resampler.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
@@ -29,6 +31,19 @@ uint32_t stream_bps(uint32_t reported, uint32_t rate, uint8_t ch, uint8_t bits) 
     if (reported && reported < 10000) reported *= 1000;
     if (reported) return reported;
     return rate * (uint32_t)ch * (uint32_t)bits;       // PCM reports nothing; this IS its rate
+}
+
+int32_t flac_duration_s(const uint8_t* head, size_t n) {
+    // "fLaC", a 4-byte block header whose type (low 7 bits) is 0 = STREAMINFO, then its 34
+    // bytes: block and frame sizes (10), 20 bits of rate, 3 of channels, 5 of depth, 36 of
+    // total samples.
+    if (!head || n < 26 || memcmp(head, "fLaC", 4) != 0 || (head[4] & 0x7F) != 0) return 0;
+    const uint32_t rate = ((uint32_t)head[18] << 12) | ((uint32_t)head[19] << 4) | (head[20] >> 4);
+    const uint64_t total = ((uint64_t)(head[21] & 0x0F) << 32) | ((uint64_t)head[22] << 24) |
+                           ((uint64_t)head[23] << 16) | ((uint64_t)head[24] << 8) | head[25];
+    if (!rate || !total) return 0;
+    const uint64_t secs = total / rate;
+    return secs > 0x7fffffffULL ? 0 : (int32_t)secs;
 }
 
 int32_t stream_duration_s(uint64_t bytes, uint32_t bps) {

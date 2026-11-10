@@ -16,6 +16,7 @@
 #include "doctest.h"
 #include "audio_pipe.h"
 
+#include <cstring>
 #include <initializer_list>
 
 TEST_CASE("a bitrate reported in kilobits is read as kilobits") {
@@ -122,4 +123,23 @@ TEST_CASE("an input limit with nowhere to put the output is zero, not a guess") 
     CHECK(audio_core::resample_input_limit(CHUNK, 8, 1.0) == 0);       // no room for margin
     CHECK(audio_core::resample_input_limit(CHUNK, CHUNK * 2, 0.0) == 0);
     CHECK(audio_core::resample_input_limit(CHUNK, CHUNK * 2, -1.0) == 0);
+}
+
+TEST_CASE("a FLAC says how long it is in its first bytes") {
+    // "fLaC", a STREAMINFO header (last block, 34 bytes), block and frame sizes, then
+    // 44,100 Hz, 2 channels, 16 bits and 10,584,000 samples: four minutes.
+    uint8_t head[42] = {'f', 'L', 'a', 'C', 0x80, 0x00, 0x00, 0x22,
+                        0x10, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x0A, 0xC4, 0x42, 0xF0, 0x00, 0xA1, 0x7F, 0xC0};
+    CHECK(audio_core::flac_duration_s(head, sizeof(head)) == 240);
+    CHECK(audio_core::flac_duration_s(head, 25) == 0);            // not all of it yet
+
+    uint8_t no_total[42];
+    memcpy(no_total, head, sizeof(head));
+    no_total[21] &= 0xF0; no_total[22] = no_total[23] = no_total[24] = no_total[25] = 0;
+    CHECK(audio_core::flac_duration_s(no_total, sizeof(no_total)) == 0);   // the encoder left it out
+
+    uint8_t mp3[42] = {'I', 'D', '3'};
+    CHECK(audio_core::flac_duration_s(mp3, sizeof(mp3)) == 0);
+    CHECK(audio_core::flac_duration_s(nullptr, 42) == 0);
 }

@@ -952,6 +952,18 @@ Pump pump() {
                 s.dur_s.store((int32_t)(s.wav_data.bytes / s.wav_data.frame_bytes /
                                        s.wav_data.rate_hz), std::memory_order_relaxed);
             }
+            // FLAC: the decoder reports no bitrate, so the line above took it for PCM and the
+            // length came out short by the compression ratio. The file says how long it is.
+            if (s.f) {
+                uint8_t head[42];
+                const long keep = ftell(s.f);
+                if (keep >= 0 && fseek(s.f, 0, SEEK_SET) == 0) {
+                    const size_t got = fread(head, 1, sizeof(head), s.f);
+                    fseek(s.f, keep, SEEK_SET);
+                    const int32_t flac_s = audio_core::flac_duration_s(head, got);
+                    if (flac_s > 0) s.dur_s.store(flac_s, std::memory_order_relaxed);
+                }
+            }
             ESP_LOGI(TAG, "format: %s, ratio %.4f%s, %ld s", s.fmt, s.ratio,
                      s.direct ? " (no resampling)" : " (fixed-ratio resampler)",
                      (long)s.dur_s.load(std::memory_order_relaxed));

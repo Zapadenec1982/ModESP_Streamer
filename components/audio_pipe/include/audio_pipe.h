@@ -42,6 +42,12 @@ namespace audio_core {
 /// IS the bitrate.
 uint32_t stream_bps(uint32_t reported, uint32_t rate, uint8_t ch, uint8_t bits);
 
+/// A FLAC file's length in seconds from its STREAMINFO block (`head`: the first 42 bytes of
+/// the file or more), 0 if this is not the start of a FLAC or the encoder left the total out.
+/// The decoder reports no bitrate for FLAC, and a length worked out as if the file were
+/// uncompressed PCM is short by the compression ratio.
+int32_t flac_duration_s(const uint8_t* head, size_t n);
+
 /// How many seconds `bytes` of a stream at `bps` lasts. 0 when it cannot be known.
 ///
 /// Tags and headers are counted as audio, which for a three-minute MP3 with artwork is a

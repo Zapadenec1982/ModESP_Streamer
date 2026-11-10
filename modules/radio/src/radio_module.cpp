@@ -241,6 +241,7 @@ struct RadioTaskState {
     uint32_t pcm_generation = 0;           ///< ring generation claimed by this radio session
     size_t   head_len = 0;
     size_t   head_at = 0;
+    int32_t  flac_dur_s = 0;               ///< from STREAMINFO, 0 = not a FLAC body from its start
     char     icy_name[radio_core::NAME_LEN] = "";
     int      icy_meta = 0;                  ///< 0 = the station sends none
     int      icy_left = 0;                  ///< audio bytes until the next block
@@ -1042,6 +1043,7 @@ void close_stream() {
     s.bitrate_bps = 0;
     s.frames_in.store(0, std::memory_order_release);
     s.dur_s.store(0, std::memory_order_release);
+    s.flac_dur_s = 0;
     s.fmt[0] = '\0';
 }
 
@@ -1198,6 +1200,8 @@ Pump pump() {
 
     // ── decode one call's worth ──
     const size_t have = raw_peek(s.feed, NET_CHUNK);
+    // Before the first frame the feed is the start of the body: a FLAC says how long it is.
+    if (!s.src_rate && !s.flac_dur_s) s.flac_dur_s = audio_core::flac_duration_s(s.feed, have);
     if (!s.first_pcm_size && have < 512 && !s.eof.load()) { s.pump_idle.fetch_add(1, std::memory_order_relaxed); return Pump::IDLE; }          // not enough to be a frame; wait for the reader
 
     esp_audio_simple_dec_raw_t raw = {};
@@ -1268,6 +1272,9 @@ Pump pump() {
             s.bitrate = s.bitrate_bps / 1000;
             s.dur_s.store(audio_core::stream_duration_s(s.body_bytes, s.bitrate_bps),
                           std::memory_order_release);
+            // FLAC reports no bitrate, so the line above took it for PCM: use the file's own
+            // length, which a body read from its start carries in its first bytes.
+            if (s.flac_dur_s > 0 && s.body_bytes) s.dur_s.store(s.flac_dur_s, std::memory_order_release);
             snprintf(s.fmt, sizeof(s.fmt), "%.1f kHz %u ch %lu kbps",
                      (double)s.src_rate / 1000.0, (unsigned)s.src_ch,
                      (unsigned long)s.bitrate);
