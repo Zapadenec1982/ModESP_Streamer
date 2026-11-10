@@ -72,6 +72,30 @@ size_t pcm_to_f32(const uint8_t* src, size_t bytes, uint8_t bits, uint8_t ch, fl
     size_t frames = bytes / bps;
     if (frames > max_frames) frames = max_frames;
 
+    // Stereo 16 and 24 bits are nearly everything that plays: a loop each, chosen once, a frame
+    // a pass. The general loop below decides the width and the channel for every sample, which
+    // costs three times as much. Same arithmetic, same floats.
+    if (ch == 2 && bits == 16) {
+        const uint8_t* p = src;
+        for (size_t i = 0; i < frames; i++, p += 4) {
+            const int16_t l = (int16_t)((uint16_t)p[0] | ((uint16_t)p[1] << 8));
+            const int16_t r = (int16_t)((uint16_t)p[2] | ((uint16_t)p[3] << 8));
+            dst[2 * i]     = (float)l / 32768.0f;
+            dst[2 * i + 1] = (float)r / 32768.0f;
+        }
+        return frames;
+    }
+    if (ch == 2 && bits == 24) {
+        const uint8_t* p = src;
+        for (size_t i = 0; i < frames; i++, p += 6) {
+            const int32_t l = (int32_t)((uint32_t)p[0] << 8 | (uint32_t)p[1] << 16 | (uint32_t)p[2] << 24);
+            const int32_t r = (int32_t)((uint32_t)p[3] << 8 | (uint32_t)p[4] << 16 | (uint32_t)p[5] << 24);
+            dst[2 * i]     = (float)(l >> 8) / 8388608.0f;
+            dst[2 * i + 1] = (float)(r >> 8) / 8388608.0f;
+        }
+        return frames;
+    }
+
     for (size_t i = 0; i < frames; i++) {
         for (int c = 0; c < 2; c++) {
             const int sc = (ch == 1) ? 0 : c;          // mono → both sides
