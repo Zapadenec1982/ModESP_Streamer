@@ -498,7 +498,7 @@ The control plane is a fork of [ModESP_Framework](https://github.com/Zapadenec19
 
 `modules/audio` has its own task, `audio`: core 1, priority 22, 8 KB stack in internal SRAM,
 a block of 240 frames (5 ms at 48 kHz). The module owns the `audio.*` keys; from `on_update` it sends the task
-commands through a FreeRTOS queue (16 POD commands), and the volume through a `LevelLatch` (the latest value, not
+commands through a FreeRTOS queue (32 POD commands), and the volume through a `LevelLatch` (the latest value, not
 a queue). The task returns only slow state — levels, underruns, the measured rate — through a
 POD under a spinlock. The task itself does not write to the log: a log call can block for longer than one block,
 so its measurements are printed by the main loop. BT reception is run by the `audio_bt` task (core 1, priority 23): from

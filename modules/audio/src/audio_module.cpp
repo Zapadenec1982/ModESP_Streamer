@@ -812,7 +812,9 @@ bool AudioModule::on_init() {
         }
     }
 
-    cmd_q_ = xQueueCreate(16, sizeof(Cmd));
+    // 32: one pass of the main loop can send every setting there is (24), and a command that
+    // finds the queue full is not sent again until its key next changes.
+    cmd_q_ = xQueueCreate(32, sizeof(Cmd));
     run_ = true;
     // Audio task: core 1, high priority, stack in INTERNAL RAM (docs/CONCEPT.md, "Board
     // constraints" — a PSRAM stack dies on the first NVS write while the cache is off).
@@ -2283,6 +2285,10 @@ void AudioModule::task_loop() {
             int32_t pct = 0, limit = 0;
             if (level_.take(pct, limit)) dsp_.set_volume(audio_core::LevelLatch::effective(pct, limit));
         }
+        // The commands' cycles end here, before the deferred source change: that one waits for
+        // the Bluetooth reader behind shut gates, in a block that runs no chain, and counted
+        // here it read as a worst block of 130-300 % on every switch away from Bluetooth.
+        const uint32_t cmd_cycles = esp_cpu_get_cycle_count() - cmd_c0;
         // ── a source change, once nothing of the old one is left to hear ──
         //
         // apply_source() used to run the moment the command arrived: it reset the chain mid-note,
@@ -2299,7 +2305,6 @@ void AudioModule::task_loop() {
                 apply_source(src);
             }
         }
-        const uint32_t cmd_cycles = esp_cpu_get_cycle_count() - cmd_c0;
 
         const int64_t t0 = esp_timer_get_time();
         bool have_signal = false;

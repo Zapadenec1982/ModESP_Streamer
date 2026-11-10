@@ -126,7 +126,7 @@ interleaved stereo float between the producers and the audio task; lock-free on 
 - Task `audio`: core 1, priority 22, 8 KB stack in internal SRAM (a stack in PSRAM crashes while
   the cache is disabled by a flash write). A block is 240 frames (`DspChain::BLOCK`, 5 ms at
   48 kHz).
-- Every block: commands from the queue (16 entries) and the volume from `LevelLatch` → deferred
+- Every block: commands from the queue (32 entries) and the volume from `LevelLatch` → deferred
   source change → source block → source counters → `amp_enable` → envelope → DSP → output gate →
   spectrum → int32 → `write` to I2S0 (up to 200 ms). The TX DMA sets the pace; for AUX, the RX
   read.
