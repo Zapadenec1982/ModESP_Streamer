@@ -116,7 +116,8 @@ void airplay2_report_volume(float volume_db) {
 }
 
 esp_err_t settings_set_volume(float volume_db) {
-    s.volume_db = volume_db;
+    // s.volume_db is what /info announces as initialVolume, and that is the room's level
+    // (airplay2_report_volume): the phone's own level is only passed on.
     airplay2_event_data_t d = {.title = "", .artist = "", .album = "", .volume_db = volume_db,
                                .image_type = ""};
     emit(AIRPLAY2_EV_VOLUME, &d);
