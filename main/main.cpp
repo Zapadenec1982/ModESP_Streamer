@@ -25,7 +25,6 @@
 #include "modesp/error_service.h"
 #include "modesp/watchdog_service.h"
 #include "modesp/system_monitor.h"
-#include "modesp/logger_service.h"
 #include "modesp/log_policy.h"
 
 // Phase 4: Configuration + HAL + Persist
@@ -131,7 +130,6 @@ static void report_alloc_failures()
 
 // System services (CRITICAL priority — start first)
 static modesp::ErrorService    error_service;
-static modesp::LoggerService   logger_service;
 static modesp::ConfigService   config_service;
 static modesp::PersistService  persist_service;
 
@@ -304,7 +302,6 @@ extern "C" void app_main(void)
     // ── Step 2: Register system services (CRITICAL) ──
     app.modules().register_module(error_service);
     app.modules().register_module(watchdog_service);
-    app.modules().register_module(logger_service);
     app.modules().register_module(config_service);
 
     // PersistService: відновлює persisted settings з NVS → SharedState
