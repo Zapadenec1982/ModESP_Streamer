@@ -13,3 +13,7 @@ idf_component_register(
 
 idf_component_get_property(tusb_lib espressif__tinyusb COMPONENT_LIB)
 target_include_directories(${tusb_lib} PUBLIC "${COMPONENT_DIR}/tusb")
+
+# The producer converts and measures every frame a computer sends, at a priority above the
+# audio task's: built -O2 like the other components that run per sample.
+target_compile_options(${COMPONENT_LIB} PRIVATE -O2)
