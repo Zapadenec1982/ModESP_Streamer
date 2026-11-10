@@ -2199,10 +2199,6 @@ void AudioModule::task_loop() {
         // Their cycles count with the DSP's: an EQ edit redesigns ten bands in double, which is
         // soft-float here, and that lands in this block's time.
         const uint32_t cmd_c0 = esp_cpu_get_cycle_count();
-        {
-            int32_t pct = 0, limit = 0;
-            if (level_.take(pct, limit)) dsp_.set_volume(audio_core::LevelLatch::effective(pct, limit));
-        }
         Cmd c;
         while (xQueueReceive(cmd_q_, &c, 0) == pdTRUE) {
             switch (c.type) {
@@ -2269,6 +2265,14 @@ void AudioModule::task_loop() {
             }
             case CmdType::STOP: stop = true; break;
             }
+        }
+        // The level, after the queue: the main loop lifts the tone's volume cap in the pass that
+        // asks for the next source, and the tone is still heard through its closing gates. Taken
+        // then, the level made it jump to the saved volume; left in the latch, it is taken in the
+        // first block of the new source, where the ramp starts from zero.
+        if (!(source_ == SRC_TONE && pend_source_ >= 0)) {
+            int32_t pct = 0, limit = 0;
+            if (level_.take(pct, limit)) dsp_.set_volume(audio_core::LevelLatch::effective(pct, limit));
         }
         // ── a source change, once nothing of the old one is left to hear ──
         //
