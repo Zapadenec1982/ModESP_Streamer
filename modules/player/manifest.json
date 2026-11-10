@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "module": "player",
   "version": "0.1.0",
-  "description": "Локальне відтворення з microSD: MP3, FLAC, WAV",
+  "description": "Локальне відтворення з microSD: MP3, FLAC, WAV, AAC/M4A",
   "priority": 4,
   "requires": [],
   "state": {

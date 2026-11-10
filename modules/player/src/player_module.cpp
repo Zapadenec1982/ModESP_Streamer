@@ -497,7 +497,10 @@ constexpr int RESYNC_TRIES = 16;
 bool playable(const char* name) {
     const char* dot = strrchr(name, '.');
     if (!dot) return false;
-    return !strcasecmp(dot, ".mp3") || !strcasecmp(dot, ".flac") || !strcasecmp(dot, ".wav");
+    // AAC as a bare stream or in an M4A, as the opener takes them and the README says. An M4A
+    // shows no tags (the tag reader knows ID3, Vorbis and RIFF) and cannot be seeked.
+    return !strcasecmp(dot, ".mp3") || !strcasecmp(dot, ".flac") || !strcasecmp(dot, ".wav") ||
+           !strcasecmp(dot, ".m4a") || !strcasecmp(dot, ".aac");
 }
 
 /// One level of the card, adding what it finds and descending into what it does not know.
@@ -914,6 +917,12 @@ Pump pump() {
             s.src_rate = info.sample_rate;
             s.src_bits = info.bits_per_sample;
             s.src_ch   = info.channel ? info.channel : 2;
+            // A WAV's samples are as wide as their container. For WAVE_FORMAT_EXTENSIBLE the
+            // decoder reports the VALID bits instead (24 in a 32-bit container), and converting
+            // by that reads every sample from the wrong bytes: noise at full scale.
+            if (s.is_wav && s.wav_data.valid() && s.wav_data.frame_bytes % s.src_ch == 0) {
+                s.src_bits = (uint8_t)(s.wav_data.frame_bytes / s.src_ch * 8);
+            }
             s.ratio    = (double)OUT_RATE / (double)s.src_rate;
             snprintf(s.fmt, sizeof(s.fmt), "%u/%.1f kHz %u ch",
                      (unsigned)s.src_bits, (double)s.src_rate / 1000.0, (unsigned)s.src_ch);
@@ -972,6 +981,26 @@ Pump pump() {
                      (long)s.dur_s.load(std::memory_order_relaxed));
         } else {
             return Pump::WORKED;          // wait for the decoder to know; input did move
+        }
+    } else if (!s.is_wav) {
+        // The decoder follows a format change inside one file and rewrites its info; frames
+        // converted by the first frame's format would play at the wrong speed to the end.
+        esp_audio_simple_dec_info_t info = {};
+        if (esp_audio_simple_dec_get_info(s.dec, &info) == ESP_AUDIO_ERR_OK && info.sample_rate) {
+            const uint8_t ch = info.channel ? info.channel : 2;
+            if (info.sample_rate != s.src_rate || info.bits_per_sample != s.src_bits ||
+                ch != s.src_ch) {
+                ESP_LOGW(TAG, "format changed inside the file: %lu Hz %u ch %u bit -> %lu Hz %u ch %u bit",
+                         (unsigned long)s.src_rate, (unsigned)s.src_ch, (unsigned)s.src_bits,
+                         (unsigned long)info.sample_rate, (unsigned)ch,
+                         (unsigned)info.bits_per_sample);
+                s.src_rate = info.sample_rate;
+                s.src_bits = info.bits_per_sample;
+                s.src_ch   = ch;
+                snprintf(s.fmt, sizeof(s.fmt), "%u/%.1f kHz %u ch",
+                         (unsigned)s.src_bits, (double)s.src_rate / 1000.0, (unsigned)s.src_ch);
+                if (!use_clock(s.clock)) return Pump::DONE;   // the session keeps its clock
+            }
         }
     }
 

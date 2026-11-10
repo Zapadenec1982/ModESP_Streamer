@@ -36,7 +36,7 @@ namespace {
 bool is_audio(const char* name) {
     const char* dot = strrchr(name, '.');
     if (!dot) return false;
-    static const char* const EXT[] = {".wav", ".flac", ".mp3", ".m4a", ".aac", ".ogg"};
+    static const char* const EXT[] = {".wav", ".flac", ".mp3", ".m4a", ".aac"};
     for (const char* e : EXT) if (strcasecmp(dot, e) == 0) return true;
     return false;
 }
