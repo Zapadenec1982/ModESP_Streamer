@@ -164,7 +164,18 @@ bool SpectrumAnalyzer::analyse() {
 
     // Window the samples straight into the FFT's buffer: sample 2m is point m's real part and
     // sample 2m + 1 its imaginary part, so a real window of N is a complex FFT of M = N/2.
-    for (int i = 0; i < N; i++) work_[i] = ring_[(start + (uint32_t)i) % SPECTRUM_RING] * window(i);
+    //
+    // A window of exact zeros (a pause, a stopped source, the standby face with nothing
+    // playing) transforms to zeros: every band reads the floor and only the decay is left to
+    // do. Found by a scan that stops at the first sample that is not zero, the window, the
+    // transform and the band sums are skipped for it — the same bars for a twentieth of the work.
+    bool silent = true;
+    for (int i = 0; i < N; i++) {
+        if (ring_[(start + (uint32_t)i) % SPECTRUM_RING] != 0.0f) { silent = false; break; }
+    }
+    if (!silent) {
+        for (int i = 0; i < N; i++) work_[i] = ring_[(start + (uint32_t)i) % SPECTRUM_RING] * window(i);
+    }
 
     // The feed kept writing meanwhile: if it reached the window's start, or started over,
     // the copy is torn and the frame is skipped.
@@ -176,6 +187,7 @@ bool SpectrumAnalyzer::analyse() {
         return false;
     }
 
+    if (!silent) {
 #if defined(ESP_PLATFORM)
     // The plain-C FFT, not the P4 assembly one (dsps_fft2r_fc32 → _arp4 on this chip). One
     // build died in the assembly one ~5 s in, the moment a source started: "Illegal
@@ -191,6 +203,7 @@ bool SpectrumAnalyzer::analyse() {
 #else
     dsps_fft_ref(work_, M);
 #endif
+    }
 
     // Scale so a full-scale sine reads 0 dBFS. Because the bands sum POWER, the divisor is
     // the window's RMS, not its mean: Hann spreads an on-bin tone as 1, 0.5, 0.5 in
@@ -217,7 +230,7 @@ bool SpectrumAnalyzer::analyse() {
         // rather than on its level. Summing is also the honest meaning of "level in this
         // band" for anything that is not a single tone.
         float power = 0.0f;
-        for (int k = lo; k < hi; k++) {
+        for (int k = lo; !silent && k < hi; k++) {
             // Bin k of the real window's N-point transform from the M-point one, Z:
             // X[k] = E[k] + W^k O[k], E and O the transforms of the even and odd samples,
             // E[k] = (Z[k] + Z*[M-k]) / 2, O[k] = (Z[k] - Z*[M-k]) / 2j, W = e^(-2 pi j / N).
