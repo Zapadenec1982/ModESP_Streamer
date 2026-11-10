@@ -1417,8 +1417,10 @@ void PlayerModule::on_update(uint32_t dt_ms) {
             break;
         case 2: m.type = Cmd::PAUSE;  break;
         case 3: m.type = Cmd::STOP;   break;
-        case 4: m.type = Cmd::NEXT;   break;
-        case 5: m.type = Cmd::PREV;   break;
+        // Next and previous belong to the card only while it is the source: off it they
+        // would claim the ring from whoever plays and then give it to nobody.
+        case 4: if (!s.selected.load(std::memory_order_acquire)) continue; m.type = Cmd::NEXT; break;
+        case 5: if (!s.selected.load(std::memory_order_acquire)) continue; m.type = Cmd::PREV; break;
         case 6: m.type = Cmd::TOGGLE; break;
         default: continue;
         }
