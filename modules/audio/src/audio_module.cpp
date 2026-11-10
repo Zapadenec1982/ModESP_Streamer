@@ -2575,6 +2575,7 @@ void AudioModule::task_loop() {
                 bt_clock_health_.reset();
                 bt_asrc_blocks_  = 0;
                 bt_capture_.store(bt_fmt_ok_);
+                if (bt_fmt_ok_ && bt_task_) xTaskNotifyGive(bt_task_);   // wake the reader now
                 sat::stream_control().complete(request.revision, bt_fmt_ok_);
                 break;
             }
@@ -3029,9 +3030,13 @@ void AudioModule::bt_rx_loop() {
     while (run_ && bt_) {
         if (!bt_capture_.load()) {
             bt_reader_paused_.store(true);
+            // Asleep until capture is switched on (the audio task notifies), not awake every
+            // tick to look: at priority 23 on the audio core each look was a preemption of the
+            // DSP, a thousand a second for as long as Bluetooth was not the source. The
+            // timeout only keeps run_ looked at.
+            ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(100));
             win_frames = 0; win_start = esp_timer_get_time();
             last_read_us = 0;
-            vTaskDelay(1);
             continue;
         }
         bt_reader_paused_.store(false);
