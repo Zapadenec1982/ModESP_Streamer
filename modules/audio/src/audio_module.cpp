@@ -2704,7 +2704,9 @@ void AudioModule::task_loop() {
             const float want = open ? 1.0f : 0.0f;
             if (sig_gain_ != want) {
                 for (size_t i = 0; i < BLOCK; i++) {
-                    sig_gain_ += (want > sig_gain_) ? sig_up_ : -sig_down_;
+                    // By where the gate is heading, not by which side of the target it is
+                    // on: a step that turns round at the target never rests on it.
+                    sig_gain_ += open ? sig_up_ : -sig_down_;
                     if (sig_gain_ > 1.0f) sig_gain_ = 1.0f;
                     else if (sig_gain_ < 0.0f) sig_gain_ = 0.0f;
                     // A curve, not the straight line sig_gain_ traces. A linear fade is
