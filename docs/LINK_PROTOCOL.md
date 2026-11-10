@@ -123,8 +123,7 @@ str  build            // the sender's build, e.g. "sat 0.1.0 v5.5.5"; for humans
 ### When it is sent
 
 - **Each side sends `HELLO` after start-up and in reply to the other's `HELLO`.** The host sends
-  its first one about a second after start-up, or straight away in reply if the device's `HELLO`
-  arrived earlier. After the exchange both work at the lower `proto_minor` of the two.
+  its first one as its link comes up at start-up. After the exchange both work at the lower `proto_minor` of the two.
 - **The device repeats its `HELLO` once a second** until it hears the host's `HELLO`. That way a
   lost greeting does not leave a freshly restarted device in the old mode. `PING`/`PONG` getting
   through does not yet mean that capabilities have been exchanged.

@@ -376,6 +376,7 @@ bool BtModule::on_init() {
              link_->describe(),
              (unsigned)sat::PROTO_MAJOR, (unsigned)sat::PROTO_MINOR,
              (unsigned long)our_caps);
+    since_hello_ms_ = HELLO_EVERY_MS;   // the limiter starts open, or this first greeting is dropped
     say_hello();
     return true;
 }
