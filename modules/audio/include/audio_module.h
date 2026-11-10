@@ -179,6 +179,8 @@ private:
     /// that arrived with nothing in it. Fills one block of `stereo`; returns the frames that carry
     /// the tail.
     size_t fade_from_hold(float* stereo, float l, float r);
+    /// Scales a block that skips the envelope's own pass by the gain the envelope had.
+    void under_envelope(float* stereo, size_t frames);
     bool pull_bt_block(float* stereo, size_t frames);
     bool stop_bt_diagnostic(uint8_t reason);
     /// Take on a format the satellite announced — the input port AND the output clock, in the

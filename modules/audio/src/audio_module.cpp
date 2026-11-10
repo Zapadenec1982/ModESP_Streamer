@@ -1420,6 +1420,15 @@ void AudioModule::retime() {
     prime_frames_ = (size_t)lroundf(PRIME_S * fs);
 }
 
+void AudioModule::under_envelope(float* stereo, size_t frames) {
+    // A short block is shaped where it is read and skips the envelope's pass, so it carries
+    // the envelope's gain itself: left at 1.0, a fragment that arrived while the envelope was
+    // still opening went out at full level.
+    const float g = audio_core::smootherstep(sig_gain_);
+    if (g >= 1.0f) return;
+    for (size_t i = 0; i < frames * 2; i++) stereo[i] *= g;
+}
+
 size_t AudioModule::fade_from_hold(float* stereo, float l, float r) {
     // Nothing arrived at all, mid-waveform. There is no sample to fade, so the last one there was
     // is brought to silence along the same curve. A decaying hold is not what the waveform was
@@ -2351,7 +2360,8 @@ void AudioModule::task_loop() {
                     // wait for the fade (claim_after_fade gives up after 100 ms). Nothing of the
                     // old stream is left to fade, so its last frame comes down along the short
                     // tail, and the output gate closes over whatever the chain still holds.
-                    fade_from_hold(s_blk, last_in_l_, last_in_r_);
+                    const size_t held = fade_from_hold(s_blk, last_in_l_, last_in_r_);
+                    under_envelope(s_blk, held);
                     have_signal = true;
                     sig_gain_ = 0.0f;
                     env_done = true;
@@ -2489,12 +2499,14 @@ void AudioModule::task_loop() {
                         s_blk[2 * k] *= g;
                         s_blk[2 * k + 1] *= g;
                     }
+                    under_envelope(s_blk, got);
                     have_signal = true;
                     sig_gain_ = 0.0f;       // whatever comes next starts from silence
                     env_done = true;        // this block is already shaped; leave it alone
                 } else if (sig_gain_ > 0.0f) {
                     // Nothing arrived at all, mid-waveform: fade_from_hold() says how that ends.
                     filled = fade_from_hold(s_blk, last_in_l_, last_in_r_);
+                    under_envelope(s_blk, filled);
                     have_signal = true;
                     sig_gain_ = 0.0f;
                     env_done = true;
@@ -2503,7 +2515,10 @@ void AudioModule::task_loop() {
                 // Nor is it an underrun while a rate change is pending: the producer has
                 // asked for a new clock and holds its frames until it has one, so an empty
                 // ring here is the old rate's tail running out, which is the plan.
-                if (!ring.eos() && !want_rate_) underruns++;
+                // A counted underrun arms the cushion again: a ring that ran dry in the middle of
+                // sound waits for 100 ms of it before it is heard, instead of playing each
+                // trickle as it arrives.
+                if (!ring.eos() && !want_rate_) { underruns++; priming_ = true; }
             }
             // Remembered here, before the envelope and the DSP, because this is where a hold
             // has to be injected: a post-DSP sample fed back in would pass the volume twice.
