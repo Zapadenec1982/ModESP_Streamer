@@ -116,7 +116,8 @@ without it — access point.
   sends the panel to its access point, and the panel goes back when the router returns. A C6 that
   stops answering on SDIO restarts the panel through ESP-Hosted
   (`CONFIG_ESP_HOSTED_HOST_TRANSPORT_RESTART_ON_FAILURE`), and the restart resets the C6
-  (GPIO 54).
+  (GPIO 54). ESP-Hosted does it with `abort()`: settings changed in the last seconds are not
+  written, a core dump is, and `system.boot_reason` reads `panic`.
 
 **Access point.** SSID `ModESP-XXXX` (the last two bytes of the base MAC) or `wifi/ap_ssid`;
 password `wifi/ap_pass` of 8–63 characters → WPA2 (a longer stored one is cut to its first 63,

@@ -103,9 +103,10 @@ int PersistService::erase_legacy_keys(nvs_handle_t h) {
 
 // player-fork: every esp_restart() writes what is pending. The routes that restart flushed by
 // hand and the rest did not: a setting changed in the seconds before an update over HTTP (until
-// it flushed too), an MQTT update, ESP-Hosted's own restart when the C6 stops answering, or the
-// Wi-Fi restart was lost with it. A shutdown handler runs on every esp_restart(), whoever calls it;
-// a panic does not run them, and has nothing a flush could be trusted with anyway.
+// it flushed too), an MQTT update or the Wi-Fi restart was lost with it. A shutdown handler runs
+// on every esp_restart(), whoever calls it; a panic does not run them, and has nothing a flush
+// could be trusted with anyway. ESP-Hosted's own restart when the C6 stops answering is such a
+// panic (it calls abort()), so what changed in the seconds before it is still lost.
 static PersistService* s_restart_flush = nullptr;
 static void flush_on_restart() {
     if (s_restart_flush) s_restart_flush->flush_now();

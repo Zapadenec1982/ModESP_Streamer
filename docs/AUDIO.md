@@ -423,6 +423,7 @@ Measuring C (a multimeter on AC V, preferably a phone with a spectrum analyser).
 
 ```
 curl -u <user>:<password> -X POST http://<panel>/api/settings \
+     -H 'Content-Type: application/json' \
      -d '{"audio.source":1,"audio.tone_mode":1,"audio.tone_hz":60,"audio.tone_db10":-260,"audio.tone_ch":1}'
 ```
 
