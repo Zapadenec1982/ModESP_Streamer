@@ -44,8 +44,9 @@ bool PcmRing::init(size_t frames) {
     // player and the radio — and whichever initialises second used to FREE the buffer the
     // audio task was already reading from and hand back a different one. A consumer reading
     // released memory is not a thing that fails loudly; it is a thing that crackles.
-    if (buf_ && cap_ == frames + 1) return true;
-    deinit();
+    // And a ring that exists is never freed here for another size: the audio task and a
+    // producer may be inside it. The caller is told no, and deinit() is its own decision.
+    if (buf_) return cap_ == frames + 1;
     // One slot stays empty so full and empty are distinguishable without a separate count,
     // which is what keeps this lock-free with a single index per side.
     buf_ = static_cast<float*>(ring_alloc((frames + 1) * 2 * sizeof(float)));
