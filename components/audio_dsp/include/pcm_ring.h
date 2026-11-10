@@ -157,7 +157,15 @@ public:
     /// answer before it decides whether it has work to do — and keeps reading it after
     /// that, because the answer can come later than the producer was willing to wait for
     /// it (see clock_moved()).
-    void set_out_rate(uint32_t hz) { out_rate_.store(hz, std::memory_order_release); }
+    void set_out_rate(uint32_t hz) {
+        if (hz) clock_rate_.store(hz, std::memory_order_release);
+        out_rate_.store(hz, std::memory_order_release);
+    }
+    /// The rate the output was last known to run at; asking does not clear it. What a producer
+    /// converts for when its question is not answered in time: a guess at a constant plays at
+    /// the wrong speed whenever the clock was left somewhere else, and the answer that would
+    /// correct it needs an empty ring, which the guessed frames keep full.
+    uint32_t clock_rate() const { return clock_rate_.load(std::memory_order_acquire); }
     uint32_t out_rate() const { return out_rate_.load(std::memory_order_acquire); }
 
     /// Whether the output clock is settled for this listening session and will not move.
@@ -297,6 +305,7 @@ private:
     std::atomic<bool>     paused_{false};
     std::atomic<uint32_t> rate_{0};
     std::atomic<uint32_t> out_rate_{48000};
+    std::atomic<uint32_t> clock_rate_{48000};
     std::atomic<bool>     clock_locked_{false};
     std::atomic<uint8_t>  session_req_{0};      ///< the Owner that asked for a new session
     std::atomic<uint32_t> prime_{0};

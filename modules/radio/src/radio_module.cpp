@@ -1290,7 +1290,7 @@ Pump pump() {
             ring.set_eos(audio_core::PcmRing::OWNER_RADIO, s.pcm_generation, false);
             uint32_t out = 0;
             for (int i = 0; i < 60 && !(out = ring.out_rate()); i++) sleep_ms(5);
-            if (!out) out = audio_core::PIPE_OUT_RATE;   // no answer yet; start on the fallback
+            if (!out) out = ring.clock_rate();   // no answer yet: the clock the output was left at
             // Both sides of the merge belong here: the converter is told which rate the
             // clock actually settled on, and a pushed track says how long it is.
             if (!use_clock(out)) return Pump::LOST;

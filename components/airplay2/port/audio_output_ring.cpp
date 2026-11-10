@@ -122,7 +122,7 @@ void settle_rate(uint32_t src) {
     uint32_t out = 0;
     for (int i = 0; i < ASK_POLLS && !(out = ring.out_rate()); i++) vTaskDelay(pdMS_TO_TICKS(5));
     if (!out) {
-        out = audio_core::PIPE_OUT_RATE;       // no answer yet: start on the fallback
+        out = audio_core::pcm_ring().clock_rate();   // no answer yet: the clock it was left at
         ESP_LOGW(TAG, "no answer to %lu Hz; assuming %lu", (unsigned long)src, (unsigned long)out);
     }
     g.asked = src;

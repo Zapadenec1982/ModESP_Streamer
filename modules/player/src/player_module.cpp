@@ -931,7 +931,7 @@ Pump pump() {
             for (int i = 0; i < 60 && !(out = ring.out_rate()); i++) {
                 sleep_at_least_a_tick(5);
             }
-            if (!out) out = audio_core::PIPE_OUT_RATE;   // no answer yet; start on the fallback
+            if (!out) out = ring.clock_rate();   // no answer yet: the clock the output was left at
             if (!use_clock(out)) return Pump::DONE;
             // How long the track is. The decoder reports a bitrate for compressed formats;
             // for PCM it reports none, and the rate times the frame size IS the bitrate.
