@@ -88,6 +88,7 @@ set(MODULE_SOURCES
     "${ROOT}/components/audio_dsp/src/spectrum.cpp"          # FFT kernel mocked in mocks/dsps_fft_ref.h
     "${ROOT}/components/audio_dsp/src/pcm_ring.cpp"          # SPSC ring, decoder -> audio task
     "${ROOT}/components/audio_dsp/src/port_finder.cpp"       # the port meter's lock-in and dip finder
+    "${ROOT}/components/audio_dsp/src/out_convert.cpp"       # float to the DAC's words
     "${ROOT}/components/audio_tags/src/audio_tags.cpp"       # ID3v2 / Vorbis / RIFF INFO, pure parsing
     "${ROOT}/components/stations/src/stations.cpp"           # station list JSON (jsmn, header-only)
     "${ROOT}/components/radio_catalog/src/radio_catalog.cpp" # Radio Browser paths, page parser, filters
@@ -123,6 +124,7 @@ set(TEST_SOURCES
     "${CMAKE_SOURCE_DIR}/test_dsp_leveler.cpp"
     "${CMAKE_SOURCE_DIR}/test_dsp_passes.cpp"        # the filter sections two to a pass, bit for bit
     "${CMAKE_SOURCE_DIR}/test_level_latch.cpp"
+    "${CMAKE_SOURCE_DIR}/test_out_convert.cpp"
     "${CMAKE_SOURCE_DIR}/test_port_finder.cpp"
     "${CMAKE_SOURCE_DIR}/test_mono_bass_retune.cpp"
     "${CMAKE_SOURCE_DIR}/test_bt_clock_health.cpp"

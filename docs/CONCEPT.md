@@ -55,7 +55,7 @@ how the audio core works:
 - **The zero detector cannot be turned off.** After ~21 ms of exact zeros on DIN the DAC mutes the
   analog output, and coming out of mute is a pop. So the audio core never sends a digital
   zero: in silence the bus carries 1 LSB at 24 bits, −138 dBFS (`DAC_KEEPALIVE`,
-  `modules/audio/src/audio_module.cpp`).
+  `components/audio_dsp/include/out_convert.h`).
 - **PLL from BCK.** Retuning the rate stops BCK, and the DAC's PLL locks onto the clock again — an event
   in the analog section that no data mute removes. So the output clock changes only at a
   session boundary (§3).

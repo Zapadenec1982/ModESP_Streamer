@@ -7,6 +7,7 @@
 #include "user_store.h"
 #include "sat_link/stream_control.h"
 #include "eq_config.h"
+#include "out_convert.h"
 #include "eq_store.h"
 #include "out_caps.h"
 #include "transport_route.h"
@@ -190,28 +191,12 @@ inline void i32_to_f32(const int32_t* in, float* out, size_t n) {
 // and every start, and never between tracks, where the fades are shorter than 21 ms.
 // TI's own cure (E2E, "PCM5102: Pop Noise when Pause and Play") is to send 1 LSB instead
 // of 0 while paused. One LSB at 24 bits is −138 dBFS, and it keeps the DAC awake.
-constexpr int32_t DAC_KEEPALIVE = 1 << 8;
-// The chain's 1.0 is the amplifier's ceiling, so the conversion scales by `scale` = k_out·2^31
-// (k_out ≤ −1 dBFS, see set_amp_clip) after clamping to ±1 — no product can overflow.
-// fmaxf/fminf rather than two comparisons: a NaN fails every comparison, so the old clamp let
-// it through to the conversion, and RISC-V's fcvt.w.s answers a NaN with 2^31 − 1 — full-scale
-// DC into the amplifier. fmaxf returns its other operand for a NaN. The DSP chain throws such
-// blocks away before they get here (DspChain::process); this is the second line.
-// Returns how many samples it had to clamp: none, after the brickwall, which keeps |y| ≤ 1 to a
-// float step (and to 1e-6 where its release snaps to 1). Anything past 1 + 1e-5 is a fault, and
-// so is a NaN — which becomes silence here rather than −1 (DC at the ceiling).
-inline uint32_t f32_to_i32(const float* in, int32_t* out, size_t n, float scale) {
-    uint32_t clamped = 0;
-    for (size_t i = 0; i < n; i++) {
-        const float x = in[i];
-        clamped += !(fabsf(x) <= 1.00001f);
-        const float v = x == x ? fminf(fmaxf(x, -1.0f), 1.0f) : 0.0f;
-        const int32_t q = (int32_t)(v * scale);
-        out[i] = q ? q : DAC_KEEPALIVE;
-    }
-    return clamped;
-}
-
+using audio_core::DAC_KEEPALIVE;
+// The chain's 1.0 is the amplifier's ceiling, so the conversion (audio_core::f32_to_i32,
+// out_convert.h) scales by k_out·2^31 (k_out ≤ −1 dBFS, see set_amp_clip) after clamping to ±1 —
+// no product can overflow. A NaN must not reach it as a number: RISC-V's fcvt.w.s answers one
+// with 2^31 − 1, full-scale DC into the amplifier. The DSP chain throws such blocks away before
+// they get here (DspChain::process); the conversion is the second line.
 /// The limiter's threshold for an amplifier that clips at `clip_dbfs`: half a dB under it for
 /// supply sag and heat, never above −1 dBFS (the DAC's own intersample margin).
 inline float ceiling_dbfs(float clip_dbfs) {
@@ -2863,7 +2848,7 @@ void AudioModule::task_loop() {
         // zero here: keep the DAC's zero-data detector out of this experiment.
         for (auto& sample : s_io_i32) sample = DAC_KEEPALIVE;
 #else
-        out_clamps += f32_to_i32(s_blk, s_io_i32, BLOCK * 2, raw_block ? RAW_SCALE : out_scale_);
+        out_clamps += audio_core::f32_to_i32(s_blk, s_io_i32, BLOCK * 2, raw_block ? RAW_SCALE : out_scale_);
 #endif
         busy_us += esp_timer_get_time() - t0;
 

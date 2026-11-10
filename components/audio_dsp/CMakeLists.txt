@@ -20,6 +20,7 @@ idf_component_register(
          "src/spectrum.cpp"
          "src/pcm_ring.cpp"
          "src/port_finder.cpp"
+         "src/out_convert.cpp"
     INCLUDE_DIRS "include"
     REQUIRES espressif__esp-dsp
     PRIV_REQUIRES jsmn jsmn_util safe_file
