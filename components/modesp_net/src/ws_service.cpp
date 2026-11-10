@@ -192,7 +192,8 @@ int WsService::send_whole(httpd_handle_t hd, int sockfd, const char* buf, size_t
     size_t sent = 0;
     while (sent < len) {
         const int64_t left_us = deadline_us - esp_timer_get_time();
-        if (left_us <= 0) return HTTPD_SOCK_ERR_TIMEOUT;
+        // Under a millisecond lwIP rounds the timeout to 0, which means none at all.
+        if (left_us < 1000) return HTTPD_SOCK_ERR_TIMEOUT;
         struct timeval tv = {};
         tv.tv_sec  = static_cast<time_t>(left_us / 1000000);
         tv.tv_usec = static_cast<suseconds_t>(left_us % 1000000);
