@@ -1278,6 +1278,9 @@ Pump pump() {
             // the PLL cannot make still has to be converted, and only the consumer knows.
             auto& ring = audio_core::pcm_ring();
             ring.ask_rate(s.src_rate);
+            // A body that ended cleanly left end-of-stream set, and a reconnect comes back here
+            // without a reset: say the stream is live again, as the card player does.
+            ring.set_eos(audio_core::PcmRing::OWNER_RADIO, s.pcm_generation, false);
             uint32_t out = 0;
             for (int i = 0; i < 60 && !(out = ring.out_rate()); i++) sleep_ms(5);
             if (!out) out = audio_core::PIPE_OUT_RATE;   // no answer yet; start on the fallback
@@ -1293,6 +1296,30 @@ Pump pump() {
             }
         } else {
             return Pump::WORKED;
+        }
+    } else {
+        // The decoder follows a format change inside one connection (a lead-in or a fallback
+        // mount at another rate, then the station's own stream) and rewrites its info. Frames
+        // converted at the rate of the first one play at the wrong speed until the next tune.
+        esp_audio_simple_dec_info_t info = {};
+        if (esp_audio_simple_dec_get_info(s.dec, &info) == ESP_AUDIO_ERR_OK && info.sample_rate) {
+            const uint8_t ch = info.channel ? info.channel : 2;
+            if (info.sample_rate != s.src_rate || info.bits_per_sample != s.src_bits ||
+                ch != s.src_ch) {
+                ESP_LOGW(TAG, "stream format changed mid-connection: %lu Hz %u ch %u bit -> "
+                              "%lu Hz %u ch %u bit",
+                         (unsigned long)s.src_rate, (unsigned)s.src_ch, (unsigned)s.src_bits,
+                         (unsigned long)info.sample_rate, (unsigned)ch,
+                         (unsigned)info.bits_per_sample);
+                s.src_rate = info.sample_rate;
+                s.src_bits = info.bits_per_sample;
+                s.src_ch   = ch;
+                snprintf(s.fmt, sizeof(s.fmt), "%.1f kHz %u ch %lu kbps",
+                         (double)s.src_rate / 1000.0, (unsigned)s.src_ch,
+                         (unsigned long)s.bitrate);
+                // The session keeps its clock; only the converter's ratio changes.
+                if (!use_clock(s.clock)) return Pump::LOST;
+            }
         }
     }
 
