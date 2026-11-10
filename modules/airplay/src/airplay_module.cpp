@@ -354,7 +354,7 @@ bool AirplayModule::on_init() {
     // on it, so a failure here is logged, not fatal.
     s_cover_q = xQueueCreate(1, sizeof(CoverJob));
     if (!s_cover_q ||
-        xTaskCreatePinnedToCoreWithCaps(cover_worker, "ap_cover", 6144, nullptr, 2, nullptr, 0,
+        xTaskCreatePinnedToCoreWithCaps(cover_worker, "ap_cover", 6144, nullptr, tskIDLE_PRIORITY, nullptr, 0,
                                         MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT) != pdPASS) {
         ESP_LOGE(TAG, "cover worker not started - no AirPlay covers");
         if (s_cover_q) vQueueDelete(s_cover_q);

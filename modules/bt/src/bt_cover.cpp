@@ -66,13 +66,13 @@ bool init() {
     if (!queue) return false;
     // A PSRAM stack, as AirPlay's cover worker has for the same decode (it writes no flash, so
     // it never has to run while the flash cache is off): 6 KB off the internal RAM DMA needs.
-    if (xTaskCreatePinnedToCoreWithCaps(worker,"bt_cover",6144,nullptr,2,nullptr,tskNO_AFFINITY,
+    if (xTaskCreatePinnedToCoreWithCaps(worker,"bt_cover",6144,nullptr,tskIDLE_PRIORITY,nullptr,0,
                                         MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT)!=pdPASS) {
         vQueueDelete(queue); queue=nullptr; return false;
     }
-    // 10 s against a 1 Hz beat: decoding a 256 KiB JPEG on the slowest path this worker
-    // takes is seconds, not tens of seconds.
-    modesp::liveness::watch("bt_cover",&beat,10000);
+    // 30 s against a 1 Hz beat, as the other cover workers have: at idle priority a
+    // software decode waits for everything else on core 0.
+    modesp::liveness::watch("bt_cover",&beat,30000);
     return true;
 }
 void clear() {
