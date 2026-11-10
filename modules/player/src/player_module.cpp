@@ -623,8 +623,9 @@ bool open_track(const char* path, bool flush_ring) {
     audio_core::claim_after_fade(audio_core::pcm_ring(), audio_core::PcmRing::OWNER_FILE,
                                  [] { sleep_at_least_a_tick(5); });
     s.ring_generation = audio_core::pcm_ring().generation();
-    audio_core::pcm_ring().set_paused(false);   // a new track is never born paused
+    // Flush first, behind the pause: lifting the pause before it lets the old track sound.
     if (flush_ring) close_track(); else close_file();
+    audio_core::pcm_ring().set_paused(false);   // a new track is never born paused
     const esp_audio_simple_dec_type_t type = type_from_name(path);
     s.is_wav = type == ESP_AUDIO_SIMPLE_DEC_TYPE_WAV;
     if (type == ESP_AUDIO_SIMPLE_DEC_TYPE_NONE) {

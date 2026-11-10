@@ -657,7 +657,8 @@ void DlnaModule::on_update(uint32_t dt_ms) {
         case Action::Stop:
             d.pause_after_start = false;
             if (ours) {
-                audio_core::pcm_ring().set_paused(false);
+                // The pause stays on until the radio has flushed: lifting it here let the
+                // paused track play on until the stop arrived.
                 post_command_to("radio", "radio.cmd", (int32_t)2);
                 d.ours.store(false);
                 d.pos_s.store(0);
