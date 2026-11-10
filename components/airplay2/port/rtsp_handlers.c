@@ -1721,6 +1721,9 @@ static void handle_set_parameter(int socket, rtsp_conn_t *conn,
         const char *vol = strstr((const char *)body, "volume:");
         if (vol) {
           float volume = strtof(vol + 7, NULL);
+          // AirPlay volumes are -144 (mute) and -30..0; anything else is not a level.
+          if (!(volume >= -144.0f)) volume = -144.0f;
+          if (volume > 0.0f) volume = 0.0f;
           rtsp_conn_set_volume(conn, volume);
         }
       }
@@ -1824,6 +1827,9 @@ static void handle_get_parameter(int socket, rtsp_conn_t *conn,
       char vol_response[32];
       int vol_len = snprintf(vol_response, sizeof(vol_response),
                              "volume: %.2f\r\n", conn->volume_db);
+      // snprintf returns the length the text wanted, not the length it got.
+      if (vol_len < 0) vol_len = 0;
+      if (vol_len > (int)sizeof(vol_response) - 1) vol_len = (int)sizeof(vol_response) - 1;
       rtsp_send_response(socket, conn, 200, "OK", req->cseq,
                          "Content-Type: text/parameters\r\n", vol_response,
                          vol_len);
