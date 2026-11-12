@@ -397,3 +397,75 @@ TEST_CASE("resampler safety: Q32 phase tracks legacy planar samples and long-ter
         }
     }
 }
+
+namespace {
+/// The loudest spectral line under 20 kHz in what `hz` at `src` became at `dst`, in dB against
+/// a full-scale-0.5 sine's line.
+double inband_spur_db(audio_core::RateConverter& converter, int src, int dst, double hz) {
+    REQUIRE(converter.ensure(src, dst));
+    constexpr int frames = 32768;
+    std::vector<float> input(frames * 2), output;
+    for (int i = 0; i < frames; ++i)
+        input[2*i] = input[2*i+1] = static_cast<float>(0.5 * std::sin(2*pi*hz*i/src));
+    for (int done = 0; done < frames;) {
+        float scratch[2048];
+        const int n = std::min(frames - done, static_cast<int>(converter.max_in(1024)));
+        size_t count = 0;
+        const float* result = converter.process(input.data() + 2*done, n, scratch, 1024, count);
+        for (size_t j = 0; j < count; ++j) output.push_back(result[2*j]);
+        done += n;
+    }
+    constexpr int N = 4096;
+    REQUIRE(output.size() > N + 512);
+    const float* x = output.data() + 256;
+    double wsum = 0;
+    for (int i = 0; i < N; ++i) wsum += 0.5 - 0.5 * std::cos(2*pi*i/N);
+    double worst = 0;
+    const int top = static_cast<int>(20000.0 * N / dst);
+    for (int k = 1; k <= top; ++k) {
+        double re = 0, im = 0;
+        for (int i = 0; i < N; ++i) {
+            const double w = (0.5 - 0.5 * std::cos(2*pi*i/N)) * x[i];
+            re += w * std::cos(2*pi*k*i/N);
+            im -= w * std::sin(2*pi*k*i/N);
+        }
+        worst = std::max(worst, std::sqrt(re*re + im*im) * 2 / wsum);
+    }
+    return 20 * std::log10(worst / 0.5 + 1e-30);
+}
+}  // namespace
+
+TEST_CASE("resampler safety: a conversion down keeps the audible band and stops what folds into it") {
+    // Every way down the producers can take inside a session. Flat to 20 kHz within half a dB,
+    // and a tone that would fold to 18 kHz at least 90 dB down.
+    struct Pair { int src, dst; };
+    const Pair pairs[] = {{96000, 48000}, {88200, 44100}, {96000, 44100}, {88200, 48000},
+                          {192000, 48000}, {176400, 44100}, {192000, 44100}, {48000, 44100},
+                          {192000, 96000}};
+    const double full = 0.5 / std::sqrt(2.0);
+    for (const Pair& p : pairs) {
+        audio_core::RateConverter converter;
+        CAPTURE(p.src);
+        CAPTURE(p.dst);
+        double at[5] = {}, *a = at;
+        for (double hz : {1000.0, 10000.0, 16000.0, 18000.0, 20000.0}) {
+            CAPTURE(hz);
+            const double db = 20 * std::log10(converted_rms(converter, p.src, p.dst, hz) / full);
+            *a++ = db;
+            CHECK(db > -0.5);
+            CHECK(db < 0.2);
+        }
+        double worst_fold = -400;
+        // Tones the output cannot carry: whatever of them is left must lie above 20 kHz. Read
+        // as the loudest DFT bin under 20 kHz of a Hann-windowed stretch of the output.
+        for (double fold : {p.dst - 18000.0, p.dst - 10000.0, p.dst * 0.75}) {
+            if (fold <= p.dst / 2.0 || fold >= p.src / 2.0 - 500) continue;
+            CAPTURE(fold);
+            const double spur = inband_spur_db(converter, p.src, p.dst, fold);
+            worst_fold = std::max(worst_fold, spur);
+            CHECK(spur < -90);
+        }
+        MESSAGE(p.src << " -> " << p.dst << ": 16 kHz " << at[2] << " dB, 18 kHz " << at[3]
+                << " dB, 20 kHz " << at[4] << " dB; worst fold under 20 kHz " << worst_fold << " dB");
+    }
+}

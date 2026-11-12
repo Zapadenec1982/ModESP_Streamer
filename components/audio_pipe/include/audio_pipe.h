@@ -124,7 +124,7 @@ public:
     /// past the whole block instead loses the remainder without a sound to mark it. Asking
     /// this first turns a silent drop into one more call.
     size_t max_in(size_t out_cap) const {
-        if (!asrc_ || ratio_ <= 1.0) return out_cap;
+        if (!stage_[0] || ratio_ <= 1.0) return out_cap;
         const size_t room = out_cap > 8 ? out_cap - 8 : 1;   // the phase can carry one over
         const size_t n = (size_t)((double)room / ratio_);
         return n ? n : 1;
@@ -134,10 +134,19 @@ public:
     double   ratio() const { return ratio_; }
     /// Whether a bank is built: `!conv` reads as "no converter", which is the question the
     /// card player's input bound asks before dividing by the ratio.
-    explicit operator bool() const { return asrc_ != nullptr; }
+    explicit operator bool() const { return stage_[0] != nullptr; }
+
+    /// Up to three stages: halvings first, then the rest. 192 kHz to 44.1 kHz is three.
+    static constexpr int MAX_STAGES = 3;
 
 private:
-    resample* asrc_ = nullptr;
+    void free_stages();
+
+    resample* stage_[MAX_STAGES] = {};
+    double    stage_ratio_[MAX_STAGES] = {};
+    int       stages_ = 0;
+    float*    mid_[2] = {};       ///< between stages, PSRAM; frames of capacity mid_cap_
+    size_t    mid_cap_ = 0;
     uint32_t  rate_ = 0;          ///< the source rate the bank was built for; 0 = none
     uint32_t  dst_  = 0;          ///< and the rate it converts TO
     double    ratio_ = 1.0;

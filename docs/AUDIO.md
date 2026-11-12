@@ -82,6 +82,13 @@ The ports are the `drivers/i2s_std` driver, set up from the `i2s_buses` entries 
 - The producers' fixed-ratio converter is `audio_core::RateConverter` (`components/audio_pipe`) on
   the resampler `components/audio_resampler` (dbry, BSD-3); the filter bank is built per pair of
   rates, not per track.
+- Going down, the converter keeps the audible band whatever the session's rate: flat to 20 kHz
+  within 0.3 dB, and what would fold under 20 kHz at least 110 dB down (host test
+  `tests/host/test_resampler_safety.cpp`). It halves first while the result is still at or above
+  the target (192 → 96 → 48, 96 → 48 → 44.1), and the stage that is heard gets a filter sized for
+  its pair: 76 taps for 96 → 48, 132 for 88.2 → 44.1. A halving that another halving follows, and
+  the ceiling's 192 → 96, keep the library's 48 taps. The cost is on core 0, only while a track
+  plays at another rate than the session's.
 
 ## The PCM ring and its owners
 
